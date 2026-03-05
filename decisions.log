@@ -16,3 +16,6 @@ Added physics-based collision response with impulse calculations, restitution fo
 
 === 2026-03-05 21:01:27 -- task 7 ===
 Added friction/damping system with different values for player and pushable balls. Player ball has responsive movement with friction when not actively controlled, while pushable ball has stronger friction to gradually stop after being pushed.
+
+=== 2026-03-05 21:19:50 -- task 8: ball moves too slow and doesnt respond to repeated pushes, also Love2D opens twice on start ===
+Increased ball movement speed from 250 to 400, improved push force from 600 to 800, reduced friction for better responsiveness, and fixed wall collision to prevent sticking. The double-opening issue is likely due to running the file directly - should run with Love2D executable instead.

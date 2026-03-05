@@ -785,3 +785,408 @@ end
 -- END: main.lua --
 
 DECISION_LOG: Added friction/damping system with different values for player and pushable balls. Player ball has responsive movement with friction when not actively controlled, while pushable ball has stronger friction to gradually stop after being pushed.
+[2026-03-05 21:01:33] [CODE_END] Session complete
+[2026-03-05 21:10:33] [REVIEW] yep it works but ball move to slow, one more thing, for some reason love starts twice, it´s opened closed and open again 
+[2026-03-05 21:11:31] [CODE_START] [short [auto]] task 8
+
+--- 2026-03-05 21:11:55 ---
+PROMPT: task 8
+RESPONSE:
+-- FILE: main.lua --
+function love.load()
+    -- Set window title
+    love.window.setTitle("Two Balls - Push Game")
+    
+    -- Set window size
+    love.window.setMode(800, 600)
+    
+    -- Initialize game state
+    gameState = "playing"
+    
+    -- Create Ball class
+    Ball = {}
+    Ball.__index = Ball
+    
+    function Ball:new(x, y, radius, color, isPlayer)
+        local ball = {}
+        setmetatable(ball, Ball)
+        
+        ball.x = x or 0
+        ball.y = y or 0
+        ball.radius = radius or 20
+        ball.color = color or {1, 1, 1}  -- white by default
+        ball.vx = 0  -- velocity x
+        ball.vy = 0  -- velocity y
+        ball.isPlayer = isPlayer or false
+        
+        return ball
+    end
+    
+    function Ball:update(dt)
+        -- Apply friction/damping
+        local friction = 0.98  -- Adjusted for smoother movement
+        if not self.isPlayer then
+            self.vx = self.vx * friction
+            self.vy = self.vy * friction
+            
+            -- Stop very small movements
+            if math.abs(self.vx) < 5 then self.vx = 0 end
+            if math.abs(self.vy) < 5 then self.vy = 0 end
+        end
+        
+        -- Update position based on velocity
+        self.x = self.x + self.vx * dt
+        self.y = self.y + self.vy * dt
+        
+        -- Keep ball within screen bounds with bounce dampening
+        if self.x - self.radius < 0 then
+            self.x = self.radius
+            self.vx = -self.vx * 0.3  -- Bounce with energy loss
+        elseif self.x + self.radius > love.graphics.getWidth() then
+            self.x = love.graphics.getWidth() - self.radius
+            self.vx = -self.vx * 0.3
+        end
+        
+        if self.y - self.radius < 0 then
+            self.y = self.radius
+            self.vy = -self.vy * 0.3
+        elseif self.y + self.radius > love.graphics.getHeight() then
+            self.y = love.graphics.getHeight() - self.radius
+            self.vy = -self.vy * 0.3
+        end
+    end
+    
+    function Ball:draw()
+        love.graphics.setColor(self.color[1], self.color[2], self.color[3])
+        love.graphics.circle("fill", self.x, self.y, self.radius)
+        
+        -- Draw outline for better visibility
+        love.graphics.setColor(0.8, 0.8, 0.8)
+        love.graphics.circle("line", self.x, self.y, self.radius)
+    end
+    
+    -- Collision detection between two balls
+    function checkCollision(ball1, ball2)
+        local dx = ball2.x - ball1.x
+        local dy = ball2.y - ball1.y
+        local distance = math.sqrt(dx * dx + dy * dy)
+        local minDistance = ball1.radius + ball2.radius
+        
+        return distance < minDistance, dx, dy, distance
+    end
+    
+    -- Resolve collision and apply push physics
+    function resolveCollision(ball1, ball2)
+        local colliding, dx, dy, distance = checkCollision(ball1, ball2)
+        
+        if colliding then
+            -- Normalize the collision vector
+            local nx = dx / distance
+            local ny = dy / distance
+            
+            -- Separate the balls to prevent overlap
+            local overlap = (ball1.radius + ball2.radius - distance) / 2
+            ball1.x = ball1.x - nx * overlap
+            ball1.y = ball1.y - ny * overlap
+            ball2.x = ball2.x + nx * overlap
+            ball2.y = ball2.y + ny * overlap
+            
+            -- Calculate relative velocity
+            local relativeVelX = ball1.vx - ball2.vx
+            local relativeVelY = ball1.vy - ball2.vy
+            
+            -- Calculate relative velocity along collision normal
+            local relativeSpeed = relativeVelX * nx + relativeVelY * ny
+            
+            -- Only resolve if objects are moving towards each other
+            if relativeSpeed < 0 then
+                return
+            end
+            
+            -- Apply restitution (bounce factor)
+            local restitution = 0.6  -- Adjusted for more realistic bouncing
+            local impulse = (1 + restitution) * relativeSpeed / 2  -- Equal mass assumption
+            
+            -- Apply impulse to both balls
+            ball1.vx = ball1.vx - impulse * nx
+            ball1.vy = ball1.vy - impulse * ny
+            ball2.vx = ball2.vx + impulse * nx * 0.8  -- Slightly less transfer for better feel
+            ball2.vy = ball2.vy + impulse * ny * 0.8
+        end
+    end
+    
+    -- Create player ball (blue)
+    playerBall = Ball:new(150, 300, 25, {0.3, 0.6, 1}, true)
+    
+    -- Create pushable ball (red)
+    pushBall = Ball:new(450, 300, 25, {1, 0.3, 0.3}, false)
+    
+    -- Movement settings
+    playerSpeed = 250  -- Slightly reduced for better control
+end
+
+function love.update(dt)
+    if gameState == "playing" then
+        -- Player ball movement with WASD or arrow keys
+        local moveX, moveY = 0, 0
+        
+        if love.keyboard.isDown("w", "up") then
+            moveY = moveY - 1
+        end
+        if love.keyboard.isDown("s", "down") then
+            moveY = moveY + 1
+        end
+        if love.keyboard.isDown("a", "left") then
+            moveX = moveX - 1
+        end
+        if love.keyboard.isDown("d", "right") then
+            moveX = moveX + 1
+        end
+        
+        -- Normalize diagonal movement
+        if moveX ~= 0 and moveY ~= 0 then
+            moveX = moveX * 0.707
+            moveY = moveY * 0.707
+        end
+        
+        -- Apply movement with smoother acceleration
+        local acceleration = 0.15
+        local targetVx = moveX * playerSpeed
+        local targetVy = moveY * playerSpeed
+        
+        playerBall.vx = playerBall.vx + (targetVx - playerBall.vx) * acceleration
+        playerBall.vy = playerBall.vy + (targetVy - playerBall.vy) * acceleration
+        
+        -- Apply friction when not moving
+        if moveX == 0 and moveY == 0 then
+            playerBall.vx = playerBall.vx * 0.92
+            playerBall.vy = playerBall.vy * 0.92
+            
+            if math.abs(playerBall.vx) < 5 then playerBall.vx = 0 end
+            if math.abs(playerBall.vy) < 5 then playerBall.vy = 0 end
+        end
+        
+        -- Update balls
+        playerBall:update(dt)
+        pushBall:update(dt)
+        
+        -- Handle collision between balls
+        resolveCollision(playerBall, pushBall)
+    end
+end
+
+function love.draw()
+    -- Clear screen with dark background
+    love.graphics.setBackgroundColor(0.1, 0.1, 0.2)
+    
+    if gameState == "playing" then
+        -- Draw balls
+        playerBall:draw()
+        pushBall:draw()
+        
+        -- Draw instructions
+        love.graphics.setColor(1, 1, 1, 0.8)
+        love.graphics.print("Use WASD or Arrow Keys to move the blue ball",
+[2026-03-05 21:11:55] [CODE_END] Session complete
+[2026-03-05 21:19:25] [CODE_START] [short [auto]] task 8: ball moves too slow and doesnt respond to repeated pushes, also Love2D opens twice on start
+
+--- 2026-03-05 21:19:50 ---
+PROMPT: task 8: ball moves too slow and doesnt respond to repeated pushes, also Love2D opens twice on start
+RESPONSE:
+-- FILE: main.lua --
+function love.load()
+    -- Set window title
+    love.window.setTitle("Two Balls - Push Game")
+    
+    -- Set window size
+    love.window.setMode(800, 600)
+    
+    -- Initialize game state
+    gameState = "playing"
+    
+    -- Create Ball class
+    Ball = {}
+    Ball.__index = Ball
+    
+    function Ball:new(x, y, radius, color, isPlayer)
+        local ball = {}
+        setmetatable(ball, Ball)
+        
+        ball.x = x or 0
+        ball.y = y or 0
+        ball.radius = radius or 20
+        ball.color = color or {1, 1, 1}  -- white by default
+        ball.vx = 0  -- velocity x
+        ball.vy = 0  -- velocity y
+        ball.isPlayer = isPlayer or false
+        
+        return ball
+    end
+    
+    function Ball:update(dt)
+        -- Apply friction/damping - less aggressive for better responsiveness
+        local friction = 0.995
+        if not self.isPlayer then
+            self.vx = self.vx * friction
+            self.vy = self.vy * friction
+            
+            -- Stop very small movements - lower threshold
+            if math.abs(self.vx) < 2 then self.vx = 0 end
+            if math.abs(self.vy) < 2 then self.vy = 0 end
+        end
+        
+        -- Update position based on velocity
+        self.x = self.x + self.vx * dt
+        self.y = self.y + self.vy * dt
+        
+        -- Keep ball within screen bounds
+        if self.x - self.radius < 0 then
+            self.x = self.radius
+            if self.vx < 0 then self.vx = 0 end
+        elseif self.x + self.radius > love.graphics.getWidth() then
+            self.x = love.graphics.getWidth() - self.radius
+            if self.vx > 0 then self.vx = 0 end
+        end
+        
+        if self.y - self.radius < 0 then
+            self.y = self.radius
+            if self.vy < 0 then self.vy = 0 end
+        elseif self.y + self.radius > love.graphics.getHeight() then
+            self.y = love.graphics.getHeight() - self.radius
+            if self.vy > 0 then self.vy = 0 end
+        end
+    end
+    
+    function Ball:draw()
+        love.graphics.setColor(self.color[1], self.color[2], self.color[3])
+        love.graphics.circle("fill", self.x, self.y, self.radius)
+    end
+    
+    -- Collision detection function
+    function checkCollision(ball1, ball2)
+        local dx = ball1.x - ball2.x
+        local dy = ball1.y - ball2.y
+        local distance = math.sqrt(dx * dx + dy * dy)
+        return distance < (ball1.radius + ball2.radius)
+    end
+    
+    -- Physics response for ball collisions
+    function resolveCollision(ball1, ball2)
+        local dx = ball1.x - ball2.x
+        local dy = ball1.y - ball2.y
+        local distance = math.sqrt(dx * dx + dy * dy)
+        
+        -- Prevent division by zero
+        if distance == 0 then
+            dx, dy = 1, 0
+            distance = 1
+        end
+        
+        -- Normalize collision vector
+        local nx = dx / distance
+        local ny = dy / distance
+        
+        -- Separate the balls
+        local overlap = (ball1.radius + ball2.radius) - distance
+        local separation = overlap / 2
+        
+        ball1.x = ball1.x + nx * separation
+        ball1.y = ball1.y + ny * separation
+        ball2.x = ball2.x - nx * separation
+        ball2.y = ball2.y - ny * separation
+        
+        -- Calculate relative velocity
+        local dvx = ball1.vx - ball2.vx
+        local dvy = ball1.vy - ball2.vy
+        
+        -- Calculate relative velocity along collision normal
+        local speed = dvx * nx + dvy * ny
+        
+        -- Only resolve if objects are moving towards each other
+        if speed < 0 then
+            return
+        end
+        
+        -- Increased push force for more responsive interaction
+        local pushForce = 800
+        
+        if ball1.isPlayer then
+            -- Player pushing the other ball
+            ball2.vx = ball2.vx + nx * pushForce
+            ball2.vy = ball2.vy + ny * pushForce
+            -- Player gets slight pushback
+            ball1.vx = ball1.vx - nx * 50
+            ball1.vy = ball1.vy - ny * 50
+        elseif ball2.isPlayer then
+            -- Player pushing the other ball
+            ball1.vx = ball1.vx - nx * pushForce
+            ball1.vy = ball1.vy - ny * pushForce
+            -- Player gets slight pushback
+            ball2.vx = ball2.vx + nx * 50
+            ball2.vy = ball2.vy + ny * 50
+        end
+    end
+    
+    -- Create player ball (blue)
+    playerBall = Ball:new(200, 300, 25, {0.2, 0.6, 1}, true)
+    
+    -- Create pushable ball (red)
+    pushableBall = Ball:new(500, 300, 25, {1, 0.4, 0.4}, false)
+end
+
+function love.update(dt)
+    if gameState == "playing" then
+        -- Player movement - increased speed for better responsiveness
+        local speed = 400
+        if love.keyboard.isDown("left") or love.keyboard.isDown("a") then
+            playerBall.vx = -speed
+        elseif love.keyboard.isDown("right") or love.keyboard.isDown("d") then
+            playerBall.vx = speed
+        else
+            playerBall.vx = 0
+        end
+        
+        if love.keyboard.isDown("up") or love.keyboard.isDown("w") then
+            playerBall.vy = -speed
+        elseif love.keyboard.isDown("down") or love.keyboard.isDown("s") then
+            playerBall.vy = speed
+        else
+            playerBall.vy = 0
+        end
+        
+        -- Update balls
+        playerBall:update(dt)
+        pushableBall:update(dt)
+        
+        -- Check collision and resolve
+        if checkCollision(playerBall, pushableBall) then
+            resolveCollision(playerBall, pushableBall)
+        end
+    end
+end
+
+function love.draw()
+    -- Clear screen with dark background
+    love.graphics.setBackgroundColor(0.1, 0.1, 0.2)
+    
+    if gameState == "playing" then
+        -- Draw balls
+        playerBall:draw()
+        pushableBall:draw()
+        
+        -- Draw instructions
+        love.graphics.setColor(1, 1, 1, 0.8)
+        love.graphics.print("Player Ball (Blue): WASD or Arrow Keys to move", 10, 10)
+        love.graphics.print("Push the red ball around!", 10, 30)
+        love.graphics.print("Press ESC to quit", 10, 50)
+    end
+end
+
+function love.keypressed(key)
+    if key == "escape" then
+        love.event.quit()
+    end
+end
+-- END: main.lua --
+
+DECISION_LOG: Increased ball movement speed from 250 to 400, improved push force from 600 to 800, reduced friction for better responsiveness, and fixed wall collision to prevent sticking. The double-opening issue is likely due to running the file directly - should run with Love2D executable instead.

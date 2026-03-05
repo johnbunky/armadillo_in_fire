@@ -28,15 +28,15 @@ function love.load()
     end
     
     function Ball:update(dt)
-        -- Apply friction/damping
-        local friction = 0.95
+        -- Apply friction/damping - less aggressive for better responsiveness
+        local friction = 0.995
         if not self.isPlayer then
             self.vx = self.vx * friction
             self.vy = self.vy * friction
             
-            -- Stop very small movements
-            if math.abs(self.vx) < 1 then self.vx = 0 end
-            if math.abs(self.vy) < 1 then self.vy = 0 end
+            -- Stop very small movements - lower threshold
+            if math.abs(self.vx) < 2 then self.vx = 0 end
+            if math.abs(self.vy) < 2 then self.vy = 0 end
         end
         
         -- Update position based on velocity
@@ -46,18 +46,18 @@ function love.load()
         -- Keep ball within screen bounds
         if self.x - self.radius < 0 then
             self.x = self.radius
-            self.vx = 0
+            if self.vx < 0 then self.vx = 0 end
         elseif self.x + self.radius > love.graphics.getWidth() then
             self.x = love.graphics.getWidth() - self.radius
-            self.vx = 0
+            if self.vx > 0 then self.vx = 0 end
         end
         
         if self.y - self.radius < 0 then
             self.y = self.radius
-            self.vy = 0
+            if self.vy < 0 then self.vy = 0 end
         elseif self.y + self.radius > love.graphics.getHeight() then
             self.y = love.graphics.getHeight() - self.radius
-            self.vy = 0
+            if self.vy > 0 then self.vy = 0 end
         end
     end
     
@@ -66,7 +66,7 @@ function love.load()
         love.graphics.circle("fill", self.x, self.y, self.radius)
     end
     
-    -- Collision detection between two balls
+    -- Collision detection function
     function checkCollision(ball1, ball2)
         local dx = ball1.x - ball2.x
         local dy = ball1.y - ball2.y
@@ -74,22 +74,23 @@ function love.load()
         return distance < (ball1.radius + ball2.radius)
     end
     
-    -- Handle collision and pushing physics
-    function handleCollision(ball1, ball2)
-        if not checkCollision(ball1, ball2) then return end
-        
+    -- Physics response for ball collisions
+    function resolveCollision(ball1, ball2)
         local dx = ball1.x - ball2.x
         local dy = ball1.y - ball2.y
         local distance = math.sqrt(dx * dx + dy * dy)
         
         -- Prevent division by zero
-        if distance == 0 then return end
+        if distance == 0 then
+            dx, dy = 1, 0
+            distance = 1
+        end
         
         -- Normalize collision vector
         local nx = dx / distance
         local ny = dy / distance
         
-        -- Separate balls to prevent overlap
+        -- Separate the balls
         local overlap = (ball1.radius + ball2.radius) - distance
         local separation = overlap / 2
         
@@ -99,81 +100,72 @@ function love.load()
         ball2.y = ball2.y - ny * separation
         
         -- Calculate relative velocity
-        local rvx = ball1.vx - ball2.vx
-        local rvy = ball1.vy - ball2.vy
+        local dvx = ball1.vx - ball2.vx
+        local dvy = ball1.vy - ball2.vy
         
-        -- Calculate relative velocity in collision normal direction
-        local speed = rvx * nx + rvy * ny
+        -- Calculate relative velocity along collision normal
+        local speed = dvx * nx + dvy * ny
         
-        -- Do not resolve if velocities are separating
-        if speed > 0 then return end
+        -- Only resolve if objects are moving towards each other
+        if speed < 0 then
+            return
+        end
         
-        -- Calculate restitution (bounciness)
-        local restitution = 0.8
+        -- Increased push force for more responsive interaction
+        local pushForce = 800
         
-        -- Calculate impulse scalar
-        local impulse = -(1 + restitution) * speed
-        local mass1 = ball1.radius * ball1.radius -- mass proportional to area
-        local mass2 = ball2.radius * ball2.radius
-        impulse = impulse / (1/mass1 + 1/mass2)
-        
-        -- Apply impulse
-        local impulsex = impulse * nx
-        local impulsey = impulse * ny
-        
-        ball1.vx = ball1.vx + impulsex / mass1
-        ball1.vy = ball1.vy + impulsey / mass1
-        ball2.vx = ball2.vx - impulsex / mass2
-        ball2.vy = ball2.vy - impulsey / mass2
+        if ball1.isPlayer then
+            -- Player pushing the other ball
+            ball2.vx = ball2.vx + nx * pushForce
+            ball2.vy = ball2.vy + ny * pushForce
+            -- Player gets slight pushback
+            ball1.vx = ball1.vx - nx * 50
+            ball1.vy = ball1.vy - ny * 50
+        elseif ball2.isPlayer then
+            -- Player pushing the other ball
+            ball1.vx = ball1.vx - nx * pushForce
+            ball1.vy = ball1.vy - ny * pushForce
+            -- Player gets slight pushback
+            ball2.vx = ball2.vx + nx * 50
+            ball2.vy = ball2.vy + ny * 50
+        end
     end
     
     -- Create player ball (blue)
-    playerBall = Ball:new(200, 300, 25, {0.3, 0.6, 1}, true)
+    playerBall = Ball:new(200, 300, 25, {0.2, 0.6, 1}, true)
     
     -- Create pushable ball (red)
-    pushableBall = Ball:new(600, 300, 30, {1, 0.4, 0.4}, false)
-    
-    -- Player movement speed
-    playerSpeed = 200
+    pushableBall = Ball:new(500, 300, 25, {1, 0.4, 0.4}, false)
 end
 
 function love.update(dt)
     if gameState == "playing" then
-        -- Player controls with smooth movement and friction
-        local moving = false
-        
+        -- Player movement - increased speed for better responsiveness
+        local speed = 400
         if love.keyboard.isDown("left") or love.keyboard.isDown("a") then
-            playerBall.vx = -playerSpeed
-            moving = true
+            playerBall.vx = -speed
         elseif love.keyboard.isDown("right") or love.keyboard.isDown("d") then
-            playerBall.vx = playerSpeed
-            moving = true
+            playerBall.vx = speed
         else
-            playerBall.vx = playerBall.vx * 0.9  -- Apply friction when not moving
+            playerBall.vx = 0
         end
         
         if love.keyboard.isDown("up") or love.keyboard.isDown("w") then
-            playerBall.vy = -playerSpeed
-            moving = true
+            playerBall.vy = -speed
         elseif love.keyboard.isDown("down") or love.keyboard.isDown("s") then
-            playerBall.vy = playerSpeed
-            moving = true
+            playerBall.vy = speed
         else
-            playerBall.vy = playerBall.vy * 0.9  -- Apply friction when not moving
-        end
-        
-        -- Stop very small movements for player
-        if not moving then
-            if math.abs(playerBall.vx) < 5 then playerBall.vx = 0 end
-            if math.abs(playerBall.vy) < 5 then playerBall.vy = 0 end
+            playerBall.vy = 0
         end
         
         -- Update balls
         playerBall:update(dt)
         pushableBall:update(dt)
         
-        -- Handle collision between player and pushable ball
-        handleCollision(playerBall, pushableBall)
+        -- Check collision and resolve
+        if checkCollision(playerBall, pushableBall) then
+            resolveCollision(playerBall, pushableBall)
+        end
     end
 end
 
@@ -187,8 +179,8 @@ function love.draw()
         pushableBall:draw()
         
         -- Draw instructions
-        love.graphics.setColor(1, 1, 1)
-        love.graphics.print("Use WASD or Arrow Keys to move the blue ball", 10, 10)
+        love.graphics.setColor(1, 1, 1, 0.8)
+        love.graphics.print("Player Ball (Blue): WASD or Arrow Keys to move", 10, 10)
         love.graphics.print("Push the red ball around!", 10, 30)
         love.graphics.print("Press ESC to quit", 10, 50)
     end
