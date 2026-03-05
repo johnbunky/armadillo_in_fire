@@ -1,10 +1,11 @@
+function love.conf(t)
+    t.title = "Two Balls - Push Game"
+    t.window.width = 800
+    t.window.height = 600
+    t.window.resizable = false
+end
+
 function love.load()
-    -- Set window title
-    love.window.setTitle("Two Balls - Push Game")
-    
-    -- Set window size
-    love.window.setMode(800, 600)
-    
     -- Initialize game state
     gameState = "playing"
     

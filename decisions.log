@@ -22,3 +22,6 @@ Increased ball movement speed from 250 to 400, improved push force from 600 to 8
 
 === 2026-03-05 21:25:15 -- could you roll back to the prevous commit ===
 Rolled back to previous version with task 7 implementation (friction and damping).
+
+=== 2026-03-05 21:32:38 -- love2d opens twice on start ===
+Added love.conf() function to properly configure window settings, which is the recommended approach and may help resolve the double-opening issue.
