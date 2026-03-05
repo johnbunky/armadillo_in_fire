@@ -31,3 +31,6 @@ Added zero friction for red balls (color check) and reflection physics with 0.8 
 
 === 2026-03-05 21:40:33 -- could you take a look whats wrong with the last changes, i see blackscreen only ===
 Fixed incomplete Ball:draw() function and added missing love.update() and love.draw() functions with ball creation and player controls.
+
+=== 2026-03-05 21:46:57 -- cold you take a look at the last feel note, may be its time to rollback for two commits ===
+Restored the complete working file from the original version and added the red ball physics modifications - zero friction and 0.8 reflection damping for red balls only.

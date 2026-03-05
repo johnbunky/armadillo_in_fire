@@ -10,6 +10,7 @@ Love2D + Lua
 In progress
 
 ## Open Tasks
+- [x] cold you take a look at the last feel note, may be its time to rollback for two commits
 - [x] could you take a look whats wrong with the last changes, i see blackscreen only
 - [x] could you add zero friction to the red ball and reflection from screen side with loosing speed 0.8
 - [x] could you roll back to the prevous commit
@@ -50,3 +51,5 @@ In progress
 - [2026-03-05 21:34:25] love2d work ok for now
 
 - [2026-03-05 21:38:36] oops, for some reasond I see black screen
+
+- [2026-03-05 21:45:07] background, instructions, collisions function are missing, balls size are changed

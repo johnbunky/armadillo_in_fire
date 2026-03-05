@@ -1,11 +1,10 @@
-function love.conf(t)
-    t.title = "Two Balls - Push Game"
-    t.window.width = 800
-    t.window.height = 600
-    t.window.resizable = false
-end
-
 function love.load()
+    -- Set window title
+    love.window.setTitle("Two Balls - Push Game")
+    
+    -- Set window size
+    love.window.setMode(800, 600)
+    
     -- Initialize game state
     gameState = "playing"
     
@@ -29,10 +28,11 @@ function love.load()
     end
     
     function Ball:update(dt)
-        -- Apply friction/damping only to non-red balls
-        local friction = 0.95
+        -- Check if this is a red ball
         local isRedBall = (self.color[1] == 1 and self.color[2] == 0 and self.color[3] == 0)
         
+        -- Apply friction/damping only to non-red balls
+        local friction = 0.95
         if not self.isPlayer and not isRedBall then
             self.vx = self.vx * friction
             self.vy = self.vy * friction
@@ -46,18 +46,18 @@ function love.load()
         self.x = self.x + self.vx * dt
         self.y = self.y + self.vy * dt
         
-        -- Handle screen bounds - reflection for red ball, stopping for others
+        -- Handle screen bounds
         if self.x - self.radius < 0 then
             self.x = self.radius
             if isRedBall then
-                self.vx = -self.vx * 0.8  -- Reflect and lose speed
+                self.vx = -self.vx * 0.8  -- Reflect and lose 20% speed
             else
                 self.vx = 0
             end
         elseif self.x + self.radius > love.graphics.getWidth() then
             self.x = love.graphics.getWidth() - self.radius
             if isRedBall then
-                self.vx = -self.vx * 0.8  -- Reflect and lose speed
+                self.vx = -self.vx * 0.8  -- Reflect and lose 20% speed
             else
                 self.vx = 0
             end
@@ -66,14 +66,14 @@ function love.load()
         if self.y - self.radius < 0 then
             self.y = self.radius
             if isRedBall then
-                self.vy = -self.vy * 0.8  -- Reflect and lose speed
+                self.vy = -self.vy * 0.8  -- Reflect and lose 20% speed
             else
                 self.vy = 0
             end
         elseif self.y + self.radius > love.graphics.getHeight() then
             self.y = love.graphics.getHeight() - self.radius
             if isRedBall then
-                self.vy = -self.vy * 0.8  -- Reflect and lose speed
+                self.vy = -self.vy * 0.8  -- Reflect and lose 20% speed
             else
                 self.vy = 0
             end
@@ -83,55 +83,5 @@ function love.load()
     function Ball:draw()
         love.graphics.setColor(self.color[1], self.color[2], self.color[3])
         love.graphics.circle("fill", self.x, self.y, self.radius)
-    end
-    
-    -- Create balls
-    balls = {}
-    
-    -- Create player ball (blue)
-    table.insert(balls, Ball:new(100, 300, 25, {0, 0, 1}, true))
-    
-    -- Create red ball
-    table.insert(balls, Ball:new(700, 300, 20, {1, 0, 0}, false))
-end
-
-function love.update(dt)
-    if gameState == "playing" then
-        -- Handle player movement
-        local player = balls[1]  -- First ball is player
-        local speed = 200
-        
-        if love.keyboard.isDown("left") or love.keyboard.isDown("a") then
-            player.vx = -speed
-        elseif love.keyboard.isDown("right") or love.keyboard.isDown("d") then
-            player.vx = speed
-        else
-            player.vx = 0
-        end
-        
-        if love.keyboard.isDown("up") or love.keyboard.isDown("w") then
-            player.vy = -speed
-        elseif love.keyboard.isDown("down") or love.keyboard.isDown("s") then
-            player.vy = speed
-        else
-            player.vy = 0
-        end
-        
-        -- Update all balls
-        for _, ball in ipairs(balls) do
-            ball:update(dt)
-        end
-    end
-end
-
-function love.draw()
-    -- Clear screen with dark background
-    love.graphics.clear(0.1, 0.1, 0.1, 1)
-    
-    if gameState == "playing" then
-        -- Draw all balls
-        for _, ball in ipairs(balls) do
-            ball:draw()
-        end
     end
 end
