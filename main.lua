@@ -84,4 +84,54 @@ function love.load()
         love.graphics.setColor(self.color[1], self.color[2], self.color[3])
         love.graphics.circle("fill", self.x, self.y, self.radius)
     end
+    
+    -- Create balls
+    balls = {}
+    
+    -- Create player ball (blue)
+    table.insert(balls, Ball:new(100, 300, 25, {0, 0, 1}, true))
+    
+    -- Create red ball
+    table.insert(balls, Ball:new(700, 300, 20, {1, 0, 0}, false))
+end
+
+function love.update(dt)
+    if gameState == "playing" then
+        -- Handle player movement
+        local player = balls[1]  -- First ball is player
+        local speed = 200
+        
+        if love.keyboard.isDown("left") or love.keyboard.isDown("a") then
+            player.vx = -speed
+        elseif love.keyboard.isDown("right") or love.keyboard.isDown("d") then
+            player.vx = speed
+        else
+            player.vx = 0
+        end
+        
+        if love.keyboard.isDown("up") or love.keyboard.isDown("w") then
+            player.vy = -speed
+        elseif love.keyboard.isDown("down") or love.keyboard.isDown("s") then
+            player.vy = speed
+        else
+            player.vy = 0
+        end
+        
+        -- Update all balls
+        for _, ball in ipairs(balls) do
+            ball:update(dt)
+        end
+    end
+end
+
+function love.draw()
+    -- Clear screen with dark background
+    love.graphics.clear(0.1, 0.1, 0.1, 1)
+    
+    if gameState == "playing" then
+        -- Draw all balls
+        for _, ball in ipairs(balls) do
+            ball:draw()
+        end
+    end
 end
