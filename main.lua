@@ -30,7 +30,7 @@ function love.load()
     
     function Ball:update(dt)
         -- Apply friction/damping
-        local friction = 0.95
+        local friction = 1.0
         if not self.isPlayer then
             self.vx = self.vx * friction
             self.vy = self.vy * friction

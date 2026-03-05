@@ -10,6 +10,7 @@ Love2D + Lua
 In progress
 
 ## Open Tasks
+- [x] could you make friction is zero
 - [x] cold you take a look at the last feel note, may be its time to rollback for two commits
 - [x] could you take a look whats wrong with the last changes, i see blackscreen only
 - [x] could you add zero friction to the red ball and reflection from screen side with loosing speed 0.8

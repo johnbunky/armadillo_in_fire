@@ -34,3 +34,6 @@ Fixed incomplete Ball:draw() function and added missing love.update() and love.d
 
 === 2026-03-05 21:46:57 -- cold you take a look at the last feel note, may be its time to rollback for two commits ===
 Restored the complete working file from the original version and added the red ball physics modifications - zero friction and 0.8 reflection damping for red balls only.
+
+=== 2026-03-05 22:10:08 -- could you make friction is zero ===
+Changed friction value from 0.95 to 1.0 in the Ball:update function, which removes friction for non-player balls allowing them to maintain momentum indefinitely.
