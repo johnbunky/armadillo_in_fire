@@ -50,38 +50,67 @@ function love.load()
         love.graphics.circle("fill", self.x, self.y, self.radius)
     end
     
+    -- Collision detection function
+    function checkCollision(ball1, ball2)
+        local dx = ball2.x - ball1.x
+        local dy = ball2.y - ball1.y
+        local distance = math.sqrt(dx * dx + dy * dy)
+        local minDistance = ball1.radius + ball2.radius
+        
+        return distance < minDistance, dx, dy, distance
+    end
+    
     -- Create player ball (blue)
-    playerBall = Ball:new(150, 300, 25, {0.3, 0.7, 1})
+    playerBall = Ball:new(200, 300, 25, {0.3, 0.6, 1})
     
     -- Create pushable ball (red)
-    pushableBall = Ball:new(500, 300, 25, {1, 0.3, 0.3})
+    pushableBall = Ball:new(500, 300, 30, {1, 0.4, 0.4})
     
     -- Player movement speed
-    playerSpeed = 300
+    playerSpeed = 200
 end
 
 function love.update(dt)
-    if gameState == "playing" then
-        -- Player ball keyboard controls
-        playerBall.vx = 0
-        playerBall.vy = 0
+    -- Player ball controls
+    playerBall.vx = 0
+    playerBall.vy = 0
+    
+    if love.keyboard.isDown("left", "a") then
+        playerBall.vx = -playerSpeed
+    end
+    if love.keyboard.isDown("right", "d") then
+        playerBall.vx = playerSpeed
+    end
+    if love.keyboard.isDown("up", "w") then
+        playerBall.vy = -playerSpeed
+    end
+    if love.keyboard.isDown("down", "s") then
+        playerBall.vy = playerSpeed
+    end
+    
+    -- Update balls
+    playerBall:update(dt)
+    pushableBall:update(dt)
+    
+    -- Check collision between balls
+    local colliding, dx, dy, distance = checkCollision(playerBall, pushableBall)
+    
+    if colliding then
+        -- Calculate overlap
+        local overlap = (playerBall.radius + pushableBall.radius) - distance
         
-        if love.keyboard.isDown("left") or love.keyboard.isDown("a") then
-            playerBall.vx = -playerSpeed
-        end
-        if love.keyboard.isDown("right") or love.keyboard.isDown("d") then
-            playerBall.vx = playerSpeed
-        end
-        if love.keyboard.isDown("up") or love.keyboard.isDown("w") then
-            playerBall.vy = -playerSpeed
-        end
-        if love.keyboard.isDown("down") or love.keyboard.isDown("s") then
-            playerBall.vy = playerSpeed
-        end
+        -- Normalize collision vector
+        local normalX = dx / distance
+        local normalY = dy / distance
         
-        -- Update both balls
-        playerBall:update(dt)
-        pushableBall:update(dt)
+        -- Separate the balls
+        local separationX = normalX * overlap * 0.5
+        local separationY = normalY * overlap * 0.5
+        
+        playerBall.x = playerBall.x - separationX
+        playerBall.y = playerBall.y - separationY
+        pushableBall.x = pushableBall.x + separationX
+        pushableBall.y = pushableBall.y + separationY
     end
 end
 
@@ -89,17 +118,15 @@ function love.draw()
     -- Clear screen with dark background
     love.graphics.setBackgroundColor(0.1, 0.1, 0.2)
     
-    if gameState == "playing" then
-        -- Draw both balls
-        playerBall:draw()
-        pushableBall:draw()
-        
-        -- Draw instructions
-        love.graphics.setColor(1, 1, 1)
-        love.graphics.print("Use WASD or Arrow Keys to move the blue ball", 10, 10)
-        love.graphics.print("Push the red ball around!", 10, 30)
-        love.graphics.print("Press ESC to quit", 10, 50)
-    end
+    -- Draw balls
+    playerBall:draw()
+    pushableBall:draw()
+    
+    -- Draw instructions
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.print("Use WASD or Arrow Keys to move the blue ball", 10, 10)
+    love.graphics.print("Push the red ball around!", 10, 30)
+    love.graphics.print("Press ESC to quit", 10, 50)
 end
 
 function love.keypressed(key)

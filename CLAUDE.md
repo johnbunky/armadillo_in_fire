@@ -7,7 +7,7 @@ two balls, player pushes second ball
 Love2D + Lua
  
 ## Current Status
-Not started.
+In progress
 
 ## Open Tasks
 - [x] task 3 and 4: player ball keyboard controls, second pushable ball, ESC to quit, instructions overlay
@@ -19,7 +19,7 @@ Not started.
 2. Implement a Ball class with position, radius, and rendering
 3. Create the first ball (player ball) with keyboard input controls for movement
 4. Create the second ball (pushable ball) at a different starting position
-5. Implement collision detection between the two balls
+- [x] 5. Implement collision detection between the two balls
 6. Add physics for the second ball to respond to pushes from the player ball
 7. Add basic friction/damping to make ball movement feel natural
 8. Test and refine the pushing mechanics for smooth gameplay
@@ -32,4 +32,6 @@ Not started.
 
 - [2026-03-05 20:31:15] game is started, background is nice, there is no and game here yet
 
-- [2026-03-05 20:37:48] two ball are present, but instruction is missing, and esc doesn´t work
+- [2026-03-05 20:37:48] two ball are present, but instruction is missing, and esc doesn?t work
+
+- [2026-03-05 20:49:01] two balls and instruction are present, esc and keyboard input controls work

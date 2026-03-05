@@ -7,3 +7,6 @@ Created Ball class with position, radius, color properties and draw method. Adde
 
 === 2026-03-05 20:43:48 -- task 3 and 4: player ball keyboard controls, second pushable ball, ESC to quit, instructions overlay ===
 Created main.lua with Ball class, player ball (blue) with WASD/arrow key controls, and pushable ball (red). Added ESC to quit and instruction overlay.
+
+=== 2026-03-05 20:51:15 -- 5. Implement collision detection between the two balls ===
+Added collision detection between player and pushable balls with basic separation to prevent overlap. Balls now detect when they're touching and separate appropriately.
