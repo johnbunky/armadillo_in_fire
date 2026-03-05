@@ -25,3 +25,6 @@ Rolled back to previous version with task 7 implementation (friction and damping
 
 === 2026-03-05 21:32:38 -- love2d opens twice on start ===
 Added love.conf() function to properly configure window settings, which is the recommended approach and may help resolve the double-opening issue.
+
+=== 2026-03-05 21:37:10 -- could you add zero friction to the red ball and reflection from screen side with loosing speed 0.8 ===
+Added zero friction for red balls (color check) and reflection physics with 0.8 speed loss on boundary collisions. Fixed the incomplete draw function.

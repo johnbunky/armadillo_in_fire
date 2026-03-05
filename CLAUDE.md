@@ -10,6 +10,7 @@ Love2D + Lua
 In progress
 
 ## Open Tasks
+- [x] could you add zero friction to the red ball and reflection from screen side with loosing speed 0.8
 - [x] could you roll back to the prevous commit
 - [x] task 8: ball moves too slow and doesnt respond to repeated pushes, also Love2D opens twice on start
 - [x] task 7
@@ -44,3 +45,5 @@ In progress
 - [2026-03-05 21:00:20] it works second ball responds to push, but it moves too slow, and doesn´t respond to another push
 
 - [2026-03-05 21:10:33] yep it works but ball move to slow, one more thing, for some reason love starts twice, it´s opened closed and open again 
+
+- [2026-03-05 21:34:25] love2d work ok for now
