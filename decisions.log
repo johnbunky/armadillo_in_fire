@@ -10,3 +10,6 @@ Created main.lua with Ball class, player ball (blue) with WASD/arrow key control
 
 === 2026-03-05 20:51:15 -- 5. Implement collision detection between the two balls ===
 Added collision detection between player and pushable balls with basic separation to prevent overlap. Balls now detect when they're touching and separate appropriately.
+
+=== 2026-03-05 20:55:10 -- task 6 ===
+Added physics-based collision response with impulse calculations, restitution for bounciness, and proper ball separation to prevent overlap. The player ball can now effectively push the red ball with realistic physics interactions.

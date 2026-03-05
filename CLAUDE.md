@@ -10,6 +10,8 @@ Love2D + Lua
 In progress
 
 ## Open Tasks
+- [x] task 6
+- [x] 5. Implement collision detection between the two balls
 - [x] task 3 and 4: player ball keyboard controls, second pushable ball, ESC to quit, instructions overlay
 - [x] task 2: implement Ball class with position, radius, color and rendering
 - [x] task 1: create main.lua with basic Love2D window and game loop
@@ -19,7 +21,7 @@ In progress
 2. Implement a Ball class with position, radius, and rendering
 3. Create the first ball (player ball) with keyboard input controls for movement
 4. Create the second ball (pushable ball) at a different starting position
-- [x] 5. Implement collision detection between the two balls
+5. Implement collision detection between the two balls
 6. Add physics for the second ball to respond to pushes from the player ball
 7. Add basic friction/damping to make ball movement feel natural
 8. Test and refine the pushing mechanics for smooth gameplay
