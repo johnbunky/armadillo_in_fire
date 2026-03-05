@@ -10,6 +10,7 @@ Love2D + Lua
 In progress
 
 ## Open Tasks
+- [x] Implemented wall reflection by changing Ball:update() to reflect velocity instead of stopping at walls, added bounce reduction for realistic physics, and adjusted friction slightly.
 - [x] could you make friction is zero
 - [x] cold you take a look at the last feel note, may be its time to rollback for two commits
 - [x] could you take a look whats wrong with the last changes, i see blackscreen only

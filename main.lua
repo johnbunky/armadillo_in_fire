@@ -30,7 +30,7 @@ function love.load()
     
     function Ball:update(dt)
         -- Apply friction/damping
-        local friction = 1.0
+        local friction = 0.98
         if not self.isPlayer then
             self.vx = self.vx * friction
             self.vy = self.vy * friction
@@ -44,21 +44,24 @@ function love.load()
         self.x = self.x + self.vx * dt
         self.y = self.y + self.vy * dt
         
-        -- Keep ball within screen bounds
+        -- Bounce reduction factor for realistic physics
+        local bounceReduction = 0.7
+        
+        -- Keep ball within screen bounds with reflection
         if self.x - self.radius < 0 then
             self.x = self.radius
-            self.vx = 0
+            self.vx = -self.vx * bounceReduction
         elseif self.x + self.radius > love.graphics.getWidth() then
             self.x = love.graphics.getWidth() - self.radius
-            self.vx = 0
+            self.vx = -self.vx * bounceReduction
         end
         
         if self.y - self.radius < 0 then
             self.y = self.radius
-            self.vy = 0
+            self.vy = -self.vy * bounceReduction
         elseif self.y + self.radius > love.graphics.getHeight() then
             self.y = love.graphics.getHeight() - self.radius
-            self.vy = 0
+            self.vy = -self.vy * bounceReduction
         end
     end
     
