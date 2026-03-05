@@ -10,6 +10,7 @@ Love2D + Lua
 Not started.
 
 ## Open Tasks
+- [x] task 3 and 4: player ball keyboard controls, second pushable ball, ESC to quit, instructions overlay
 - [x] task 2: implement Ball class with position, radius, color and rendering
 - [x] task 1: create main.lua with basic Love2D window and game loop
 
@@ -22,16 +23,13 @@ Not started.
 6. Add physics for the second ball to respond to pushes from the player ball
 7. Add basic friction/damping to make ball movement feel natural
 8. Test and refine the pushing mechanics for smooth gameplay
-<!-- Updated each session -->
 
 ## Decisions Made
-<!-- Why we chose approach X — prevents re-arguing settled questions -->
 
 ## Known Issues
-<!-- Bugs and dead ends -->
 
 ## Feel Notes  ← only human writes here
-<!-- Emotional / playtest feedback that tests can't capture -->
-<!-- e.g. 'jump feels floaty', 'enemies too aggressive in level 2' -->
 
 - [2026-03-05 20:31:15] game is started, background is nice, there is no and game here yet
+
+- [2026-03-05 20:37:48] two ball are present, but instruction is missing, and esc doesn�t work

@@ -4,3 +4,6 @@ Created basic Love2D game window with 800x600 resolution, dark blue background, 
 
 === 2026-03-05 20:33:17 -- task 2: implement Ball class with position, radius, color and rendering ===
 Created Ball class with position, radius, color properties and draw method. Added two test balls to verify rendering works correctly.
+
+=== 2026-03-05 20:43:48 -- task 3 and 4: player ball keyboard controls, second pushable ball, ESC to quit, instructions overlay ===
+Created main.lua with Ball class, player ball (blue) with WASD/arrow key controls, and pushable ball (red). Added ESC to quit and instruction overlay.
