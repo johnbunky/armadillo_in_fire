@@ -10,6 +10,7 @@ Love2D + Lua
 Not started.
 
 ## Open Tasks
+- [x] task 2: implement Ball class with position, radius, color and rendering
 - [x] task 1: create main.lua with basic Love2D window and game loop
 
 ### Plan: two balls, player able to push second ball [2026-03-05 20:25:51]
@@ -32,3 +33,5 @@ Not started.
 ## Feel Notes  ← only human writes here
 <!-- Emotional / playtest feedback that tests can't capture -->
 <!-- e.g. 'jump feels floaty', 'enemies too aggressive in level 2' -->
+
+- [2026-03-05 20:31:15] game is started, background is nice, there is no and game here yet
