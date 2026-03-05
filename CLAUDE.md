@@ -10,6 +10,7 @@ Love2D + Lua
 In progress
 
 ## Open Tasks
+- [x] could you roll back to the prevous commit
 - [x] task 8: ball moves too slow and doesnt respond to repeated pushes, also Love2D opens twice on start
 - [x] task 7
 - [x] task 6
