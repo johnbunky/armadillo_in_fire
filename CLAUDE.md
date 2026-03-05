@@ -10,6 +10,7 @@ Love2D + Lua
 In progress
 
 ## Open Tasks
+- [x] task 7
 - [x] task 6
 - [x] 5. Implement collision detection between the two balls
 - [x] task 3 and 4: player ball keyboard controls, second pushable ball, ESC to quit, instructions overlay
@@ -37,3 +38,5 @@ In progress
 - [2026-03-05 20:37:48] two ball are present, but instruction is missing, and esc doesn?t work
 
 - [2026-03-05 20:49:01] two balls and instruction are present, esc and keyboard input controls work
+
+- [2026-03-05 21:00:20] it works second ball responds to push, but it moves too slow, and doesn´t respond to another push

@@ -13,3 +13,6 @@ Added collision detection between player and pushable balls with basic separatio
 
 === 2026-03-05 20:55:10 -- task 6 ===
 Added physics-based collision response with impulse calculations, restitution for bounciness, and proper ball separation to prevent overlap. The player ball can now effectively push the red ball with realistic physics interactions.
+
+=== 2026-03-05 21:01:27 -- task 7 ===
+Added friction/damping system with different values for player and pushable balls. Player ball has responsive movement with friction when not actively controlled, while pushable ball has stronger friction to gradually stop after being pushed.

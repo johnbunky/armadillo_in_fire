@@ -12,7 +12,7 @@ function love.load()
     Ball = {}
     Ball.__index = Ball
     
-    function Ball:new(x, y, radius, color)
+    function Ball:new(x, y, radius, color, isPlayer)
         local ball = {}
         setmetatable(ball, Ball)
         
@@ -22,11 +22,23 @@ function love.load()
         ball.color = color or {1, 1, 1}  -- white by default
         ball.vx = 0  -- velocity x
         ball.vy = 0  -- velocity y
+        ball.isPlayer = isPlayer or false
         
         return ball
     end
     
     function Ball:update(dt)
+        -- Apply friction/damping
+        local friction = 0.95
+        if not self.isPlayer then
+            self.vx = self.vx * friction
+            self.vy = self.vy * friction
+            
+            -- Stop very small movements
+            if math.abs(self.vx) < 1 then self.vx = 0 end
+            if math.abs(self.vy) < 1 then self.vy = 0 end
+        end
+        
         -- Update position based on velocity
         self.x = self.x + self.vx * dt
         self.y = self.y + self.vy * dt
@@ -34,14 +46,18 @@ function love.load()
         -- Keep ball within screen bounds
         if self.x - self.radius < 0 then
             self.x = self.radius
+            self.vx = 0
         elseif self.x + self.radius > love.graphics.getWidth() then
             self.x = love.graphics.getWidth() - self.radius
+            self.vx = 0
         end
         
         if self.y - self.radius < 0 then
             self.y = self.radius
+            self.vy = 0
         elseif self.y + self.radius > love.graphics.getHeight() then
             self.y = love.graphics.getHeight() - self.radius
+            self.vy = 0
         end
     end
     
@@ -50,96 +66,114 @@ function love.load()
         love.graphics.circle("fill", self.x, self.y, self.radius)
     end
     
-    -- Collision detection function
+    -- Collision detection between two balls
     function checkCollision(ball1, ball2)
-        local dx = ball2.x - ball1.x
-        local dy = ball2.y - ball1.y
+        local dx = ball1.x - ball2.x
+        local dy = ball1.y - ball2.y
         local distance = math.sqrt(dx * dx + dy * dy)
-        local minDistance = ball1.radius + ball2.radius
-        
-        return distance < minDistance, dx, dy, distance, minDistance
+        return distance < (ball1.radius + ball2.radius)
     end
     
-    -- Physics collision response function
-    function resolveCollision(ball1, ball2)
-        local colliding, dx, dy, distance, minDistance = checkCollision(ball1, ball2)
+    -- Handle collision and pushing physics
+    function handleCollision(ball1, ball2)
+        if not checkCollision(ball1, ball2) then return end
         
-        if colliding then
-            -- Normalize collision vector
-            local nx = dx / distance
-            local ny = dy / distance
-            
-            -- Separate balls to prevent overlap
-            local overlap = minDistance - distance
-            local separationX = nx * overlap * 0.5
-            local separationY = ny * overlap * 0.5
-            
-            ball1.x = ball1.x - separationX
-            ball1.y = ball1.y - separationY
-            ball2.x = ball2.x + separationX
-            ball2.y = ball2.y + separationY
-            
-            -- Calculate relative velocity
-            local relativeVelX = ball1.vx - ball2.vx
-            local relativeVelY = ball1.vy - ball2.vy
-            
-            -- Velocity in collision normal direction
-            local velInNormal = relativeVelX * nx + relativeVelY * ny
-            
-            -- Only resolve if objects are moving towards each other
-            if velInNormal > 0 then
-                return
-            end
-            
-            -- Collision restitution (bounciness)
-            local restitution = 0.8
-            
-            -- Calculate impulse
-            local impulse = -(1 + restitution) * velInNormal / 2
-            
-            -- Apply impulse to balls
-            ball1.vx = ball1.vx + impulse * nx
-            ball1.vy = ball1.vy + impulse * ny
-            ball2.vx = ball2.vx - impulse * nx
-            ball2.vy = ball2.vy - impulse * ny
-        end
+        local dx = ball1.x - ball2.x
+        local dy = ball1.y - ball2.y
+        local distance = math.sqrt(dx * dx + dy * dy)
+        
+        -- Prevent division by zero
+        if distance == 0 then return end
+        
+        -- Normalize collision vector
+        local nx = dx / distance
+        local ny = dy / distance
+        
+        -- Separate balls to prevent overlap
+        local overlap = (ball1.radius + ball2.radius) - distance
+        local separation = overlap / 2
+        
+        ball1.x = ball1.x + nx * separation
+        ball1.y = ball1.y + ny * separation
+        ball2.x = ball2.x - nx * separation
+        ball2.y = ball2.y - ny * separation
+        
+        -- Calculate relative velocity
+        local rvx = ball1.vx - ball2.vx
+        local rvy = ball1.vy - ball2.vy
+        
+        -- Calculate relative velocity in collision normal direction
+        local speed = rvx * nx + rvy * ny
+        
+        -- Do not resolve if velocities are separating
+        if speed > 0 then return end
+        
+        -- Calculate restitution (bounciness)
+        local restitution = 0.8
+        
+        -- Calculate impulse scalar
+        local impulse = -(1 + restitution) * speed
+        local mass1 = ball1.radius * ball1.radius -- mass proportional to area
+        local mass2 = ball2.radius * ball2.radius
+        impulse = impulse / (1/mass1 + 1/mass2)
+        
+        -- Apply impulse
+        local impulsex = impulse * nx
+        local impulsey = impulse * ny
+        
+        ball1.vx = ball1.vx + impulsex / mass1
+        ball1.vy = ball1.vy + impulsey / mass1
+        ball2.vx = ball2.vx - impulsex / mass2
+        ball2.vy = ball2.vy - impulsey / mass2
     end
     
     -- Create player ball (blue)
-    playerBall = Ball:new(200, 300, 25, {0.2, 0.6, 1})
+    playerBall = Ball:new(200, 300, 25, {0.3, 0.6, 1}, true)
     
     -- Create pushable ball (red)
-    pushableBall = Ball:new(600, 300, 30, {1, 0.3, 0.3})
+    pushableBall = Ball:new(600, 300, 30, {1, 0.4, 0.4}, false)
     
     -- Player movement speed
-    playerSpeed = 300
+    playerSpeed = 200
 end
 
 function love.update(dt)
     if gameState == "playing" then
-        -- Player ball movement
+        -- Player controls with smooth movement and friction
+        local moving = false
+        
         if love.keyboard.isDown("left") or love.keyboard.isDown("a") then
             playerBall.vx = -playerSpeed
+            moving = true
         elseif love.keyboard.isDown("right") or love.keyboard.isDown("d") then
             playerBall.vx = playerSpeed
+            moving = true
         else
-            playerBall.vx = 0
+            playerBall.vx = playerBall.vx * 0.9  -- Apply friction when not moving
         end
         
         if love.keyboard.isDown("up") or love.keyboard.isDown("w") then
             playerBall.vy = -playerSpeed
+            moving = true
         elseif love.keyboard.isDown("down") or love.keyboard.isDown("s") then
             playerBall.vy = playerSpeed
+            moving = true
         else
-            playerBall.vy = 0
+            playerBall.vy = playerBall.vy * 0.9  -- Apply friction when not moving
         end
         
-        -- Update ball positions
+        -- Stop very small movements for player
+        if not moving then
+            if math.abs(playerBall.vx) < 5 then playerBall.vx = 0 end
+            if math.abs(playerBall.vy) < 5 then playerBall.vy = 0 end
+        end
+        
+        -- Update balls
         playerBall:update(dt)
         pushableBall:update(dt)
         
-        -- Handle collision between balls
-        resolveCollision(playerBall, pushableBall)
+        -- Handle collision between player and pushable ball
+        handleCollision(playerBall, pushableBall)
     end
 end
 
