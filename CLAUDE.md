@@ -10,6 +10,17 @@ Love2D + Lua
 In progress
 
 ## Open Tasks
+- [x] task 1: create Coin class with position, radius, color and rendering method
+
+### Plan: let´s add a coin, that would be an obstical for the user, but the red ball able to gather it [2026-03-06 11:25:46]
+1. Create a Coin class with position, radius, color, and rendering method
+2. Add coin spawning system that places coins at random positions on screen
+3. Implement collision detection between the red ball and coins
+4. Add coin collection mechanics when red ball touches a coin
+5. Add visual feedback when coins are collected (disappear from screen)
+6. Add score counter to track collected coins
+7. Display score on screen with the other instructions
+8. Add coin respawn system to generate new coins after collection
 - [x] Implemented wall reflection by changing Ball:update() to reflect velocity instead of stopping at walls, added bounce reduction for realistic physics, and adjusted friction slightly.
 - [x] could you make friction is zero
 - [x] cold you take a look at the last feel note, may be its time to rollback for two commits
