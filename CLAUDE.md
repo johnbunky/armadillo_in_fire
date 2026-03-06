@@ -10,6 +10,7 @@ Love2D + Lua
 In progress
 
 ## Open Tasks
+- [x] task 5: Add sound effects for coin collection (pickup/ding sound)
 - [x] task 4:Add sound effects for ball collision (bounce/push sound)
 - [x] task 3: Create src/audio.lua module to handle sound loading and playing
 - [x] task 2: Create shadow rendering system in coin.lua that draws dark elliptical shadows beneath coins

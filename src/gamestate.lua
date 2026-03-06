@@ -92,7 +92,12 @@ function GameState:spawnSingleCoin()
     table.insert(self.coins, Coin:new(x, y, 12, {1, 0.8, 0}))
 end
 
-function GameState:collectCoin(index)
+function GameState:collectCoin(index, audio)
+    -- Play coin collection sound effect
+    if audio then
+        audio:playCoinCollect()
+    end
+    
     -- Remove the coin and reset respawn timer to start countdown
     table.remove(self.coins, index)
     self.respawnTimer = 0
