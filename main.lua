@@ -1,13 +1,19 @@
 local GameState = require("src/gamestate")
 local Physics = require("src/physics")
 local UI = require("src/ui")
+local Audio = require("src/audio")
 
 -- Initialize game
 local gameState
+local audio
 
 function love.load()
     gameState = GameState:new()
     gameState:init()
+    
+    -- Initialize audio system
+    audio = Audio
+    audio:init()
 end
 
 function love.update(dt)
@@ -33,18 +39,18 @@ function love.update(dt)
             gameState.playerBall.vy = speed
         end
         
-        -- Update balls
-        gameState.playerBall:update(dt)
-        gameState.pushableBall:update(dt)
+        -- Update balls with audio support
+        gameState.playerBall:update(dt, audio)
+        gameState.pushableBall:update(dt, audio)
         
-        -- Handle collision between balls
-        Physics.handleCollision(gameState.playerBall, gameState.pushableBall)
+        -- Handle collision between balls with audio
+        Physics.handleCollision(gameState.playerBall, gameState.pushableBall, audio)
         
         -- Check collision between red ball and coins
         for i = #gameState.coins, 1, -1 do
             if Physics.checkCoinCollision(gameState.pushableBall, gameState.coins[i]) then
-                -- Use the new collectCoin method
-                gameState:collectCoin(i)
+                -- Use the new collectCoin method with audio
+                gameState:collectCoin(i, audio)
             end
         end
     end
@@ -55,6 +61,14 @@ function love.draw()
     love.graphics.setBackgroundColor(0.1, 0.1, 0.2)
     
     if gameState.state == "playing" then
+        -- Draw shadows first (behind all objects)
+        gameState.playerBall:drawShadow()
+        gameState.pushableBall:drawShadow()
+        
+        for i, coin in ipairs(gameState.coins) do
+            coin:drawShadow()
+        end
+        
         -- Draw balls
         gameState.playerBall:draw()
         gameState.pushableBall:draw()
@@ -72,5 +86,8 @@ end
 function love.keypressed(key)
     if key == "escape" then
         love.event.quit()
+    elseif key == "m" then
+        -- Toggle audio mute
+        audio:toggle()
     end
 end

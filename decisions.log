@@ -79,3 +79,6 @@ Enhanced Physics module with audio-enabled collision handling and modified Ball 
 
 === 2026-03-06 13:35:37 -- task 5: Add sound effects for coin collection (pickup/ding sound) ===
 Modified GameState collectCoin method to accept audio parameter and play coin collection sound effect when coins are collected.
+
+=== 2026-03-06 13:37:44 -- task 6: Integrate shadow rendering into main game draw loop ===
+Integrated shadow rendering by drawing all shadows first before objects, ensuring proper depth layering, and added audio system integration with mute toggle.
