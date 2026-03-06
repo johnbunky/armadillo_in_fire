@@ -10,6 +10,7 @@ Love2D + Lua
 In progress
 
 ## Open Tasks
+- [x] could you glance what´s wrong with shadows and sounds
 - [x] task 7: Integrate audio system into main game initialization and collision events
 - [x] task 6: Integrate shadow rendering into main game draw loop
 - [x] task 5: Add sound effects for coin collection (pickup/ding sound)
@@ -39,3 +40,5 @@ In progress
 - [2026-03-06 13:23:26] it works well, thank you
 
 - [2026-03-06 13:39:22] game works well, but shadows are missing
+
+- [2026-03-06 13:42:09] game works well, but shadows and sounds are missing

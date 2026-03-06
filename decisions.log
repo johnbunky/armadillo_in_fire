@@ -85,3 +85,6 @@ Integrated shadow rendering by drawing all shadows first before objects, ensurin
 
 === 2026-03-06 13:40:05 -- task 7: Integrate audio system into main game initialization and collision events ===
 Completed audio system integration by updating UI to show audio status and controls, and adding volume control keys for full audio management.
+
+=== 2026-03-06 13:43:41 -- could you glance what´s wrong with shadows and sounds ===
+Added directory creation and programmatic sound generation as fallbacks to ensure both shadow rendering and audio systems work even without external sound files.

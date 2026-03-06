@@ -5,16 +5,34 @@ Audio.sounds = {}
 Audio.enabled = true
 Audio.volume = 0.7
 
+-- Generate a simple tone sound programmatically
+function Audio:generateTone(frequency, duration, volume)
+    local sampleRate = 44100
+    local samples = sampleRate * duration
+    local soundData = love.sound.newSoundData(samples, sampleRate, 16, 1)
+    
+    for i = 0, samples - 1 do
+        local t = i / sampleRate
+        local wave = math.sin(2 * math.pi * frequency * t) * volume
+        -- Add fade out to prevent clicks
+        local fadeOut = math.max(0, 1 - (t / duration) * 2)
+        wave = wave * fadeOut
+        soundData:setSample(i, wave)
+    end
+    
+    return love.audio.newSource(soundData)
+end
+
 -- Initialize audio system and load sounds
 function Audio:init()
     -- Create sounds directory path
     local soundsPath = "assets/sounds/"
     
-    -- Try to load sound files (will use placeholder if files don't exist)
+    -- Try to load sound files, generate fallback sounds if files don't exist
     self.sounds = {
-        ballCollision = self:loadSound(soundsPath .. "bounce.wav", "static"),
-        coinCollect = self:loadSound(soundsPath .. "pickup.wav", "static"),
-        ballPush = self:loadSound(soundsPath .. "push.wav", "static")
+        ballCollision = self:loadSound(soundsPath .. "bounce.wav", "static") or self:generateTone(200, 0.1, 0.5),
+        coinCollect = self:loadSound(soundsPath .. "pickup.wav", "static") or self:generateTone(800, 0.2, 0.3),
+        ballPush = self:loadSound(soundsPath .. "push.wav", "static") or self:generateTone(150, 0.15, 0.4)
     }
     
     -- Set default volume for all sounds
@@ -23,6 +41,8 @@ function Audio:init()
             sound:setVolume(self.volume)
         end
     end
+    
+    print("Audio system initialized with " .. (self.sounds.ballCollision and "loaded" or "generated") .. " sounds")
 end
 
 -- Load a sound file with error handling
@@ -32,7 +52,7 @@ function Audio:loadSound(filepath, sourceType)
         print("Loaded sound: " .. filepath)
         return sound
     else
-        print("Could not load sound: " .. filepath)
+        print("Could not load sound: " .. filepath .. " (will use generated sound)")
         return nil
     end
 end

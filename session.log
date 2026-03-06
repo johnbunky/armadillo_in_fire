@@ -2601,3 +2601,6 @@ The game demonstrates basic 2D physics principles and provides an interactive pu
 [2026-03-06 13:37:59] [CODE_END] done
 [2026-03-06 13:39:22] [REVIEW] game works well, but shadows are missing
 [2026-03-06 13:39:49] [CODE_START] [short [auto]] task 7: Integrate audio system into main game initialization and collision events
+[2026-03-06 13:40:12] [CODE_END] done
+[2026-03-06 13:42:09] [REVIEW] game works well, but shadows and sounds are missing
+[2026-03-06 13:42:54] [CODE_START] [full] could you glance what´s wrong with shadows and sounds

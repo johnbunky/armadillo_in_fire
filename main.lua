@@ -14,6 +14,17 @@ function love.load()
     -- Initialize audio system
     audio = Audio
     audio:init()
+    
+    -- Create assets/sounds directory if it doesn't exist
+    local info = love.filesystem.getInfo("assets")
+    if not info then
+        love.filesystem.createDirectory("assets")
+    end
+    
+    local soundsInfo = love.filesystem.getInfo("assets/sounds")
+    if not soundsInfo then
+        love.filesystem.createDirectory("assets/sounds")
+    end
 end
 
 function love.update(dt)
