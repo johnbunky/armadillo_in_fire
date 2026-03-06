@@ -2564,3 +2564,13 @@ The game demonstrates basic 2D physics principles and provides an interactive pu
 [2026-03-06 11:25:31] [PLAN_START] let´s add a coin, that would be an obstical for the user, but the red ball able to gather it
 [2026-03-06 11:25:46] [PLAN_END] let´s add a coin, that would be an obstical for the user, but the red ball able to gather it
 [2026-03-06 11:28:04] [CODE_START] [short [auto]] task 1: create Coin class with position, radius, color and rendering method
+[2026-03-06 11:28:32] [CODE_END] done
+[2026-03-06 11:31:37] [CODE_START] [short [auto]] task 1
+[2026-03-06 11:31:43] [CODE_END] done
+[2026-03-06 11:31:55] [CODE_START] [short [auto]] task 2
+[2026-03-06 11:32:15] [CODE_END] done
+[2026-03-06 11:34:38] [REVIEW] i don´t see any coins yet
+[2026-03-06 11:36:45] [CODE_START] [short [auto]] task 3: Implement collision detection between the red ball and coins
+[2026-03-06 11:37:03] [CODE_END] done
+[2026-03-06 11:41:41] [SESSION] cleared
+[2026-03-06 11:41:51] [CODE_START] [full] task 3: collision detection between red ball and coins

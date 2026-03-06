@@ -99,6 +99,14 @@ function love.load()
         return distance < (ball1.radius + ball2.radius)
     end
     
+    -- Check collision between ball and coin
+    function checkCoinCollision(ball, coin)
+        local dx = ball.x - coin.x
+        local dy = ball.y - coin.y
+        local distance = math.sqrt(dx * dx + dy * dy)
+        return distance < (ball.radius + coin.radius)
+    end
+    
     -- Handle collision physics
     function handleCollision(playerBall, pushBall)
         if not checkCollision(playerBall, pushBall) then
@@ -123,7 +131,7 @@ function love.load()
         -- Separate balls to prevent overlap
         local overlap = (playerBall.radius + pushBall.radius) - distance
         pushBall.x = pushBall.x + dx * overlap * 0.6
-        pushBall.y = pushBall.y + dy * overlap * 0.6
+        pushBall.y = pushBall.y + dy * overlap * 0.4
         playerBall.x = playerBall.x - dx * overlap * 0.4
         playerBall.y = playerBall.y - dy * overlap * 0.4
         
@@ -133,9 +141,40 @@ function love.load()
         pushBall.vy = pushBall.vy + dy * pushForce
     end
     
+    -- Spawn coins at random positions
+    function spawnCoins(count)
+        coins = {}
+        for i = 1, count do
+            local x, y
+            local validPosition = false
+            local attempts = 0
+            
+            -- Try to find a valid position that doesn't overlap with balls
+            while not validPosition and attempts < 50 do
+                x = math.random(50, love.graphics.getWidth() - 50)
+                y = math.random(50, love.graphics.getHeight() - 50)
+                
+                -- Check distance from both balls
+                local distToPlayer = math.sqrt((x - playerBall.x)^2 + (y - playerBall.y)^2)
+                local distToPush = math.sqrt((x - pushableBall.x)^2 + (y - pushableBall.y)^2)
+                
+                if distToPlayer > 80 and distToPush > 80 then
+                    validPosition = true
+                end
+                attempts = attempts + 1
+            end
+            
+            -- Create coin at found position (or random if no valid position found)
+            table.insert(coins, Coin:new(x, y, 12, {1, 0.8, 0}))
+        end
+    end
+    
     -- Create the two balls
     playerBall = Ball:new(200, 300, 25, {0.2, 0.8, 1}, true)  -- Blue player ball
     pushableBall = Ball:new(500, 300, 30, {1, 0.3, 0.3}, false)  -- Red pushable ball
+    
+    -- Initialize coins
+    spawnCoins(5)
 end
 
 function love.update(dt)
@@ -162,8 +201,16 @@ function love.update(dt)
         playerBall:update(dt)
         pushableBall:update(dt)
         
-        -- Handle collision
+        -- Handle collision between balls
         handleCollision(playerBall, pushableBall)
+        
+        -- Check collision between red ball and coins
+        for i = #coins, 1, -1 do
+            if checkCoinCollision(pushableBall, coins[i]) then
+                -- Remove coin when red ball touches it
+                table.remove(coins, i)
+            end
+        end
     end
 end
 
@@ -176,11 +223,17 @@ function love.draw()
         playerBall:draw()
         pushableBall:draw()
         
+        -- Draw coins
+        for i, coin in ipairs(coins) do
+            coin:draw()
+        end
+        
         -- Draw instructions
         love.graphics.setColor(1, 1, 1)
         love.graphics.print("Use WASD or Arrow Keys to move the blue ball", 10, 10)
-        love.graphics.print("Push the red ball around!", 10, 30)
+        love.graphics.print("Push the red ball to collect yellow coins!", 10, 30)
         love.graphics.print("Press ESC to quit", 10, 50)
+        love.graphics.print("Coins remaining: " .. #coins, 10, 70)
     end
 end
 

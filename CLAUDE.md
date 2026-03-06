@@ -10,6 +10,7 @@ Love2D + Lua
 In progress
 
 ## Open Tasks
+- [x] task 3: collision detection between red ball and coins
 - [x] task 1: create Coin class with position, radius, color and rendering method
 
 ### Plan: let´s add a coin, that would be an obstical for the user, but the red ball able to gather it [2026-03-06 11:25:46]
@@ -66,3 +67,5 @@ In progress
 - [2026-03-05 21:38:36] oops, for some reasond I see black screen
 
 - [2026-03-05 21:45:07] background, instructions, collisions function are missing, balls size are changed
+
+- [2026-03-06 11:34:38] i don´t see any coins yet
