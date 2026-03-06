@@ -12,6 +12,9 @@ end
 
 function love.update(dt)
     if gameState.state == "playing" then
+        -- Update game state (handles coin respawning)
+        gameState:update(dt)
+        
         -- Player ball movement
         local speed = 300
         gameState.playerBall.vx = 0
@@ -40,8 +43,8 @@ function love.update(dt)
         -- Check collision between red ball and coins
         for i = #gameState.coins, 1, -1 do
             if Physics.checkCoinCollision(gameState.pushableBall, gameState.coins[i]) then
-                -- Remove coin when red ball touches it
-                table.remove(gameState.coins, i)
+                -- Use the new collectCoin method
+                gameState:collectCoin(i)
             end
         end
     end

@@ -10,6 +10,7 @@ Love2D + Lua
 In progress
 
 ## Open Tasks
+- [x] Add coin respawn system to generate new coins after collection
 - [x] task 8: conf.lua
 - [x] task 1: Create src/ directory and move game logic into separate modules
 
