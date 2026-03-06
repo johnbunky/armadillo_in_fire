@@ -13,6 +13,11 @@ function Ball:new(x, y, radius, color, isPlayer)
     ball.vy = 0  -- velocity y
     ball.isPlayer = isPlayer or false
     
+    -- Shadow properties
+    ball.shadowOffset = {x = 3, y = 5}  -- Shadow offset from ball position
+    ball.shadowColor = {0, 0, 0, 0.3}   -- Semi-transparent black shadow
+    ball.shadowScale = {x = 1.2, y = 0.6}  -- Shadow is wider and flatter than ball
+    
     return ball
 end
 
@@ -51,6 +56,18 @@ function Ball:update(dt)
         self.y = love.graphics.getHeight() - self.radius
         self.vy = -self.vy * bounceReduction
     end
+end
+
+function Ball:drawShadow()
+    -- Draw shadow as an ellipse beneath the ball
+    love.graphics.setColor(self.shadowColor[1], self.shadowColor[2], self.shadowColor[3], self.shadowColor[4])
+    
+    local shadowX = self.x + self.shadowOffset.x
+    local shadowY = self.y + self.shadowOffset.y
+    local shadowRadiusX = self.radius * self.shadowScale.x
+    local shadowRadiusY = self.radius * self.shadowScale.y
+    
+    love.graphics.ellipse("fill", shadowX, shadowY, shadowRadiusX, shadowRadiusY)
 end
 
 function Ball:draw()

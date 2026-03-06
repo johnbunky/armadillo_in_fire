@@ -2583,3 +2583,8 @@ The game demonstrates basic 2D physics principles and provides an interactive pu
 [2026-03-06 12:00:54] [CODE_START] [short [auto]] task 8: conf.lua
 [2026-03-06 12:01:09] [CODE_END] done
 [2026-03-06 13:20:21] [CODE_START] [short [auto]] Add coin respawn system to generate new coins after collection
+[2026-03-06 13:21:10] [CODE_END] done
+[2026-03-06 13:23:26] [REVIEW] it works well, thank you
+[2026-03-06 13:25:13] [PLAN_START] it wouls be greate to add a shadows to the balls and and coind, or even sounds too
+[2026-03-06 13:25:40] [PLAN_END] it wouls be greate to add a shadows to the balls and and coind, or even sounds too
+[2026-03-06 13:27:35] [CODE_START] [short [auto]] task 1: Create shadow rendering system in ball.lua that draws dark elliptical shadows beneath balls

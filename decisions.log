@@ -64,3 +64,6 @@ Task 8 was already completed in task 1 - conf.lua file exists with Love2D config
 
 === 2026-03-06 13:20:40 -- Add coin respawn system to generate new coins after collection ===
 Added coin respawn system with 2-second delay timer, maximum of 5 coins maintained, improved collision avoidance between coins, and integrated respawn logic into GameState update cycle.
+
+=== 2026-03-06 13:27:46 -- task 1: Create shadow rendering system in ball.lua that draws dark elliptical shadows beneath balls ===
+Added shadow rendering system to Ball class with drawShadow() method that renders semi-transparent elliptical shadows offset below balls for depth perception.
