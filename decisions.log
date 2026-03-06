@@ -58,3 +58,6 @@ Added coin spawning system with 5 coins at random positions, implemented checkCo
 
 === 2026-03-06 11:56:26 -- task 1: Create src/ directory and move game logic into separate modules ===
 Created modular project structure with separate files for Ball, Coin, Physics, GameState, and UI modules, moved Love2D configuration to conf.lua, and updated main.lua to use the new modular system.
+
+=== 2026-03-06 12:00:59 -- task 8: conf.lua ===
+Task 8 was already completed in task 1 - conf.lua file exists with Love2D configuration moved out of main.lua.

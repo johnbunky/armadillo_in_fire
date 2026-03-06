@@ -10,6 +10,7 @@ Love2D + Lua
 In progress
 
 ## Open Tasks
+- [x] task 8: conf.lua
 - [x] task 1: Create src/ directory and move game logic into separate modules
 
 ### Plan: could you create a project ctructure for future development, everything shouldn´t be in main.lua [2026-03-06 11:54:16]
