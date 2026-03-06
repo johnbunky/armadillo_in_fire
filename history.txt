@@ -1032,3 +1032,144 @@ end
 
 DECISION_LOG: Integrated shadow rendering by drawing all shadows first before objects, ensuring proper depth layering, and added audio system integration with mute toggle.
 <<<MSG>>>
+<<<ROLE:user>>>
+task 7: Integrate audio system into main game initialization and collision events
+<<<MSG>>>
+<<<ROLE:assistant>>>
+The audio system has already been integrated into the main game initialization and collision events in the previous tasks. Let me verify the integration is complete by showing the current state:
+
+**Already completed integrations:**
+
+1. **Main game initialization** - Audio system is initialized in `love.load()` in main.lua
+2. **Ball collision events** - Physics.handleCollision() and Physics.handleBoundaryCollision() play sounds
+3. **Coin collection events** - GameState:collectCoin() plays pickup sounds
+4. **Ball updates** - Ball:update() method passes audio reference for boundary collisions
+
+**Missing integration:** The main.lua file needs to ensure the audio reference is properly passed and the UI should show audio controls.
+
+-- FILE: src/ui.lua --
+local UI = {}
+
+function UI.draw(gameState, audio)
+    -- Draw instructions
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.print("Use WASD or Arrow Keys to move the blue ball", 10, 10)
+    love.graphics.print("Push the red ball to collect yellow coins!", 10, 30)
+    love.graphics.print("Press ESC to quit", 10, 50)
+    love.graphics.print("Press M to toggle audio", 10, 70)
+    love.graphics.print("Coins remaining: " .. #gameState.coins, 10, 90)
+    
+    -- Show audio status
+    local audioStatus = audio and audio:isEnabled() and "ON" or "OFF"
+    love.graphics.print("Audio: " .. audioStatus, 10, 110)
+end
+
+return UI
+-- END: src/ui.lua --
+
+-- FILE: main.lua --
+local GameState = require("src/gamestate")
+local Physics = require("src/physics")
+local UI = require("src/ui")
+local Audio = require("src/audio")
+
+-- Initialize game
+local gameState
+local audio
+
+function love.load()
+    gameState = GameState:new()
+    gameState:init()
+    
+    -- Initialize audio system
+    audio = Audio
+    audio:init()
+end
+
+function love.update(dt)
+    if gameState.state == "playing" then
+        -- Update game state (handles coin respawning)
+        gameState:update(dt)
+        
+        -- Player ball movement
+        local speed = 300
+        gameState.playerBall.vx = 0
+        gameState.playerBall.vy = 0
+        
+        if love.keyboard.isDown("left", "a") then
+            gameState.playerBall.vx = -speed
+        end
+        if love.keyboard.isDown("right", "d") then
+            gameState.playerBall.vx = speed
+        end
+        if love.keyboard.isDown("up", "w") then
+            gameState.playerBall.vy = -speed
+        end
+        if love.keyboard.isDown("down", "s") then
+            gameState.playerBall.vy = speed
+        end
+        
+        -- Update balls with audio support
+        gameState.playerBall:update(dt, audio)
+        gameState.pushableBall:update(dt, audio)
+        
+        -- Handle collision between balls with audio
+        Physics.handleCollision(gameState.playerBall, gameState.pushableBall, audio)
+        
+        -- Check collision between red ball and coins
+        for i = #gameState.coins, 1, -1 do
+            if Physics.checkCoinCollision(gameState.pushableBall, gameState.coins[i]) then
+                -- Use the new collectCoin method with audio
+                gameState:collectCoin(i, audio)
+            end
+        end
+    end
+end
+
+function love.draw()
+    -- Clear screen with dark background
+    love.graphics.setBackgroundColor(0.1, 0.1, 0.2)
+    
+    if gameState.state == "playing" then
+        -- Draw shadows first (behind all objects)
+        gameState.playerBall:drawShadow()
+        gameState.pushableBall:drawShadow()
+        
+        for i, coin in ipairs(gameState.coins) do
+            coin:drawShadow()
+        end
+        
+        -- Draw balls
+        gameState.playerBall:draw()
+        gameState.pushableBall:draw()
+        
+        -- Draw coins
+        for i, coin in ipairs(gameState.coins) do
+            coin:draw()
+        end
+        
+        -- Draw UI with audio reference
+        UI.draw(gameState, audio)
+    end
+end
+
+function love.keypressed(key)
+    if key == "escape" then
+        love.event.quit()
+    elseif key == "m" then
+        -- Toggle audio mute
+        audio:toggle()
+    elseif key == "=" or key == "+" then
+        -- Increase volume
+        local currentVolume = audio.volume
+        audio:setVolume(currentVolume + 0.1)
+    elseif key == "-" then
+        -- Decrease volume
+        local currentVolume = audio.volume
+        audio:setVolume(currentVolume - 0.1)
+    end
+end
+-- END: main.lua --
+
+DECISION_LOG: Completed audio system integration by updating UI to show audio status and controls, and adding volume control keys for full audio management.
+<<<MSG>>>

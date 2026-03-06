@@ -78,8 +78,8 @@ function love.draw()
             coin:draw()
         end
         
-        -- Draw UI
-        UI.draw(gameState)
+        -- Draw UI with audio reference
+        UI.draw(gameState, audio)
     end
 end
 
@@ -89,5 +89,13 @@ function love.keypressed(key)
     elseif key == "m" then
         -- Toggle audio mute
         audio:toggle()
+    elseif key == "=" or key == "+" then
+        -- Increase volume
+        local currentVolume = audio.volume
+        audio:setVolume(currentVolume + 0.1)
+    elseif key == "-" then
+        -- Decrease volume
+        local currentVolume = audio.volume
+        audio:setVolume(currentVolume - 0.1)
     end
 end
