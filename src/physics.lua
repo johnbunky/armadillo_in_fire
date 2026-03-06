@@ -16,8 +16,8 @@ function Physics.checkCoinCollision(ball, coin)
     return distance < (ball.radius + coin.radius)
 end
 
--- Handle collision physics
-function Physics.handleCollision(playerBall, pushBall)
+-- Handle collision physics with audio support
+function Physics.handleCollision(playerBall, pushBall, audio)
     if not Physics.checkCollision(playerBall, pushBall) then
         return
     end
@@ -48,6 +48,49 @@ function Physics.handleCollision(playerBall, pushBall)
     local pushForce = 200
     pushBall.vx = pushBall.vx + dx * pushForce
     pushBall.vy = pushBall.vy + dy * pushForce
+    
+    -- Play collision sound effect
+    if audio then
+        audio:playBallPush()
+    end
+end
+
+-- Handle ball boundary collision with audio support
+function Physics.handleBoundaryCollision(ball, audio)
+    local bounced = false
+    local bounceReduction = 0.7
+    
+    -- Check and handle boundary collisions
+    if ball.x - ball.radius < 0 then
+        ball.x = ball.radius
+        ball.vx = -ball.vx * bounceReduction
+        bounced = true
+    elseif ball.x + ball.radius > love.graphics.getWidth() then
+        ball.x = love.graphics.getWidth() - ball.radius
+        ball.vx = -ball.vx * bounceReduction
+        bounced = true
+    end
+    
+    if ball.y - ball.radius < 0 then
+        ball.y = ball.radius
+        ball.vy = -ball.vy * bounceReduction
+        bounced = true
+    elseif ball.y + ball.radius > love.graphics.getHeight() then
+        ball.y = love.graphics.getHeight() - ball.radius
+        ball.vy = -ball.vy * bounceReduction
+        bounced = true
+    end
+    
+    -- Play bounce sound if ball hit a wall
+    if bounced and audio then
+        -- Only play bounce sound for fast-moving balls to avoid spam
+        local speed = math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy)
+        if speed > 50 then
+            audio:playBallCollision()
+        end
+    end
+    
+    return bounced
 end
 
 return Physics

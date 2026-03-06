@@ -73,3 +73,6 @@ Added shadow rendering system to Coin class with drawShadow() method that render
 
 === 2026-03-06 13:31:32 -- task 3: Create src/audio.lua module to handle sound loading and playing ===
 Created Audio module with sound loading, volume control, and specific methods for game events with error handling for missing sound files.
+
+=== 2026-03-06 13:34:44 -- task 4:Add sound effects for ball collision (bounce/push sound) ===
+Enhanced Physics module with audio-enabled collision handling and modified Ball update method to pass audio reference for boundary collision sounds.

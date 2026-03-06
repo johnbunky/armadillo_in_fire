@@ -21,7 +21,7 @@ function Ball:new(x, y, radius, color, isPlayer)
     return ball
 end
 
-function Ball:update(dt)
+function Ball:update(dt, audio)
     -- Apply friction/damping
     local friction = 0.98
     if not self.isPlayer then
@@ -37,25 +37,9 @@ function Ball:update(dt)
     self.x = self.x + self.vx * dt
     self.y = self.y + self.vy * dt
     
-    -- Bounce reduction factor for realistic physics
-    local bounceReduction = 0.7
-    
-    -- Keep ball within screen bounds with reflection
-    if self.x - self.radius < 0 then
-        self.x = self.radius
-        self.vx = -self.vx * bounceReduction
-    elseif self.x + self.radius > love.graphics.getWidth() then
-        self.x = love.graphics.getWidth() - self.radius
-        self.vx = -self.vx * bounceReduction
-    end
-    
-    if self.y - self.radius < 0 then
-        self.y = self.radius
-        self.vy = -self.vy * bounceReduction
-    elseif self.y + self.radius > love.graphics.getHeight() then
-        self.y = love.graphics.getHeight() - self.radius
-        self.vy = -self.vy * bounceReduction
-    end
+    -- Handle boundary collisions with audio
+    local Physics = require("src/physics")
+    Physics.handleBoundaryCollision(self, audio)
 end
 
 function Ball:drawShadow()
