@@ -67,3 +67,6 @@ Added coin respawn system with 2-second delay timer, maximum of 5 coins maintain
 
 === 2026-03-06 13:27:46 -- task 1: Create shadow rendering system in ball.lua that draws dark elliptical shadows beneath balls ===
 Added shadow rendering system to Ball class with drawShadow() method that renders semi-transparent elliptical shadows offset below balls for depth perception.
+
+=== 2026-03-06 13:28:52 -- task 2: Create shadow rendering system in coin.lua that draws dark elliptical shadows beneath coins ===
+Added shadow rendering system to Coin class with drawShadow() method that renders smaller, lighter elliptical shadows appropriate for coin objects.

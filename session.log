@@ -2588,3 +2588,5 @@ The game demonstrates basic 2D physics principles and provides an interactive pu
 [2026-03-06 13:25:13] [PLAN_START] it wouls be greate to add a shadows to the balls and and coind, or even sounds too
 [2026-03-06 13:25:40] [PLAN_END] it wouls be greate to add a shadows to the balls and and coind, or even sounds too
 [2026-03-06 13:27:35] [CODE_START] [short [auto]] task 1: Create shadow rendering system in ball.lua that draws dark elliptical shadows beneath balls
+[2026-03-06 13:27:57] [CODE_END] done
+[2026-03-06 13:28:45] [CODE_START] [short [auto]] task 2: Create shadow rendering system in coin.lua that draws dark elliptical shadows beneath coins
