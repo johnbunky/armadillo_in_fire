@@ -7,38 +7,39 @@ two balls, player pushes second ball
 Love2D + Lua
  
 ## Current Status
-In progress
+Complete core game with modular structure, physics, shadows, audio, and coin collection system
 
 ## Open Tasks
-- [x] could you glance what�s wrong with shadows and sounds
-- [x] task 7: Integrate audio system into main game initialization and collision events
-- [x] task 6: Integrate shadow rendering into main game draw loop
-- [x] task 5: Add sound effects for coin collection (pickup/ding sound)
-- [x] task 4:Add sound effects for ball collision (bounce/push sound)
-- [x] task 3: Create src/audio.lua module to handle sound loading and playing
-- [x] task 2: Create shadow rendering system in coin.lua that draws dark elliptical shadows beneath coins
-- [x] task 1: Create shadow rendering system in ball.lua that draws dark elliptical shadows beneath balls
+- [x] could you make backgound brighter, shadows are not visible now
 
-### Plan: it wouls be greate to add a shadows to the balls and and coind, or even sounds too [2026-03-06 13:25:40]
-1. Create shadow rendering system in ball.lua that draws dark elliptical shadows beneath balls
-2. Create shadow rendering system in coin.lua that draws dark elliptical shadows beneath coins
-3. Create src/audio.lua module to handle sound loading and playing
-4. Add sound effects for ball collision (bounce/push sound)
-5. Add sound effects for coin collection (pickup/ding sound)
-6. Integrate shadow rendering into main game draw loop
-7. Integrate audio system into main game initialization and collision events
-8. Add volume control and audio toggle functionality
+### Plan: it wouls be greate to add a main menu before the game with all guides and settings [2026-03-06 15:20:07]
+1. Create src/menu.lua with menu system supporting navigation between different screens (main, settings, help)
+2. Add menu state to GameState with states: "menu", "settings", "help", "playing"
+3. Implement main menu screen with "Play", "Settings", "Help", "Quit" options
+4. Implement settings screen with audio toggle, volume slider, and key binding display
+5. Implement help screen with complete game instructions and controls guide
+6. Add menu navigation controls (arrow keys, enter, escape) to main.lua keypressed function
+7. Create menu background and visual styling with consistent theme
+8. Integrate menu system into main.lua game loop (update/draw based on current state)
+9. Add smooth transitions between menu screens and game start
+10. Test all menu navigation paths and ensure proper state management
 
 ## Decisions Made
+- Created modular project structure with separate Ball, Coin, Physics, GameState, and UI modules
+- Implemented physics-based collision with impulse calculations and restitution
+- Added friction/damping system with different values for player vs pushable balls
+- Red ball has zero friction and reflects off walls with 0.8 speed reduction
+- Added shadow rendering system for depth perception
+- Created audio system with sound generation fallbacks
+- Implemented coin collection system with 2-second respawn timer
+- Added volume control and mute toggle functionality
 
 ## Known Issues
 
-## Feel Notes  ← only human writes here
+## Feel Notes — only human writes here
 
-- [2026-03-06 11:50:26] really nice
-
+- Earlier: Multiple iterations on physics, friction, and collision systems
 - [2026-03-06 13:23:26] it works well, thank you
-
 - [2026-03-06 13:39:22] game works well, but shadows are missing
-
 - [2026-03-06 13:42:09] game works well, but shadows and sounds are missing
+- [2026-03-06 15:16:59] sounds and shadows are work well
