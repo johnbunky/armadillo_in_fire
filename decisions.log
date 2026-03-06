@@ -55,3 +55,6 @@ Confirmed that Coin class with position, radius, color and rendering method was 
 
 === 2026-03-06 11:42:23 -- task 3: collision detection between red ball and coins ===
 Added coin spawning system with 5 coins at random positions, implemented checkCoinCollision function for red ball-coin detection, and added collision handling that removes coins when touched by the red ball.
+
+=== 2026-03-06 11:56:26 -- task 1: Create src/ directory and move game logic into separate modules ===
+Created modular project structure with separate files for Ball, Coin, Physics, GameState, and UI modules, moved Love2D configuration to conf.lua, and updated main.lua to use the new modular system.

@@ -10,41 +10,18 @@ Love2D + Lua
 In progress
 
 ## Open Tasks
-- [x] task 3: collision detection between red ball and coins
-- [x] task 1: create Coin class with position, radius, color and rendering method
+- [x] task 1: Create src/ directory and move game logic into separate modules
 
-### Plan: let¥s add a coin, that would be an obstical for the user, but the red ball able to gather it [2026-03-06 11:25:46]
-1. Create a Coin class with position, radius, color, and rendering method
-2. Add coin spawning system that places coins at random positions on screen
-3. Implement collision detection between the red ball and coins
-4. Add coin collection mechanics when red ball touches a coin
-5. Add visual feedback when coins are collected (disappear from screen)
-6. Add score counter to track collected coins
-7. Display score on screen with the other instructions
-8. Add coin respawn system to generate new coins after collection
-- [x] Implemented wall reflection by changing Ball:update() to reflect velocity instead of stopping at walls, added bounce reduction for realistic physics, and adjusted friction slightly.
-- [x] could you make friction is zero
-- [x] cold you take a look at the last feel note, may be its time to rollback for two commits
-- [x] could you take a look whats wrong with the last changes, i see blackscreen only
-- [x] could you add zero friction to the red ball and reflection from screen side with loosing speed 0.8
-- [x] could you roll back to the prevous commit
-- [x] task 8: ball moves too slow and doesnt respond to repeated pushes, also Love2D opens twice on start
-- [x] task 7
-- [x] task 6
-- [x] 5. Implement collision detection between the two balls
-- [x] task 3 and 4: player ball keyboard controls, second pushable ball, ESC to quit, instructions overlay
-- [x] task 2: implement Ball class with position, radius, color and rendering
-- [x] task 1: create main.lua with basic Love2D window and game loop
+### Plan: could you create a project ctructure for future development, everything shouldn¥t be in main.lua [2026-03-06 11:54:16]
+1. Create src/ directory and move game logic into separate modules
+2. Create Ball class in src/ball.lua with all ball-related functionality
+3. Create Coin class in src/coin.lua with all coin-related functionality
+4. Create Physics module in src/physics.lua for collision detection and handling
+5. Create GameState module in src/gamestate.lua to manage game state and spawning
+6. Create UI module in src/ui.lua for drawing instructions and interface
+7. Update main.lua to require and use the modular components
+8. Create conf.lua file to move Love2D configuration out of main.lua
 
-### Plan: two balls, player able to push second ball [2026-03-05 20:25:51]
-1. Create a basic game window with a rendering system
-2. Implement a Ball class with position, radius, and rendering
-3. Create the first ball (player ball) with keyboard input controls for movement
-4. Create the second ball (pushable ball) at a different starting position
-5. Implement collision detection between the two balls
-6. Add physics for the second ball to respond to pushes from the player ball
-7. Add basic friction/damping to make ball movement feel natural
-8. Test and refine the pushing mechanics for smooth gameplay
 
 ## Decisions Made
 
@@ -52,20 +29,4 @@ In progress
 
 ## Feel Notes  ‚Üê only human writes here
 
-- [2026-03-05 20:31:15] game is started, background is nice, there is no and game here yet
-
-- [2026-03-05 20:37:48] two ball are present, but instruction is missing, and esc doesn?t work
-
-- [2026-03-05 20:49:01] two balls and instruction are present, esc and keyboard input controls work
-
-- [2026-03-05 21:00:20] it works second ball responds to push, but it moves too slow, and doesn¥t respond to another push
-
-- [2026-03-05 21:10:33] yep it works but ball move to slow, one more thing, for some reason love starts twice, it¥s opened closed and open again 
-
-- [2026-03-05 21:34:25] love2d work ok for now
-
-- [2026-03-05 21:38:36] oops, for some reasond I see black screen
-
-- [2026-03-05 21:45:07] background, instructions, collisions function are missing, balls size are changed
-
-- [2026-03-06 11:34:38] i don¥t see any coins yet
+- [2026-03-06 11:50:26] really nice
