@@ -1129,3 +1129,297 @@ end
 
 DECISION_LOG: Added AI movement behavior to coins with player detection (150px range), red ball avoidance (130px distance), slow movement (speed 20), and periodic repositioning without changing visual appearance or collection mechanics.
 <<<MSG>>>
+<<<ROLE:user>>>
+coins spawn using evolved strategy: predict player movement 0.28s ahead, spawn coin 65px from predicted position, avoid red ball by 130px minimum distance when choosing spawn point. Coins stay static after spawning, no movement
+<<<MSG>>>
+<<<ROLE:assistant>>>
+-- FILE: src\coin.lua --
+local Coin = {}
+Coin.__index = Coin
+
+function Coin:new(x, y, radius, color)
+    local coin = {}
+    setmetatable(coin, Coin)
+    
+    coin.x = x or 0
+    coin.y = y or 0
+    coin.radius = radius or 10
+    coin.color = color or {1, 1, 0}  -- yellow by default
+    
+    -- Shadow properties
+    coin.shadowOffset = {x = 2, y = 3}  -- Smaller shadow offset for coins
+    coin.shadowColor = {0, 0, 0, 0.25}  -- Semi-transparent black shadow, slightly lighter than balls
+    coin.shadowScale = {x = 1.1, y = 0.5}  -- Shadow is wider and flatter than coin
+    
+    return coin
+end
+
+function Coin:drawShadow()
+    -- Draw shadow as an ellipse beneath the coin
+    love.graphics.setColor(self.shadowColor[1], self.shadowColor[2], self.shadowColor[3], self.shadowColor[4])
+    
+    local shadowX = self.x + self.shadowOffset.x
+    local shadowY = self.y + self.shadowOffset.y
+    local shadowRadiusX = self.radius * self.shadowScale.x
+    local shadowRadiusY = self.radius * self.shadowScale.y
+    
+    love.graphics.ellipse("fill", shadowX, shadowY, shadowRadiusX, shadowRadiusY)
+end
+
+function Coin:draw()
+    love.graphics.setColor(self.color[1], self.color[2], self.color[3])
+    love.graphics.circle("fill", self.x, self.y, self.radius)
+end
+
+return Coin
+-- END: src\coin.lua --
+
+-- FILE: src\gamestate.lua --
+local Ball = require("src/ball")
+local Coin = require("src/coin")
+
+local GameState = {}
+
+function GameState:new()
+    local gameState = {}
+    setmetatable(gameState, {__index = self})
+    
+    gameState.state = "playing"
+    gameState.playerBall = nil
+    gameState.pushableBall = nil
+    gameState.coins = {}
+    gameState.maxCoins = 5
+    gameState.respawnTimer = 0
+    gameState.respawnDelay = 1.95  -- 1.95 seconds delay before respawning
+    
+    return gameState
+end
+
+function GameState:init()
+    -- Create the two balls
+    self.playerBall = Ball:new(200, 300, 25, {0.2, 0.8, 1}, true)  -- Blue player ball
+    self.pushableBall = Ball:new(500, 300, 30, {1, 0.3, 0.3}, false)  -- Red pushable ball
+    
+    -- Initialize coins
+    self:spawnCoins(self.maxCoins)
+end
+
+function GameState:update(dt)
+    -- Update respawn timer
+    if #self.coins < self.maxCoins then
+        self.respawnTimer = self.respawnTimer + dt
+        
+        -- Check if it's time to spawn a new coin
+        if self.respawnTimer >= self.respawnDelay then
+            self:spawnSingleCoin()
+            self.respawnTimer = 0
+        end
+    else
+        -- Reset timer when we have max coins
+        self.respawnTimer = 0
+    end
+end
+
+-- Predict player position 0.28 seconds ahead
+function GameState:predictPlayerPosition()
+    local predictionTime = 0.28
+    local predictedX = self.playerBall.x + self.playerBall.vx * predictionTime
+    local predictedY = self.playerBall.y + self.playerBall.vy * predictionTime
+    
+    return predictedX, predictedY
+end
+
+-- Spawn coins at random positions
+function GameState:spawnCoins(count)
+    self.coins = {}
+    for i = 1, count do
+        self:spawnSingleCoin()
+    end
+end
+
+-- Spawn a single coin using evolved strategy
+function GameState:spawnSingleCoin()
+    local x, y
+    local validPosition = false
+    local attempts = 0
+    
+    -- Try to find a valid position
+    while not validPosition and attempts < 100 do
+        -- Predict player position and spawn 65px from it
+        local predictedX, predictedY = self:predictPlayerPosition()
+        local angle = math.random() * 2 * math.pi
+        x = predictedX + math.cos(angle) * 65
+        y = predictedY + math.sin(angle) * 65
+        
+        -- Clamp to screen bounds
+        x = math.max(50, math.min(x, love.graphics.getWidth() - 50))
+        y = math.max(50, math.min(y, love.graphics.getHeight() - 50))
+        
+        -- Check minimum distance from red ball (130px)
+        local distToRedBall = math.sqrt((x - self.pushableBall.x)^2 + (y - self.pushableBall.y)^2)
+        
+        -- Check distance from player ball
+        local distToPlayer = math.sqrt((x - self.playerBall.x)^2 + (y - self.playerBall.y)^2)
+        
+        -- Check distance from existing coins
+        local tooCloseToCoins = false
+        for _, coin in ipairs(self.coins) do
+            local distToCoin = math.sqrt((x - coin.x)^2 + (y - coin.y)^2)
+            if distToCoin < 30 then  -- Minimum distance between coins
+                tooCloseToCoins = true
+                break
+            end
+        end
+        
+        if distToRedBall >= 130 and distToPlayer > 30 and not tooCloseToCoins then
+            validPosition = true
+        end
+        attempts = attempts + 1
+    end
+    
+    -- Create coin at found position (or fallback if no valid position found)
+    if attempts >= 100 then
+        -- Fallback: place coin at random position avoiding red ball
+        local fallbackAttempts = 0
+        repeat
+            x = math.random(50, love.graphics.getWidth() - 50)
+            y = math.random(50, love.graphics.getHeight() - 50)
+            local distToRedBall = math.sqrt((x - self.pushableBall.x)^2 + (y - self.pushableBall.y)^2)
+            fallbackAttempts = fallbackAttempts + 1
+        until distToRedBall >= 130 or fallbackAttempts >= 50
+    end
+    
+    table.insert(self.coins, Coin:new(x, y, 12, {1, 0.8, 0}))
+end
+
+function GameState:collectCoin(index, audio)
+    -- Play coin collection sound effect
+    if audio then
+        audio:playCoinCollect()
+    end
+    
+    -- Remove the coin and reset respawn timer to start countdown
+    table.remove(self.coins, index)
+    self.respawnTimer = 0
+end
+
+return GameState
+-- END: src\gamestate.lua --
+
+-- FILE: main.lua --
+local GameState = require("src/gamestate")
+local Physics = require("src/physics")
+local UI = require("src/ui")
+local Audio = require("src/audio")
+
+-- Initialize game
+local gameState
+local audio
+
+function love.load()
+    gameState = GameState:new()
+    gameState:init()
+    
+    -- Initialize audio system
+    audio = Audio
+    audio:init()
+    
+    -- Create assets/sounds directory if it doesn't exist
+    local info = love.filesystem.getInfo("assets")
+    if not info then
+        love.filesystem.createDirectory("assets")
+    end
+    
+    local soundsInfo = love.filesystem.getInfo("assets/sounds")
+    if not soundsInfo then
+        love.filesystem.createDirectory("assets/sounds")
+    end
+end
+
+function love.update(dt)
+    if gameState.state == "playing" then
+        -- Update game state (handles coin respawning)
+        gameState:update(dt)
+        
+        -- Player ball movement
+        local speed = 300
+        gameState.playerBall.vx = 0
+        gameState.playerBall.vy = 0
+        
+        if love.keyboard.isDown("left", "a") then
+            gameState.playerBall.vx = -speed
+        end
+        if love.keyboard.isDown("right", "d") then
+            gameState.playerBall.vx = speed
+        end
+        if love.keyboard.isDown("up", "w") then
+            gameState.playerBall.vy = -speed
+        end
+        if love.keyboard.isDown("down", "s") then
+            gameState.playerBall.vy = speed
+        end
+        
+        -- Update balls with audio support
+        gameState.playerBall:update(dt, audio)
+        gameState.pushableBall:update(dt, audio)
+        
+        -- Handle collision between balls with audio
+        Physics.handleCollision(gameState.playerBall, gameState.pushableBall, audio)
+        
+        -- Check collision between red ball and coins
+        for i = #gameState.coins, 1, -1 do
+            if Physics.checkCoinCollision(gameState.pushableBall, gameState.coins[i]) then
+                -- Use the new collectCoin method with audio
+                gameState:collectCoin(i, audio)
+            end
+        end
+    end
+end
+
+function love.draw()
+    -- Clear screen with light green grass-like background
+    love.graphics.setBackgroundColor(0.6, 0.8, 0.4)
+    
+    if gameState.state == "playing" then
+        -- Draw shadows first (behind all objects)
+        gameState.playerBall:drawShadow()
+        gameState.pushableBall:drawShadow()
+        
+        for i, coin in ipairs(gameState.coins) do
+            coin:drawShadow()
+        end
+        
+        -- Draw balls
+        gameState.playerBall:draw()
+        gameState.pushableBall:draw()
+        
+        -- Draw coins
+        for i, coin in ipairs(gameState.coins) do
+            coin:draw()
+        end
+        
+        -- Draw UI with audio reference
+        UI.draw(gameState, audio)
+    end
+end
+
+function love.keypressed(key)
+    if key == "escape" then
+        love.event.quit()
+    elseif key == "m" then
+        -- Toggle audio mute
+        audio:toggle()
+    elseif key == "=" or key == "+" then
+        -- Increase volume
+        local currentVolume = audio.volume
+        audio:setVolume(currentVolume + 0.1)
+    elseif key == "-" then
+        -- Decrease volume
+        local currentVolume = audio.volume
+        audio:setVolume(currentVolume - 0.1)
+    end
+end
+-- END: main.lua --
+
+DECISION_LOG: Removed all coin movement behavior and updated spawn strategy to use player movement prediction with 130px red ball avoidance, making coins static after spawning while maintaining strategic positioning.
+<<<MSG>>>

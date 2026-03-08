@@ -10,6 +10,7 @@ Love2D + Lua
 Complete core game with modular structure, physics, shadows, audio, and AI coin behavior system. Features predictive coin spawning, player detection, red ball avoidance, and slow repositioning movement.
 
 ## Open Tasks
+- [x] coins spawn using evolved strategy: predict player movement 0.28s ahead, spawn coin 65px from predicted position, avoid red ball by 130px minimum distance when choosing spawn point. Coins stay static after spawning, no movement
 
 ### Plan: let's keep the existing menu plan, and add one more game flow change it should be fire instead of coins, and fire damages the player, red ball stopped a fire, back ground should be light green, like a grass, after fire stopped by red ball there is a stain on this place that dissapear in some seconds, may be dissole [2026-03-08 10:37:38]
 2. Rename Coin class to Fire class with red/orange coloring

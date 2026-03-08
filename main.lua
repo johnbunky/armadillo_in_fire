@@ -54,11 +54,6 @@ function love.update(dt)
         gameState.playerBall:update(dt, audio)
         gameState.pushableBall:update(dt, audio)
         
-        -- Update coins with movement behavior
-        for i, coin in ipairs(gameState.coins) do
-            coin:update(dt, gameState.playerBall, gameState.pushableBall)
-        end
-        
         -- Handle collision between balls with audio
         Physics.handleCollision(gameState.playerBall, gameState.pushableBall, audio)
         

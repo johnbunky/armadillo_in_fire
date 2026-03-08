@@ -1,0 +1,3 @@
+
+=== 2026-03-08 13:15:05 -- coins spawn using evolved strategy: predict player movement 0.28s ahead, spawn coin 65px from predicted position, avoid red ball by 130px minimum distance when choosing spawn point. Coins stay static after spawning, no movement ===
+Removed all coin movement behavior and updated spawn strategy to use player movement prediction with 130px red ball avoidance, making coins static after spawning while maintaining strategic positioning.

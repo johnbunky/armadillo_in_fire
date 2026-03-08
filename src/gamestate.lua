@@ -60,54 +60,41 @@ function GameState:spawnCoins(count)
     end
 end
 
--- Spawn a single coin using new strategy
+-- Spawn a single coin using evolved strategy
 function GameState:spawnSingleCoin()
     local x, y
     local validPosition = false
     local attempts = 0
     
-    -- 58% chance to cluster near existing coin
-    local clusterChance = 0.58
-    local shouldCluster = math.random() < clusterChance and #self.coins > 0
-    
     -- Try to find a valid position
     while not validPosition and attempts < 100 do
-        if shouldCluster then
-            -- Spawn near an existing coin
-            local existingCoin = self.coins[math.random(#self.coins)]
-            local angle = math.random() * 2 * math.pi
-            local distance = 40 + math.random(30)  -- 40-70 pixels from existing coin
-            x = existingCoin.x + math.cos(angle) * distance
-            y = existingCoin.y + math.sin(angle) * distance
-        else
-            -- Spawn 65px from predicted player position
-            local predictedX, predictedY = self:predictPlayerPosition()
-            local angle = math.random() * 2 * math.pi
-            x = predictedX + math.cos(angle) * 65
-            y = predictedY + math.sin(angle) * 65
-        end
+        -- Predict player position and spawn 65px from it
+        local predictedX, predictedY = self:predictPlayerPosition()
+        local angle = math.random() * 2 * math.pi
+        x = predictedX + math.cos(angle) * 65
+        y = predictedY + math.sin(angle) * 65
         
         -- Clamp to screen bounds
         x = math.max(50, math.min(x, love.graphics.getWidth() - 50))
         y = math.max(50, math.min(y, love.graphics.getHeight() - 50))
         
-        -- Check distance from both balls
-        local distToPlayer = math.sqrt((x - self.playerBall.x)^2 + (y - self.playerBall.y)^2)
-        local distToPush = math.sqrt((x - self.pushableBall.x)^2 + (y - self.pushableBall.y)^2)
+        -- Check minimum distance from red ball (130px)
+        local distToRedBall = math.sqrt((x - self.pushableBall.x)^2 + (y - self.pushableBall.y)^2)
         
-        -- Check distance from existing coins (but allow clustering)
+        -- Check distance from player ball
+        local distToPlayer = math.sqrt((x - self.playerBall.x)^2 + (y - self.playerBall.y)^2)
+        
+        -- Check distance from existing coins
         local tooCloseToCoins = false
-        if not shouldCluster then
-            for _, coin in ipairs(self.coins) do
-                local distToCoin = math.sqrt((x - coin.x)^2 + (y - coin.y)^2)
-                if distToCoin < 30 then  -- Minimum distance when not clustering
-                    tooCloseToCoins = true
-                    break
-                end
+        for _, coin in ipairs(self.coins) do
+            local distToCoin = math.sqrt((x - coin.x)^2 + (y - coin.y)^2)
+            if distToCoin < 30 then  -- Minimum distance between coins
+                tooCloseToCoins = true
+                break
             end
         end
         
-        if distToPlayer > 40 and distToPush > 40 and not tooCloseToCoins then
+        if distToRedBall >= 130 and distToPlayer > 30 and not tooCloseToCoins then
             validPosition = true
         end
         attempts = attempts + 1
@@ -115,9 +102,14 @@ function GameState:spawnSingleCoin()
     
     -- Create coin at found position (or fallback if no valid position found)
     if attempts >= 100 then
-        -- Fallback: place coin at random position
-        x = math.random(50, love.graphics.getWidth() - 50)
-        y = math.random(50, love.graphics.getHeight() - 50)
+        -- Fallback: place coin at random position avoiding red ball
+        local fallbackAttempts = 0
+        repeat
+            x = math.random(50, love.graphics.getWidth() - 50)
+            y = math.random(50, love.graphics.getHeight() - 50)
+            local distToRedBall = math.sqrt((x - self.pushableBall.x)^2 + (y - self.pushableBall.y)^2)
+            fallbackAttempts = fallbackAttempts + 1
+        until distToRedBall >= 130 or fallbackAttempts >= 50
     end
     
     table.insert(self.coins, Coin:new(x, y, 12, {1, 0.8, 0}))
