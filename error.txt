@@ -1,21 +1,15 @@
-Auto-merging CLAUDE.md
-CONFLICT (content): Merge conflict in CLAUDE.md
-Auto-merging decisions.log
-CONFLICT (content): Merge conflict in decisions.log
-Auto-merging error.txt
-CONFLICT (add/add): Merge conflict in error.txt
-Auto-merging history.txt
-CONFLICT (content): Merge conflict in history.txt
-Auto-merging main.lua
-CONFLICT (content): Merge conflict in main.lua
-Auto-merging session.log
-CONFLICT (content): Merge conflict in session.log
-Auto-merging src/ball.lua
-CONFLICT (content): Merge conflict in src/ball.lua
-Auto-merging src/fire.lua
-CONFLICT (add/add): Merge conflict in src/fire.lua
-Auto-merging src/gamestate.lua
-CONFLICT (content): Merge conflict in src/gamestate.lua
-Auto-merging src/ui.lua
-CONFLICT (content): Merge conflict in src/ui.lua
-Automatic merge failed; fix conflicts and then commit the result.
+Error
+
+Syntax error: src/gamestate.lua:1: unexpected symbol near '<'
+
+
+
+Traceback
+
+[love "callbacks.lua"]:228: in function 'handler'
+[C]: at 0x7ff8051f2fa0
+[C]: in function 'require'
+main.lua:1: in main chunk
+[C]: in function 'require'
+[C]: in function 'xpcall'
+[C]: in function 'xpcall'

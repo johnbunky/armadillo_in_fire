@@ -2744,3 +2744,13 @@ Auto-merging decisions.log
 CONFLICT (content): Me
 [2026-03-08 20:41:22] [ERROR_END] done
 [2026-03-08 20:43:24] [CODE_START] [full] could you pass throw the whole project and fix merge conflicts properly
+[2026-03-08 20:44:46] [CODE_END] done
+[2026-03-08 20:47:05] [ERROR_INPUT] Error
+
+Syntax error: src/gamestate.lua:1: unexpected symbol near '<'
+
+
+
+Traceback
+
+[love "callbacks.lua"]:228: in functi
