@@ -1078,3 +1078,159 @@ end
 
 DECISION_LOG: Renamed Coin to Fire class with red/orange coloring, added flickering animation with sine wave calculations for color intensity, size variation, and flame tip effects to create realistic fire visuals.
 <<<MSG>>>
+<<<ROLE:user>>>
+This error occurred at runtime:
+
+Error
+<<<MSG>>>
+<<<ROLE:assistant>>>
+ROOT_CAUSE: Physics.checkCoinCollision function name is outdated - should be checkFireCollision to match the Fire class rename
+FIX: Rename checkCoinCollision to checkFireCollision in physics.lua and update all references in main.lua
+CONFIDENCE: high
+
+-- FILE: src\physics.lua --
+local Physics = {}
+
+-- Collision detection function
+function Physics.checkCollision(ball1, ball2)
+    local dx = ball1.x - ball2.x
+    local dy = ball1.y - ball2.y
+    local distance = math.sqrt(dx * dx + dy * dy)
+    return distance < (ball1.radius + ball2.radius)
+end
+
+-- Check collision between ball and fire
+function Physics.checkFireCollision(ball, fire)
+    local dx = ball.x - fire.x
+    local dy = ball.y - fire.y
+    local distance = math.sqrt(dx * dx + dy * dy)
+    return distance < (ball.radius + fire.currentRadius)
+end
+
+-- Keep old method name for compatibility
+function Physics.checkCoinCollision(ball, fire)
+    return Physics.checkFireCollision(ball, fire)
+end
+
+-- Handle collision physics with audio support
+function Physics.handleCollision(playerBall, pushBall, audio)
+    if not Physics.checkCollision(playerBall, pushBall) then
+        return
+    end
+    
+    -- Calculate collision direction
+    local dx = pushBall.x - playerBall.x
+    local dy = pushBall.y - playerBall.y
+    local distance = math.sqrt(dx * dx + dy * dy)
+    
+    -- Avoid division by zero
+    if distance == 0 then
+        dx, dy = 1, 0
+        distance = 1
+    end
+    
+    -- Normalize direction
+    dx = dx / distance
+    dy = dy / distance
+    
+    -- Separate balls to prevent overlap
+    local overlap = (playerBall.radius + pushBall.radius) - distance
+    pushBall.x = pushBall.x + dx * overlap * 0.6
+    pushBall.y = pushBall.y + dy * overlap * 0.4
+    playerBall.x = playerBall.x - dx * overlap * 0.4
+    playerBall.y = playerBall.y - dy * overlap * 0.4
+    
+    -- Transfer momentum (player ball pushes the other)
+    local pushForce = 200
+    pushBall.vx = pushBall.vx + dx * pushForce
+    pushBall.vy = pushBall.vy + dy * pushForce
+    
+    -- Play collision sound effect
+    if audio then
+        audio:playBallPush()
+    end
+end
+
+-- Handle ball boundary collision with audio support
+function Physics.handleBoundaryCollision(ball, audio)
+    local bounced = false
+    local bounceReduction = 0.7
+    
+    -- Check and handle boundary collisions
+    if ball.x - ball.radius < 0 then
+        ball.x = ball.radius
+        ball.vx = -ball.vx * bounceReduction
+        bounced = true
+    elseif ball.x + ball.radius > love.graphics.getWidth() then
+        ball.x = love.graphics.getWidth() - ball.radius
+        ball.vx = -ball.vx * bounceReduction
+        bounced = true
+    end
+    
+    if ball.y - ball.radius < 0 then
+        ball.y = ball.radius
+        ball.vy = -ball.vy * bounceReduction
+        bounced = true
+    elseif ball.y + ball.radius > love.graphics.getHeight() then
+        ball.y = love.graphics.getHeight() - ball.radius
+        ball.vy = -ball.vy * bounceReduction
+        bounced = true
+    end
+    
+    -- Play bounce sound if ball hit a wall
+    if bounced and audio then
+        -- Only play bounce sound for fast-moving balls to avoid spam
+        local speed = math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy)
+        if speed > 50 then
+            audio:playBallCollision()
+        end
+    end
+    
+    return bounced
+end
+
+return Physics
+-- END: src\physics.lua --
+<<<MSG>>>
+<<<ROLE:user>>>
+This error occurred at runtime:
+
+Error
+
+src/ui.lua:10: attempt to get length of field 'coins' (a nil value)
+
+
+Traceback
+
+[love "callbacks.lua"]:228: in function 'handler'
+src/ui.lua:10: in function 'draw'
+main.lua:93: in function 'draw'
+[love "callbacks.lua"]:168: in function <[love "callbacks.lua"]:144>
+[C]: in function 'xpcall'
+
+<<<MSG>>>
+<<<ROLE:assistant>>>
+ROOT_CAUSE: UI.lua is still referencing 'coins' field which was renamed to 'fires' in the gamestate
+FIX: Update UI.lua to reference gameState.fires instead of gameState.coins and update display text
+CONFIDENCE: high
+
+-- FILE: src\ui.lua --
+local UI = {}
+
+function UI.draw(gameState, audio)
+    -- Draw instructions
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.print("Use WASD or Arrow Keys to move the blue ball", 10, 10)
+    love.graphics.print("Push the red ball to extinguish fires!", 10, 30)
+    love.graphics.print("Press ESC to quit", 10, 50)
+    love.graphics.print("Press M to toggle audio", 10, 70)
+    love.graphics.print("Fires remaining: " .. #gameState.fires, 10, 90)
+    
+    -- Show audio status
+    local audioStatus = audio and audio:isEnabled() and "ON" or "OFF"
+    love.graphics.print("Audio: " .. audioStatus, 10, 110)
+end
+
+return UI
+-- END: src\ui.lua --
+<<<MSG>>>
