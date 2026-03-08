@@ -1,3 +1,12 @@
 
 === 2026-03-08 13:15:05 -- coins spawn using evolved strategy: predict player movement 0.28s ahead, spawn coin 65px from predicted position, avoid red ball by 130px minimum distance when choosing spawn point. Coins stay static after spawning, no movement ===
 Removed all coin movement behavior and updated spawn strategy to use player movement prediction with 130px red ball avoidance, making coins static after spawning while maintaining strategic positioning.
+
+=== 2026-03-08 16:36:04 -- could you update the plan ### Plan: let's keep the existing menu plan, and add one more game flow change it should be fire instead of coins, and fire damages the player, red ball stopped a fire, back ground should be light green, like a grass, after fire stopped by red ball there is a stain on this place that dissapear in some seconds, may be dissole [2026-03-08 10:37:38] it looks like it looks like fire and stain classea are alreade exist ===
+Waiting for complete project structure to assess existing Fire and Stain implementation before proceeding with system conversion
+
+=== 2026-03-08 16:37:00 -- could you update the plan ### Plan: let's keep the existing menu plan, and add one more game flow change it should be fire instead of coins, and fire damages the player, red ball stopped a fire, back ground should be light green, like a grass, after fire stopped by red ball there is a stain on this place that dissapear in some seconds, may be dissole [2026-03-08 10:37:38] it looks like it looks like fire and stain classea are alreade exist ===
+Confirmed Fire and Stain classes exist with proper animations - plan updated to focus on system integration and replacing coin mechanics with fire damage system
+
+=== 2026-03-08 16:41:33 -- task 1.1: - Modify gamestate.lua to use Fire objects instead of Coin objects ===
+Replaced coin system with fire system in gamestate - changed collections to fires/stains arrays, updated spawn logic for fires, added stain management and extinguish functionality

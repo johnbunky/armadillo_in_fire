@@ -1,5 +1,6 @@
 local Ball = require("src/ball")
-local Coin = require("src/coin")
+local Fire = require("src/fire")
+local Stain = require("src/stain")
 
 local GameState = {}
 
@@ -10,8 +11,9 @@ function GameState:new()
     gameState.state = "playing"
     gameState.playerBall = nil
     gameState.pushableBall = nil
-    gameState.coins = {}
-    gameState.maxCoins = 5
+    gameState.fires = {}
+    gameState.stains = {}
+    gameState.maxFires = 3
     gameState.respawnTimer = 0
     gameState.respawnDelay = 1.95  -- 1.95 seconds delay before respawning
     
@@ -23,22 +25,35 @@ function GameState:init()
     self.playerBall = Ball:new(200, 300, 25, {0.2, 0.8, 1}, true)  -- Blue player ball
     self.pushableBall = Ball:new(500, 300, 30, {1, 0.3, 0.3}, false)  -- Red pushable ball
     
-    -- Initialize coins
-    self:spawnCoins(self.maxCoins)
+    -- Initialize fires
+    self:spawnFires(self.maxFires)
 end
 
 function GameState:update(dt)
+    -- Update fires
+    for i, fire in ipairs(self.fires) do
+        fire:update(dt, self.playerBall)
+    end
+    
+    -- Update stains and remove dissolved ones
+    for i = #self.stains, 1, -1 do
+        local dissolved = self.stains[i]:update(dt)
+        if dissolved then
+            table.remove(self.stains, i)
+        end
+    end
+    
     -- Update respawn timer
-    if #self.coins < self.maxCoins then
+    if #self.fires < self.maxFires then
         self.respawnTimer = self.respawnTimer + dt
         
-        -- Check if it's time to spawn a new coin
+        -- Check if it's time to spawn a new fire
         if self.respawnTimer >= self.respawnDelay then
-            self:spawnSingleCoin()
+            self:spawnSingleFire()
             self.respawnTimer = 0
         end
     else
-        -- Reset timer when we have max coins
+        -- Reset timer when we have max fires
         self.respawnTimer = 0
     end
 end
@@ -52,16 +67,16 @@ function GameState:predictPlayerPosition()
     return predictedX, predictedY
 end
 
--- Spawn coins at random positions
-function GameState:spawnCoins(count)
-    self.coins = {}
+-- Spawn fires at random positions
+function GameState:spawnFires(count)
+    self.fires = {}
     for i = 1, count do
-        self:spawnSingleCoin()
+        self:spawnSingleFire()
     end
 end
 
--- Spawn a single coin using evolved strategy
-function GameState:spawnSingleCoin()
+-- Spawn a single fire using evolved strategy
+function GameState:spawnSingleFire()
     local x, y
     local validPosition = false
     local attempts = 0
@@ -84,25 +99,25 @@ function GameState:spawnSingleCoin()
         -- Check distance from player ball
         local distToPlayer = math.sqrt((x - self.playerBall.x)^2 + (y - self.playerBall.y)^2)
         
-        -- Check distance from existing coins
-        local tooCloseToCoins = false
-        for _, coin in ipairs(self.coins) do
-            local distToCoin = math.sqrt((x - coin.x)^2 + (y - coin.y)^2)
-            if distToCoin < 30 then  -- Minimum distance between coins
-                tooCloseToCoins = true
+        -- Check distance from existing fires
+        local tooCloseToFires = false
+        for _, fire in ipairs(self.fires) do
+            local distToFire = math.sqrt((x - fire.x)^2 + (y - fire.y)^2)
+            if distToFire < 40 then  -- Minimum distance between fires
+                tooCloseToFires = true
                 break
             end
         end
         
-        if distToRedBall >= 130 and distToPlayer > 30 and not tooCloseToCoins then
+        if distToRedBall >= 130 and distToPlayer > 30 and not tooCloseToFires then
             validPosition = true
         end
         attempts = attempts + 1
     end
     
-    -- Create coin at found position (or fallback if no valid position found)
+    -- Create fire at found position (or fallback if no valid position found)
     if attempts >= 100 then
-        -- Fallback: place coin at random position avoiding red ball
+        -- Fallback: place fire at random position avoiding red ball
         local fallbackAttempts = 0
         repeat
             x = math.random(50, love.graphics.getWidth() - 50)
@@ -112,17 +127,22 @@ function GameState:spawnSingleCoin()
         until distToRedBall >= 130 or fallbackAttempts >= 50
     end
     
-    table.insert(self.coins, Coin:new(x, y, 12, {1, 0.8, 0}))
+    table.insert(self.fires, Fire:new(x, y, 15, {1, 0.3, 0}))
 end
 
-function GameState:collectCoin(index, audio)
-    -- Play coin collection sound effect
+function GameState:extinguishFire(index, audio)
+    local fire = self.fires[index]
+    
+    -- Create stain where fire was extinguished
+    table.insert(self.stains, Stain:new(fire.x, fire.y, fire.radius + 5))
+    
+    -- Play fire extinguish sound effect (placeholder - will be implemented in audio system)
     if audio then
-        audio:playCoinCollect()
+        audio:playCoinCollect()  -- Temporary: reuse existing sound
     end
     
-    -- Remove the coin and reset respawn timer to start countdown
-    table.remove(self.coins, index)
+    -- Remove the fire and reset respawn timer to start countdown
+    table.remove(self.fires, index)
     self.respawnTimer = 0
 end
 
