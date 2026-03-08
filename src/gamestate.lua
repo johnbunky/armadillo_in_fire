@@ -8,7 +8,7 @@ function GameState:new()
     local gameState = {}
     setmetatable(gameState, {__index = self})
     
-    gameState.state = "playing"
+    gameState.state = "playing"  -- Can be "playing" or "game_over"
     gameState.playerBall = nil
     gameState.pushableBall = nil
     gameState.fires = {}
@@ -30,6 +30,19 @@ function GameState:init()
 end
 
 function GameState:update(dt)
+    if self.state == "playing" then
+        self:updatePlaying(dt)
+        
+        -- Check for game over condition
+        if self.playerBall:isDead() then
+            self.state = "game_over"
+        end
+    elseif self.state == "game_over" then
+        self:updateGameOver(dt)
+    end
+end
+
+function GameState:updatePlaying(dt)
     -- Update fires
     for i, fire in ipairs(self.fires) do
         fire:update(dt, self.playerBall)
@@ -56,6 +69,36 @@ function GameState:update(dt)
         -- Reset timer when we have max fires
         self.respawnTimer = 0
     end
+end
+
+function GameState:updateGameOver(dt)
+    -- Handle restart input - check for common restart keys
+    if love.keyboard.isDown("r") or love.keyboard.isDown("space") or love.keyboard.isDown("return") then
+        self:restart()
+    end
+end
+
+function GameState:restart()
+    -- Reset game state
+    self.state = "playing"
+    
+    -- Recreate player ball with full health
+    self.playerBall = Ball:new(200, 300, 25, {0.2, 0.8, 1}, true)
+    
+    -- Reset pushable ball position
+    self.pushableBall = Ball:new(500, 300, 30, {1, 0.3, 0.3}, false)
+    
+    -- Clear and respawn fires
+    self.fires = {}
+    self.stains = {}
+    self:spawnFires(self.maxFires)
+    
+    -- Reset timers
+    self.respawnTimer = 0
+end
+
+function GameState:isGameOver()
+    return self.state == "game_over"
 end
 
 -- Predict player position 0.28 seconds ahead
