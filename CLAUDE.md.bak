@@ -7,52 +7,77 @@ two balls, player pushes second ball
 Love2D + Lua
  
 ## Current Status
-In progress
+Complete core game with modular structure, physics, shadows, audio, and AI coin behavior system. Features predictive coin spawning, player detection, red ball avoidance, and slow repositioning movement.
 
 ## Open Tasks
+- [x] task 2.1: Implement game over condition when health reaches zero
+- [x] task 1.2: - Change collision detection from coin collection to fire damage
+- [x] could you remove movment ability of fire, it chase the plyer now
+- [x] task 1.1: - Modify gamestate.lua to use Fire objects instead of Coin objects
+- [x] coins spawn using evolved strategy: predict player movement 0.28s ahead, spawn coin 65px from predicted position, avoid red ball by 130px minimum distance when choosing spawn point. Coins stay static after spawning, no movement
+ 
+### Current State Analysis:
 
-### Plan: it wouls be greate to add a main menu before the game with all guides and settings [2026-03-06 15:20:07]
-1. Create src/menu.lua with menu system supporting navigation between different screens (main, settings, help)
-2. Add menu state to GameState with states: "menu", "settings", "help", "playing"
-3. Implement main menu screen with "Play", "Settings", "Help", "Quit" options
-4. Implement settings screen with audio toggle, volume slider, and key binding display
-5. Implement help screen with complete game instructions and controls guide
-6. Add menu navigation controls (arrow keys, enter, escape) to main.lua keypressed function
-7. Create menu background and visual styling with consistent theme
-8. Integrate menu system into main.lua game loop (update/draw based on current state)
-9. Add smooth transitions between menu screens and game start
-10. Test all menu navigation paths and ensure proper state management
-- [x] could you glance what¥s wrong with shadows and sounds
-- [x] task 7: Integrate audio system into main game initialization and collision events
-- [x] task 6: Integrate shadow rendering into main game draw loop
-- [x] task 5: Add sound effects for coin collection (pickup/ding sound)
-- [x] task 4:Add sound effects for ball collision (bounce/push sound)
-- [x] task 3: Create src/audio.lua module to handle sound loading and playing
-- [x] task 2: Create shadow rendering system in coin.lua that draws dark elliptical shadows beneath coins
-- [x] task 1: Create shadow rendering system in ball.lua that draws dark elliptical shadows beneath balls
+- ‘ÿÓ No damage system for player health
 
-### Plan: it wouls be greate to add a shadows to the balls and and coind, or even sounds too [2026-03-06 13:25:40]
-1. Create shadow rendering system in ball.lua that draws dark elliptical shadows beneath balls
-2. Create shadow rendering system in coin.lua that draws dark elliptical shadows beneath coins
-3. Create src/audio.lua module to handle sound loading and playing
-4. Add sound effects for ball collision (bounce/push sound)
-5. Add sound effects for coin collection (pickup/ding sound)
-6. Integrate shadow rendering into main game draw loop
-7. Integrate audio system into main game initialization and collision events
-8. Add volume control and audio toggle functionality
+### Fire System Conversion Tasks:
+
+**2. Implement Player Damage System:**
+
+- Implement game over condition when health reaches zero
+
+**4. Update Audio System:**
+- Add fire-related sound effects (crackling, damage, extinguish)
+- Replace coin collection sounds with fire damage/extinguish sounds
+
+**5. Update UI System:**
+- Replace coin counter with player health display
+- Update instruction text to reflect fire mechanics
+- Add damage indicator visual feedback
+
+**6. Menu System Implementation (existing plan):**
+- Create menu system with navigation between screens
+- Add settings, help, and main menu screens
+- Integrate menu state management
+
+
 
 ## Decisions Made
+- Created modular project structure with separate Ball, Coin, Physics, GameState, and UI modules
+- Implemented physics-based collision with impulse calculations and restitution
+- Added friction/damping system with different values for player vs pushable balls
+- Red ball has zero friction and reflects off walls with 0.8 speed reduction
+- Added shadow rendering system for depth perception
+- Created audio system with sound generation fallbacks
+- Implemented AI coin behavior with player detection (150px), red ball avoidance (130px), and slow repositioning (speed 20)
+- Added predictive coin spawning using 0.28s movement prediction, 65px spawn distance, 1.95s delay, 58% clustering chance
+- Added volume control and mute toggle functionality
+- Set grass-like light green background (0.6, 0.8, 0.4) for visual theme
+- Created comprehensive .gitignore for Love2D projects
 
 ## Known Issues
 
-## Feel Notes  ‚Üê only human writes here
+## Feel Notes ‚Äî only human writes here
 
-- [2026-03-06 11:50:26] really nice
-
-- [2026-03-06 13:23:26] it works well, thank you
-
-- [2026-03-06 13:39:22] game works well, but shadows are missing
-
-- [2026-03-06 13:42:09] game works well, but shadows and sounds are missing
-
+- Earlier iterations focused on physics, friction, collision systems, and visual improvements
 - [2026-03-06 15:16:59] sounds and shadows are work well
+- [2026-03-06 15:26:48] background color is ok
+- [2026-03-06 15:38:47] oops, the background color is too dark again
+
+- [2026-03-08 16:51:05] game started withou errors, for some reasond fires are move and cover the player, stain finction works ok
+- [2026-03-08 17:07:14] there is ony there fire, probably it would be great to icrease fire¥s gradualy during playtime
+- [2026-03-08 17:14:15] it works well, it would be ok to remove shadows from fire, and change fire shape from circle to triangle
+
+## Project Structure
+  conf.lua
+  main.lua
+  src\audio.lua
+  src\ball.lua
+  src\coin.lua
+  src\fire.lua
+  src\gamestate.lua
+  src\physics.lua
+  src\stain.lua
+  src\ui.lua
+
+
