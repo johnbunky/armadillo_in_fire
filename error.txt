@@ -1,15 +1,12 @@
 Error
 
-Syntax error: src/ui.lua:4: unexpected symbol near '<'
-
+main.lua:20: attempt to call method 'init' (a nil value)
 
 
 Traceback
 
 [love "callbacks.lua"]:228: in function 'handler'
-[C]: at 0x7ff8051f2fa0
-[C]: in function 'require'
-main.lua:7: in main chunk
-[C]: in function 'require'
+main.lua:20: in function 'load'
+[love "callbacks.lua"]:136: in function <[love "callbacks.lua"]:135>
 [C]: in function 'xpcall'
 [C]: in function 'xpcall'

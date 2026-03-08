@@ -2776,3 +2776,12 @@ Traceback
 [love "callbacks.lua"]:228: in functi
 [2026-03-08 20:49:26] [ERROR_END] done
 [2026-03-08 20:53:07] [CODE_START] [full] could you take a look whats wrong with the ui.lua
+[2026-03-08 20:53:40] [CODE_END] done
+[2026-03-08 20:54:55] [ERROR_INPUT] Error
+
+main.lua:20: attempt to call method 'init' (a nil value)
+
+
+Traceback
+
+[love "callbacks.lua"]:228: in function 'ha
