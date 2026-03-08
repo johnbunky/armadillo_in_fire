@@ -10,6 +10,7 @@ Love2D + Lua
 Complete core game with modular structure, physics, shadows, audio, and fire damage system. Features fire spawning using predictive player movement (0.28s ahead, 65px distance), red ball fire extinguishing with stain creation, player health system with damage/regeneration, and game over mechanics.
 
 ## Open Tasks
+- [x] could you take a look whats wrong with the ui.lua
 - [x] could you pass throw the whole project and fix merge conflicts properly
 
 ### Current State Analysis:

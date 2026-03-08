@@ -1,20 +1,6 @@
 local UI = {}
 
 function UI.draw(gameState, audio)
-<<<<<<< HEAD
-    -- Draw instructions
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.print("Use WASD or Arrow Keys to move the blue ball", 10, 10)
-    love.graphics.print("Push the red ball to extinguish fires!", 10, 30)
-    love.graphics.print("Press ESC to quit", 10, 50)
-    love.graphics.print("Press M to toggle audio", 10, 70)
-    love.graphics.print("Fires remaining: " .. #gameState.fires, 10, 90)
-=======
-    -- Draw HUD
-    love.graphics.setColor(1, 1, 1, 1)
-    love.graphics.setFont(love.graphics.getFont())
->>>>>>> detached-work
-    
     -- Draw player health bar
     if gameState.playerBall then
         local healthPercent = gameState.playerBall.health / gameState.playerBall.maxHealth
