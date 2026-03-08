@@ -71,7 +71,6 @@ main.lua:1: in main chunk
 [C]: in function 'require'
 [C]: in function 'xpcall'
 [C]: in function 'xpcall'
-
 <<<MSG>>>
 <<<ROLE:assistant>>>
 ROOT_CAUSE: The gamestate.lua file still contains unresolved merge conflict markers starting with '<' symbol
@@ -116,6 +115,81 @@ function GameState:restart()
     self.currentState = "playing"
     self.gameOverTime = 0
     -- Player health will be reset in main.lua
+end
+
+function GameState:isGameOver()
+    return self.currentState == "gameOver"
+end
+
+function GameState:isPlaying()
+    return self.currentState == "playing"
+end
+
+return GameState
+-- END: src/gamestate.lua --
+<<<MSG>>>
+<<<ROLE:user>>>
+This error occurred at runtime:
+
+Error
+
+Syntax error: src/gamestate.lua:1: unexpected symbol near '<'
+
+
+
+Traceback
+
+[love "callbacks.lua"]:228: in function 'handler'
+[C]: at 0x7ff8051f2fa0
+[C]: in function 'require'
+main.lua:1: in main chunk
+[C]: in function 'require'
+[C]: in function 'xpcall'
+[C]: in function 'xpcall'
+
+<<<MSG>>>
+<<<ROLE:assistant>>>
+ROOT_CAUSE: The gamestate.lua file still contains merge conflict markers that weren't properly removed from the actual file
+
+FIX: The file content on disk still has merge conflict markers - need to completely replace the file content
+
+CONFIDENCE: high
+
+The error persists because the actual gamestate.lua file on disk still contains merge conflict markers like `<<<<<<<`, `=======`, or `>>>>>>>` at the beginning. You need to open the src/gamestate.lua file and completely replace its contents with clean code, removing any lines that start with `<`, `=`, or `>` symbols.
+
+-- FILE: src/gamestate.lua --
+local GameState = {}
+GameState.__index = GameState
+
+function GameState:new()
+    local state = {}
+    setmetatable(state, GameState)
+    
+    state.currentState = "playing"
+    state.gameOverTime = 0
+    state.gameOverDelay = 2.0
+    
+    return state
+end
+
+function GameState:update(dt, player)
+    if self.currentState == "playing" then
+        if player.health <= 0 then
+            self.currentState = "gameOver"
+            self.gameOverTime = 0
+        end
+    elseif self.currentState == "gameOver" then
+        self.gameOverTime = self.gameOverTime + dt
+        
+        if self.gameOverTime >= self.gameOverDelay then
+            self:restart()
+        end
+    end
+end
+
+function GameState:restart()
+    self.currentState = "playing"
+    self.gameOverTime = 0
 end
 
 function GameState:isGameOver()
