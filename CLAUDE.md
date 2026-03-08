@@ -10,39 +10,25 @@ Love2D + Lua
 Complete core game with modular structure, physics, shadows, audio, and AI coin behavior system. Features predictive coin spawning, player detection, red ball avoidance, and slow repositioning movement.
 
 ## Open Tasks
+- [x] task 1.2: - Change collision detection from coin collection to fire damage
 - [x] could you remove movment ability of fire, it chase the plyer now
 - [x] task 1.1: - Modify gamestate.lua to use Fire objects instead of Coin objects
 - [x] coins spawn using evolved strategy: predict player movement 0.28s ahead, spawn coin 65px from predicted position, avoid red ball by 130px minimum distance when choosing spawn point. Coins stay static after spawning, no movement
  
 ### Current State Analysis:
-- дЃр Fire class exists with flickering animation and player tracking behavior
-- дЃр Stain class exists with dissolve animation over 3 seconds
-- дЃр Background is already light green (grass-like)
-- дЃр Core game mechanics (player ball, red pushable ball) are working
-- дию Game still uses coin collection system instead of fire system
+
 - дию No damage system for player health
-- дию No fire extinguishing mechanics
-- дию UI still shows coin-related text
 
 ### Fire System Conversion Tasks:
 
 **1. Replace Coin System with Fire System:**
-- Modify gamestate.lua to use Fire objects instead of Coin objects
-- Update spawn logic to create Fire instances with existing predictive positioning
 - Change collision detection from coin collection to fire damage
-- Add red ball fire extinguishing collision detection
 
 **2. Implement Player Damage System:**
 - Add health/damage properties to player ball
 - Create damage system when player touches fire
 - Add health regeneration over time
 - Implement game over condition when health reaches zero
-
-**3. Implement Fire Extinguishing Mechanics:**
-- Add collision detection between red ball and fire
-- Replace fire with stain when extinguished by red ball
-- Add stain management system to gamestate
-- Update stain lifecycle (3 second dissolve as already implemented)
 
 **4. Update Audio System:**
 - Add fire-related sound effects (crackling, damage, extinguish)
@@ -95,3 +81,5 @@ Complete core game with modular structure, physics, shadows, audio, and AI coin 
   src\physics.lua
   src\stain.lua
   src\ui.lua
+
+- [2026-03-08 17:07:14] there is ony there fire, probably it would be great to icrease fireДs gradualy during playtime

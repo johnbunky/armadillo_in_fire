@@ -976,3 +976,331 @@ return Fire
 
 DECISION_LOG: Removed all movement/tracking code from Fire:update() method, keeping only the flickering animation so fires remain static after spawning.
 <<<MSG>>>
+<<<ROLE:user>>>
+task 1.2: - Change collision detection from coin collection to fire damage
+<<<MSG>>>
+<<<ROLE:assistant>>>
+I need to implement a player damage system when the player touches fire. I'll add health properties to the player and implement damage mechanics.
+
+-- FILE: src/ball.lua --
+local Ball = {}
+Ball.__index = Ball
+
+function Ball:new(x, y, radius, color, isPlayer)
+    local ball = {}
+    setmetatable(ball, Ball)
+    
+    ball.x = x or 0
+    ball.y = y or 0
+    ball.radius = radius or 20
+    ball.color = color or {1, 1, 1}  -- white by default
+    ball.vx = 0  -- velocity x
+    ball.vy = 0  -- velocity y
+    ball.isPlayer = isPlayer or false
+    
+    -- Player-specific properties
+    if ball.isPlayer then
+        ball.maxHealth = 100
+        ball.health = ball.maxHealth
+        ball.damageTimer = 0
+        ball.damageInterval = 0.5  -- Take damage every 0.5 seconds when touching fire
+        ball.fireResistanceTime = 0  -- Brief immunity after taking damage
+        ball.fireResistanceDuration = 0.2  -- 0.2 seconds of immunity
+        ball.regenRate = 10  -- Health regeneration per second when not taking damage
+        ball.regenDelay = 2.0  -- Delay before regeneration starts after damage
+        ball.timeSinceLastDamage = 0
+    end
+    
+    -- Shadow properties
+    ball.shadowOffset = {x = 3, y = 5}  -- Shadow offset from ball position
+    ball.shadowColor = {0, 0, 0, 0.3}   -- Semi-transparent black shadow
+    ball.shadowScale = {x = 1.2, y = 0.6}  -- Shadow is wider and flatter than ball
+    
+    return ball
+end
+
+function Ball:update(dt, audio)
+    -- Apply friction/damping
+    local friction = 0.98
+    if not self.isPlayer then
+        self.vx = self.vx * friction
+        self.vy = self.vy * friction
+        
+        -- Stop very small movements
+        if math.abs(self.vx) < 1 then self.vx = 0 end
+        if math.abs(self.vy) < 1 then self.vy = 0 end
+    end
+    
+    -- Update position based on velocity
+    self.x = self.x + self.vx * dt
+    self.y = self.y + self.vy * dt
+    
+    -- Update player-specific properties
+    if self.isPlayer then
+        -- Update timers
+        self.damageTimer = self.damageTimer + dt
+        self.fireResistanceTime = math.max(0, self.fireResistanceTime - dt)
+        self.timeSinceLastDamage = self.timeSinceLastDamage + dt
+        
+        -- Health regeneration
+        if self.timeSinceLastDamage >= self.regenDelay and self.health < self.maxHealth then
+            self.health = math.min(self.maxHealth, self.health + self.regenRate * dt)
+        end
+    end
+    
+    -- Handle boundary collisions with audio
+    local Physics = require("src/physics")
+    Physics.handleBoundaryCollision(self, audio)
+end
+
+function Ball:takeDamage(amount, audio)
+    if not self.isPlayer or self.fireResistanceTime > 0 then
+        return false  -- Not player or still resistant
+    end
+    
+    self.health = math.max(0, self.health - amount)
+    self.fireResistanceTime = self.fireResistanceDuration
+    self.timeSinceLastDamage = 0
+    
+    -- Play damage sound (placeholder - will use existing sound)
+    if audio then
+        audio:playBallCollision()  -- Temporary sound effect
+    end
+    
+    return true  -- Damage was applied
+end
+
+function Ball:isDead()
+    return self.isPlayer and self.health <= 0
+end
+
+function Ball:drawShadow()
+    -- Draw shadow as an ellipse beneath the ball
+    love.graphics.setColor(self.shadowColor[1], self.shadowColor[2], self.shadowColor[3], self.shadowColor[4])
+    
+    local shadowX = self.x + self.shadowOffset.x
+    local shadowY = self.y + self.shadowOffset.y
+    local shadowRadiusX = self.radius * self.shadowScale.x
+    local shadowRadiusY = self.radius * self.shadowScale.y
+    
+    love.graphics.ellipse("fill", shadowX, shadowY, shadowRadiusX, shadowRadiusY)
+end
+
+function Ball:draw()
+    love.graphics.setColor(self.color[1], self.color[2], self.color[3])
+    love.graphics.circle("fill", self.x, self.y, self.radius)
+    
+    -- Draw damage indicator for player (red tint when taking damage)
+    if self.isPlayer and self.fireResistanceTime > 0 then
+        love.graphics.setColor(1, 0.3, 0.3, 0.5)
+        love.graphics.circle("fill", self.x, self.y, self.radius)
+    end
+end
+
+return Ball
+-- END: src/ball.lua --
+
+-- FILE: main.lua --
+local GameState = require("src/gamestate")
+local Physics = require("src/physics")
+local UI = require("src/ui")
+local Audio = require("src/audio")
+
+-- Initialize game
+local gameState
+local audio
+
+function love.load()
+    gameState = GameState:new()
+    gameState:init()
+    
+    -- Initialize audio system
+    audio = Audio
+    audio:init()
+    
+    -- Create assets/sounds directory if it doesn't exist
+    local info = love.filesystem.getInfo("assets")
+    if not info then
+        love.filesystem.createDirectory("assets")
+    end
+    
+    local soundsInfo = love.filesystem.getInfo("assets/sounds")
+    if not soundsInfo then
+        love.filesystem.createDirectory("assets/sounds")
+    end
+end
+
+function love.update(dt)
+    if gameState.state == "playing" then
+        -- Check for game over
+        if gameState.playerBall:isDead() then
+            gameState.state = "gameOver"
+            return
+        end
+        
+        -- Update game state (handles fire respawning and stain dissolving)
+        gameState:update(dt)
+        
+        -- Player ball movement
+        local speed = 300
+        gameState.playerBall.vx = 0
+        gameState.playerBall.vy = 0
+        
+        if love.keyboard.isDown("left", "a") then
+            gameState.playerBall.vx = -speed
+        end
+        if love.keyboard.isDown("right", "d") then
+            gameState.playerBall.vx = speed
+        end
+        if love.keyboard.isDown("up", "w") then
+            gameState.playerBall.vy = -speed
+        end
+        if love.keyboard.isDown("down", "s") then
+            gameState.playerBall.vy = speed
+        end
+        
+        -- Update balls with audio support
+        gameState.playerBall:update(dt, audio)
+        gameState.pushableBall:update(dt, audio)
+        
+        -- Handle collision between balls with audio
+        Physics.handleCollision(gameState.playerBall, gameState.pushableBall, audio)
+        
+        -- Check collision between red ball and fires (extinguishing)
+        for i = #gameState.fires, 1, -1 do
+            if Physics.checkCoinCollision(gameState.pushableBall, gameState.fires[i]) then
+                gameState:extinguishFire(i, audio)
+            end
+        end
+        
+        -- Check collision between player ball and fires (damage)
+        for i, fire in ipairs(gameState.fires) do
+            if Physics.checkCoinCollision(gameState.playerBall, fire) then
+                if gameState.playerBall.damageTimer >= gameState.playerBall.damageInterval then
+                    gameState.playerBall:takeDamage(20, audio)  -- 20 damage per hit
+                    gameState.playerBall.damageTimer = 0
+                end
+            end
+        end
+    elseif gameState.state == "gameOver" then
+        -- Allow restart on spacebar
+        if love.keyboard.isDown("space") then
+            gameState:init()
+            gameState.state = "playing"
+        end
+    end
+end
+
+function love.draw()
+    -- Clear screen with light green grass-like background
+    love.graphics.setBackgroundColor(0.6, 0.8, 0.4)
+    
+    if gameState.state == "playing" then
+        -- Draw shadows first (behind all objects)
+        gameState.playerBall:drawShadow()
+        gameState.pushableBall:drawShadow()
+        
+        for i, fire in ipairs(gameState.fires) do
+            fire:drawShadow()
+        end
+        
+        -- Draw stains (on ground level)
+        for i, stain in ipairs(gameState.stains) do
+            stain:draw()
+        end
+        
+        -- Draw balls
+        gameState.playerBall:draw()
+        gameState.pushableBall:draw()
+        
+        -- Draw fires
+        for i, fire in ipairs(gameState.fires) do
+            fire:draw()
+        end
+        
+        -- Draw UI with audio reference
+        UI.draw(gameState, audio)
+    elseif gameState.state == "gameOver" then
+        -- Draw game over screen
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.printf("GAME OVER", 0, love.graphics.getHeight() / 2 - 50, love.graphics.getWidth(), "center")
+        love.graphics.printf("Press SPACE to restart", 0, love.graphics.getHeight() / 2, love.graphics.getWidth(), "center")
+    end
+end
+
+function love.keypressed(key)
+    if key == "escape" then
+        love.event.quit()
+    elseif key == "m" then
+        -- Toggle audio mute
+        audio:toggle()
+    elseif key == "=" or key == "+" then
+        -- Increase volume
+        local currentVolume = audio.volume
+        audio:setVolume(currentVolume + 0.1)
+    elseif key == "-" then
+        -- Decrease volume
+        local currentVolume = audio.volume
+        audio:setVolume(currentVolume - 0.1)
+    end
+end
+-- END: main.lua --
+
+-- FILE: src/ui.lua --
+local UI = {}
+
+function UI.draw(gameState, audio)
+    -- Draw HUD
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.setFont(love.graphics.getFont())
+    
+    -- Draw player health bar
+    if gameState.playerBall then
+        local healthPercent = gameState.playerBall.health / gameState.playerBall.maxHealth
+        local barWidth = 200
+        local barHeight = 20
+        local barX = 10
+        local barY = 10
+        
+        -- Health bar background
+        love.graphics.setColor(0.3, 0.3, 0.3, 0.8)
+        love.graphics.rectangle("fill", barX, barY, barWidth, barHeight)
+        
+        -- Health bar fill
+        local healthColor = {1 - healthPercent + 0.3, healthPercent, 0.2}  -- Red to green gradient
+        love.graphics.setColor(healthColor[1], healthColor[2], healthColor[3], 0.9)
+        love.graphics.rectangle("fill", barX, barY, barWidth * healthPercent, barHeight)
+        
+        -- Health bar border
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.rectangle("line", barX, barY, barWidth, barHeight)
+        
+        -- Health text
+        love.graphics.print(string.format("Health: %.0f/%.0f", gameState.playerBall.health, gameState.playerBall.maxHealth), barX, barY + 25)
+    end
+    
+    -- Draw fire count and stain count
+    local fireCount = gameState.fires and #gameState.fires or 0
+    local stainCount = gameState.stains and #gameState.stains or 0
+    
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.print("Active Fires: " .. fireCount, 10, 60)
+    love.graphics.print("Extinguished: " .. stainCount, 10, 80)
+    
+    -- Draw instructions
+    love.graphics.print("Push red ball into fires to extinguish them!", 10, 110)
+    love.graphics.print("Avoid touching fires - they damage you!", 10, 130)
+    
+    -- Draw audio status
+    if audio then
+        local audioStatus = audio:isEnabled() and "ON" or "OFF"
+        love.graphics.print("Audio: " .. audioStatus .. " (M to toggle)", love.graphics.getWidth() - 200, 10)
+        love.graphics.print("Volume: " .. math.floor(audio.volume * 100) .. "% (+/- to adjust)", love.graphics.getWidth() - 200, 30)
+    end
+end
+
+return UI
+-- END: src/ui.lua --
+
+DECISION_LOG: Implemented player damage system with health (100 max), fire damage (20 per hit every 0.5s), health regeneration (10/sec after 2s delay), damage resistance (0.2s immunity), game over state, and updated UI to show health bar instead of coin counter.
+<<<MSG>>>

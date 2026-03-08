@@ -13,6 +13,19 @@ function Ball:new(x, y, radius, color, isPlayer)
     ball.vy = 0  -- velocity y
     ball.isPlayer = isPlayer or false
     
+    -- Player-specific properties
+    if ball.isPlayer then
+        ball.maxHealth = 100
+        ball.health = ball.maxHealth
+        ball.damageTimer = 0
+        ball.damageInterval = 0.5  -- Take damage every 0.5 seconds when touching fire
+        ball.fireResistanceTime = 0  -- Brief immunity after taking damage
+        ball.fireResistanceDuration = 0.2  -- 0.2 seconds of immunity
+        ball.regenRate = 10  -- Health regeneration per second when not taking damage
+        ball.regenDelay = 2.0  -- Delay before regeneration starts after damage
+        ball.timeSinceLastDamage = 0
+    end
+    
     -- Shadow properties
     ball.shadowOffset = {x = 3, y = 5}  -- Shadow offset from ball position
     ball.shadowColor = {0, 0, 0, 0.3}   -- Semi-transparent black shadow
@@ -37,9 +50,43 @@ function Ball:update(dt, audio)
     self.x = self.x + self.vx * dt
     self.y = self.y + self.vy * dt
     
+    -- Update player-specific properties
+    if self.isPlayer then
+        -- Update timers
+        self.damageTimer = self.damageTimer + dt
+        self.fireResistanceTime = math.max(0, self.fireResistanceTime - dt)
+        self.timeSinceLastDamage = self.timeSinceLastDamage + dt
+        
+        -- Health regeneration
+        if self.timeSinceLastDamage >= self.regenDelay and self.health < self.maxHealth then
+            self.health = math.min(self.maxHealth, self.health + self.regenRate * dt)
+        end
+    end
+    
     -- Handle boundary collisions with audio
     local Physics = require("src/physics")
     Physics.handleBoundaryCollision(self, audio)
+end
+
+function Ball:takeDamage(amount, audio)
+    if not self.isPlayer or self.fireResistanceTime > 0 then
+        return false  -- Not player or still resistant
+    end
+    
+    self.health = math.max(0, self.health - amount)
+    self.fireResistanceTime = self.fireResistanceDuration
+    self.timeSinceLastDamage = 0
+    
+    -- Play damage sound (placeholder - will use existing sound)
+    if audio then
+        audio:playBallCollision()  -- Temporary sound effect
+    end
+    
+    return true  -- Damage was applied
+end
+
+function Ball:isDead()
+    return self.isPlayer and self.health <= 0
 end
 
 function Ball:drawShadow()
@@ -57,6 +104,12 @@ end
 function Ball:draw()
     love.graphics.setColor(self.color[1], self.color[2], self.color[3])
     love.graphics.circle("fill", self.x, self.y, self.radius)
+    
+    -- Draw damage indicator for player (red tint when taking damage)
+    if self.isPlayer and self.fireResistanceTime > 0 then
+        love.graphics.setColor(1, 0.3, 0.3, 0.5)
+        love.graphics.circle("fill", self.x, self.y, self.radius)
+    end
 end
 
 return Ball

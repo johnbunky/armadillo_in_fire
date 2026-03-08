@@ -29,6 +29,12 @@ end
 
 function love.update(dt)
     if gameState.state == "playing" then
+        -- Check for game over
+        if gameState.playerBall:isDead() then
+            gameState.state = "gameOver"
+            return
+        end
+        
         -- Update game state (handles fire respawning and stain dissolving)
         gameState:update(dt)
         
@@ -64,12 +70,20 @@ function love.update(dt)
             end
         end
         
-        -- Check collision between player ball and fires (damage - placeholder for now)
+        -- Check collision between player ball and fires (damage)
         for i, fire in ipairs(gameState.fires) do
             if Physics.checkCoinCollision(gameState.playerBall, fire) then
-                -- TODO: Implement damage system in next task
-                -- For now, just continue without action
+                if gameState.playerBall.damageTimer >= gameState.playerBall.damageInterval then
+                    gameState.playerBall:takeDamage(20, audio)  -- 20 damage per hit
+                    gameState.playerBall.damageTimer = 0
+                end
             end
+        end
+    elseif gameState.state == "gameOver" then
+        -- Allow restart on spacebar
+        if love.keyboard.isDown("space") then
+            gameState:init()
+            gameState.state = "playing"
         end
     end
 end
@@ -103,6 +117,11 @@ function love.draw()
         
         -- Draw UI with audio reference
         UI.draw(gameState, audio)
+    elseif gameState.state == "gameOver" then
+        -- Draw game over screen
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.printf("GAME OVER", 0, love.graphics.getHeight() / 2 - 50, love.graphics.getWidth(), "center")
+        love.graphics.printf("Press SPACE to restart", 0, love.graphics.getHeight() / 2, love.graphics.getWidth(), "center")
     end
 end
 
