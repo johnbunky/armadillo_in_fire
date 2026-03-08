@@ -1,0 +1,110 @@
+# Love2D Build Files
+*.love
+dist/
+build/
+
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Editor Files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*~
+*.swp
+*.swo
+.vim/
+
+# Log Files
+*.log
+debug.log
+error.log
+crash.log
+
+# Temporary Files
+*.tmp
+*.temp
+*.bak
+*.backup
+.tmp/
+temp/
+
+# History and Cache Files
+history.txt
+.history
+*.history
+.cache/
+cache/
+
+# Love2D Specific
+conf.lua.bak
+main.lua.bak
+
+# Assets that shouldn't be tracked (optional - uncomment if needed)
+# assets/music/*.mp3
+# assets/music/*.ogg
+# assets/sounds/*.wav
+# assets/sounds/*.mp3
+# assets/images/*.psd
+# assets/images/raw/
+
+# Dependencies (if using any Lua package managers)
+lua_modules/
+.luarocks/
+
+# Documentation Build Files
+docs/_build/
+docs/html/
+*.pdf
+
+# Profiling and Debug Files
+profile.txt
+*.prof
+debug/
+
+# Configuration Files (local settings)
+config.local.lua
+settings.local.lua
+
+# ZIP and Archive Files
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+# Windows
+*.exe
+*.dll
+*.pdb
+
+# macOS
+*.app/
+*.dmg
+
+# Linux
+*.AppImage
+*.deb
+*.rpm
+
+# Game Save Files (if applicable)
+saves/
+*.save
+*.sav
+
+# Screenshots and Recordings
+screenshots/
+*.png
+*.jpg
+*.gif
+!assets/**/*.png
+!assets/**/*.jpg
+!assets/**/*.gif

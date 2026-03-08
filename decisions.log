@@ -1,3 +1,6 @@
 
 === 2026-03-06 15:24:35 -- could you make backgound brighter, shadows are not visible now ===
 Changed background color from dark blue (0.1, 0.1, 0.2) to lighter gray (0.7, 0.7, 0.8) to make shadow rendering more visible.
+
+=== 2026-03-08 09:27:48 -- could you create .gitignore and fill that by all required love2d lua game as well as .log and history.txt etc ===
+Created comprehensive .gitignore covering Love2D build files, OS files, editor configs, logs, temporary files, and game-specific artifacts while preserving asset files.

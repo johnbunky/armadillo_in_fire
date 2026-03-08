@@ -10,6 +10,7 @@ Love2D + Lua
 Complete core game with modular structure, physics, shadows, audio, and coin collection system
 
 ## Open Tasks
+- [x] could you create .gitignore and fill that by all required love2d lua game as well as .log and history.txt etc
 - [x] could you make backgound brighter, shadows are not visible now
 
 ### Plan: it wouls be greate to add a main menu before the game with all guides and settings [2026-03-06 15:20:07]
@@ -43,3 +44,6 @@ Complete core game with modular structure, physics, shadows, audio, and coin col
 - [2026-03-06 13:39:22] game works well, but shadows are missing
 - [2026-03-06 13:42:09] game works well, but shadows and sounds are missing
 - [2026-03-06 15:16:59] sounds and shadows are work well
+- [2026-03-06 15:26:48] background color is ok
+
+- [2026-03-06 15:38:47] oops, the background color is too dark again
