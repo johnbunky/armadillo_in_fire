@@ -29,7 +29,7 @@ end
 
 function love.update(dt)
     if gameState.state == "playing" then
-        -- Update game state (handles coin respawning)
+        -- Update game state (handles fire respawning and stain dissolving)
         gameState:update(dt)
         
         -- Player ball movement
@@ -57,11 +57,18 @@ function love.update(dt)
         -- Handle collision between balls with audio
         Physics.handleCollision(gameState.playerBall, gameState.pushableBall, audio)
         
-        -- Check collision between red ball and coins
-        for i = #gameState.coins, 1, -1 do
-            if Physics.checkCoinCollision(gameState.pushableBall, gameState.coins[i]) then
-                -- Use the new collectCoin method with audio
-                gameState:collectCoin(i, audio)
+        -- Check collision between red ball and fires (extinguishing)
+        for i = #gameState.fires, 1, -1 do
+            if Physics.checkCoinCollision(gameState.pushableBall, gameState.fires[i]) then
+                gameState:extinguishFire(i, audio)
+            end
+        end
+        
+        -- Check collision between player ball and fires (damage - placeholder for now)
+        for i, fire in ipairs(gameState.fires) do
+            if Physics.checkCoinCollision(gameState.playerBall, fire) then
+                -- TODO: Implement damage system in next task
+                -- For now, just continue without action
             end
         end
     end
@@ -76,17 +83,22 @@ function love.draw()
         gameState.playerBall:drawShadow()
         gameState.pushableBall:drawShadow()
         
-        for i, coin in ipairs(gameState.coins) do
-            coin:drawShadow()
+        for i, fire in ipairs(gameState.fires) do
+            fire:drawShadow()
+        end
+        
+        -- Draw stains (on ground level)
+        for i, stain in ipairs(gameState.stains) do
+            stain:draw()
         end
         
         -- Draw balls
         gameState.playerBall:draw()
         gameState.pushableBall:draw()
         
-        -- Draw coins
-        for i, coin in ipairs(gameState.coins) do
-            coin:draw()
+        -- Draw fires
+        for i, fire in ipairs(gameState.fires) do
+            fire:draw()
         end
         
         -- Draw UI with audio reference
