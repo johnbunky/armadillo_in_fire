@@ -7,14 +7,11 @@ two balls, player pushes second ball
 Love2D + Lua
  
 ## Current Status
-Complete core game with modular structure, physics, shadows, audio, and coin collection system
+Complete core game with modular structure, physics, shadows, audio, and AI coin behavior system. Features predictive coin spawning, player detection, red ball avoidance, and slow repositioning movement.
 
 ## Open Tasks
-- [x] keep coins as coins, but change spawn strategy: instead of random position, predict player movement 0.28s ahead, spawn coin 65px from predicted position, 1.95s spawn delay, 58% chance to cluster near existing coin. Don't change anything else
-- [x] task 1: Change background color from light gray to light green (grass-like)
 
-### Plan: let´s keep the existing menu plan, and add one more game flow change it should be fire instead of coins, and fire damages the player, red ball stoppped a fire, back ground should be light green, like a grass, after fire stopped by red ball there is a stain on this place that dissapear in some seconds, may be dissole [2026-03-08 10:37:38]
-1. Change background color from light gray to light green (grass-like)
+### Plan: let's keep the existing menu plan, and add one more game flow change it should be fire instead of coins, and fire damages the player, red ball stopped a fire, back ground should be light green, like a grass, after fire stopped by red ball there is a stain on this place that dissapear in some seconds, may be dissole [2026-03-08 10:37:38]
 2. Rename Coin class to Fire class with red/orange coloring
 3. Update Fire class to have flame-like visual effects (flickering animation)
 4. Add damage system to player ball when touching fire
@@ -26,8 +23,6 @@ Complete core game with modular structure, physics, shadows, audio, and coin col
 10. Update audio effects to match fire theme (crackling, extinguish sounds)
 11. Modify gamestate to track fire/stain spawning and management
 12. Add player health/damage display to UI
-- [x] could you create .gitignore and fill that by all required love2d lua game as well as .log and history.txt etc
-- [x] could you make backgound brighter, shadows are not visible now
 
 ### Plan: it wouls be greate to add a main menu before the game with all guides and settings [2026-03-06 15:20:07]
 1. Create src/menu.lua with menu system supporting navigation between different screens (main, settings, help)
@@ -48,18 +43,17 @@ Complete core game with modular structure, physics, shadows, audio, and coin col
 - Red ball has zero friction and reflects off walls with 0.8 speed reduction
 - Added shadow rendering system for depth perception
 - Created audio system with sound generation fallbacks
-- Implemented coin collection system with 2-second respawn timer
+- Implemented AI coin behavior with player detection (150px), red ball avoidance (130px), and slow repositioning (speed 20)
+- Added predictive coin spawning using 0.28s movement prediction, 65px spawn distance, 1.95s delay, 58% clustering chance
 - Added volume control and mute toggle functionality
+- Set grass-like light green background (0.6, 0.8, 0.4) for visual theme
+- Created comprehensive .gitignore for Love2D projects
 
 ## Known Issues
 
 ## Feel Notes â€” only human writes here
 
-- Earlier: Multiple iterations on physics, friction, and collision systems
-- [2026-03-06 13:23:26] it works well, thank you
-- [2026-03-06 13:39:22] game works well, but shadows are missing
-- [2026-03-06 13:42:09] game works well, but shadows and sounds are missing
+- Earlier iterations focused on physics, friction, collision systems, and visual improvements
 - [2026-03-06 15:16:59] sounds and shadows are work well
 - [2026-03-06 15:26:48] background color is ok
-
 - [2026-03-06 15:38:47] oops, the background color is too dark again
