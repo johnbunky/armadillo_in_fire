@@ -2,3 +2,6 @@
 
 === 2026-03-08 20:53:34 -- could you take a look whats wrong with the ui.lua ===
 Fixed UI module by adding proper module structure with UI.draw function and return statement
+
+=== 2026-03-08 20:57:40 -- could you take a look whats wrong with the main.lua ===
+Removed dependency on separate GameState class and integrated game state logic directly into main.lua with proper ball creation, fire spawning system, and restart functionality

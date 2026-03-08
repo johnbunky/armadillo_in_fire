@@ -2785,3 +2785,5 @@ main.lua:20: attempt to call method 'init' (a nil value)
 Traceback
 
 [love "callbacks.lua"]:228: in function 'ha
+[2026-03-08 20:55:18] [ERROR_END] done
+[2026-03-08 20:56:50] [CODE_START] [full] could you take a look whats wrong with the main.lua

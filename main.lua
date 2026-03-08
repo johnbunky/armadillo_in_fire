@@ -1,4 +1,3 @@
-local GameState = require('src.gamestate')
 local Ball = require('src.ball')
 local Fire = require('src.fire')
 local Stain = require('src.stain')
@@ -7,7 +6,7 @@ local Audio = require('src.audio')
 local UI = require('src.ui')
 
 -- Global game state
-local gameState
+local gameState = {}
 local audio
 
 function love.load()
@@ -16,11 +15,115 @@ function love.load()
     audio:init()
     
     -- Initialize game state
-    gameState = GameState:new()
-    gameState:init()
+    gameState.state = "playing"
+    gameState.gameOverTime = 0
+    gameState.gameOverDelay = 2.0
+    gameState.nextFireSpawn = 2.0  -- First fire spawns after 2 seconds
+    gameState.fireSpawnInterval = 1.95  -- Base spawn interval
+    gameState.maxFires = 15  -- Maximum fires on screen
+    
+    -- Create balls
+    gameState.playerBall = Ball:new(100, 300, 25, {0.2, 0.8, 0.2}, true)  -- Green player ball
+    gameState.pushableBall = Ball:new(400, 300, 25, {0.8, 0.2, 0.2}, false)  -- Red pushable ball
+    
+    -- Initialize arrays
+    gameState.fires = {}
+    gameState.stains = {}
     
     -- Set window properties
     love.graphics.setBackgroundColor(0.6, 0.8, 0.4)  -- Light green grass-like background
+end
+
+function gameState:update(dt)
+    -- Update fire spawn timer
+    self.nextFireSpawn = self.nextFireSpawn - dt
+    
+    if self.nextFireSpawn <= 0 and #self.fires < self.maxFires then
+        self:spawnFire()
+        self.nextFireSpawn = self.fireSpawnInterval
+    end
+    
+    -- Update fires
+    for i, fire in ipairs(self.fires) do
+        fire:update(dt, self.playerBall)
+    end
+    
+    -- Update and remove dissolved stains
+    for i = #self.stains, 1, -1 do
+        if self.stains[i]:update(dt) then
+            table.remove(self.stains, i)
+        end
+    end
+end
+
+function gameState:spawnFire()
+    -- Predict player position
+    local predictionTime = 0.28
+    local predictedX = self.playerBall.x + self.playerBall.vx * predictionTime
+    local predictedY = self.playerBall.y + self.playerBall.vy * predictionTime
+    
+    -- Keep predicted position within bounds
+    predictedX = math.max(50, math.min(love.graphics.getWidth() - 50, predictedX))
+    predictedY = math.max(50, math.min(love.graphics.getHeight() - 50, predictedY))
+    
+    -- Calculate spawn position around predicted location
+    local spawnDistance = 65
+    local angle = math.random() * 2 * math.pi
+    local spawnX = predictedX + math.cos(angle) * spawnDistance
+    local spawnY = predictedY + math.sin(angle) * spawnDistance
+    
+    -- Keep spawn position within screen bounds
+    spawnX = math.max(30, math.min(love.graphics.getWidth() - 30, spawnX))
+    spawnY = math.max(30, math.min(love.graphics.getHeight() - 30, spawnY))
+    
+    -- Create new fire
+    local newFire = Fire:new(spawnX, spawnY, 15, {1, 0.3, 0})
+    table.insert(self.fires, newFire)
+end
+
+function gameState:extinguishFire(fireIndex, audio)
+    if self.fires[fireIndex] then
+        local fire = self.fires[fireIndex]
+        
+        -- Create stain at fire position
+        local stain = Stain:new(fire.x, fire.y, fire.radius + 5)
+        table.insert(self.stains, stain)
+        
+        -- Remove fire
+        table.remove(self.fires, fireIndex)
+        
+        -- Play extinguish sound
+        if audio then
+            audio:playCoinCollect()  -- Using coin collect sound for extinguish
+        end
+    end
+end
+
+function gameState:restart()
+    -- Reset player ball
+    self.playerBall.x = 100
+    self.playerBall.y = 300
+    self.playerBall.vx = 0
+    self.playerBall.vy = 0
+    self.playerBall.health = self.playerBall.maxHealth
+    self.playerBall.damageTimer = 0
+    self.playerBall.fireResistanceTime = 0
+    self.playerBall.timeSinceLastDamage = 0
+    
+    -- Reset pushable ball
+    self.pushableBall.x = 400
+    self.pushableBall.y = 300
+    self.pushableBall.vx = 0
+    self.pushableBall.vy = 0
+    
+    -- Clear fires and stains
+    self.fires = {}
+    self.stains = {}
+    
+    -- Reset state
+    self.state = "playing"
+    self.gameOverTime = 0
+    self.nextFireSpawn = 2.0
 end
 
 function love.update(dt)
@@ -76,8 +179,10 @@ function love.update(dt)
             end
         end
     elseif gameState.state == "game_over" then
-        -- Update game state for restart handling
-        gameState:update(dt)
+        -- Handle restart input
+        if love.keyboard.isDown("r", "space", "return") then
+            gameState:restart()
+        end
     end
 end
 
@@ -121,5 +226,7 @@ function love.keypressed(key)
         audio:setVolume(audio.volume - 0.1)
     elseif key == "escape" then
         love.event.quit()
+    elseif gameState.state == "game_over" and (key == "r" or key == "space" or key == "return") then
+        gameState:restart()
     end
 end
