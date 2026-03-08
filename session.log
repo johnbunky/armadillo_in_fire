@@ -2678,3 +2678,12 @@ src/gamestate.lua:57: attempt to call field 'checkFireCollision' (a nil value)
 Traceback
 
 [love "callbacks.lua"
+[2026-03-08 11:41:15] [ERROR_END] done
+[2026-03-08 11:41:46] [ERROR_INPUT] Error
+
+main.lua:11: attempt to call method 'new' (a nil value)
+
+
+Traceback
+
+[love "callbacks.lua"]:228: in function 'han

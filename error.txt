@@ -1,12 +1,12 @@
 Error
 
-src/gamestate.lua:57: attempt to call field 'checkFireCollision' (a nil value)
+main.lua:11: attempt to call method 'new' (a nil value)
 
 
 Traceback
 
 [love "callbacks.lua"]:228: in function 'handler'
-src/gamestate.lua:57: in function 'checkPlayerFireDamage'
-main.lua:69: in function 'update'
-[love "callbacks.lua"]:162: in function <[love "callbacks.lua"]:144>
+main.lua:11: in function 'load'
+[love "callbacks.lua"]:136: in function <[love "callbacks.lua"]:135>
+[C]: in function 'xpcall'
 [C]: in function 'xpcall'

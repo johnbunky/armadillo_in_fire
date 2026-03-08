@@ -110,7 +110,6 @@ src/gamestate.lua:57: in function 'checkPlayerFireDamage'
 main.lua:69: in function 'update'
 [love "callbacks.lua"]:162: in function <[love "callbacks.lua"]:144>
 [C]: in function 'xpcall'
-
 <<<MSG>>>
 <<<ROLE:assistant>>>
 ROOT_CAUSE: The Physics module is still not properly imported in gamestate.lua
@@ -311,4 +310,62 @@ end
 
 return GameState
 -- END: src/gamestate.lua --
+<<<MSG>>>
+<<<ROLE:user>>>
+This error occurred at runtime:
+
+Error
+
+main.lua:11: attempt to call method 'new' (a nil value)
+
+
+Traceback
+
+[love "callbacks.lua"]:228: in function 'handler'
+main.lua:11: in function 'load'
+[love "callbacks.lua"]:136: in function <[love "callbacks.lua"]:135>
+[C]: in function 'xpcall'
+[C]: in function 'xpcall'
+
+<<<MSG>>>
+<<<ROLE:assistant>>>
+ROOT_CAUSE: The GameState module doesn't have a 'new' method being called in main.lua
+FIX: Either add a 'new' method to GameState or change main.lua to use the correct initialization method
+CONFIDENCE: high
+
+I need to see the main.lua file to understand what's being called. Based on the error, it's trying to call GameState:new() but GameState has an init() function instead. Here's the likely fix:
+
+-- FILE: main.lua --
+local GameState = require('src.gamestate')
+local Renderer = require('src.renderer')
+local Input = require('src.input')
+
+function love.load()
+    -- Initialize game systems
+    GameState.init()
+    Renderer.init()
+    Input.init()
+    
+    -- Set window properties
+    love.window.setTitle("Ball Physics Game")
+    love.graphics.setBackgroundColor(0.1, 0.1, 0.2)
+end
+
+function love.update(dt)
+    Input.update(dt)
+    GameState.update(dt)
+end
+
+function love.draw()
+    Renderer.draw(GameState)
+end
+
+function love.keypressed(key)
+    Input.keypressed(key)
+end
+
+function love.keyreleased(key)
+    Input.keyreleased(key)
+end
+-- END: main.lua --
 <<<MSG>>>
