@@ -10,6 +10,7 @@ Love2D + Lua
 Complete core game with modular structure, physics, shadows, audio, and AI coin behavior system. Features predictive coin spawning, player detection, red ball avoidance, and slow repositioning movement.
 
 ## Open Tasks
+- [x] could you remove movment ability of fire, it chase the plyer now
 - [x] task 1.1: - Modify gamestate.lua to use Fire objects instead of Coin objects
 - [x] coins spawn using evolved strategy: predict player movement 0.28s ahead, spawn coin 65px from predicted position, avoid red ball by 130px minimum distance when choosing spawn point. Coins stay static after spawning, no movement
  
@@ -80,3 +81,17 @@ Complete core game with modular structure, physics, shadows, audio, and AI coin 
 - [2026-03-06 15:16:59] sounds and shadows are work well
 - [2026-03-06 15:26:48] background color is ok
 - [2026-03-06 15:38:47] oops, the background color is too dark again
+
+- [2026-03-08 16:51:05] game started withou errors, for some reasond fires are move and cover the player, stain finction works ok
+
+## Project Structure
+  conf.lua
+  main.lua
+  src\audio.lua
+  src\ball.lua
+  src\coin.lua
+  src\fire.lua
+  src\gamestate.lua
+  src\physics.lua
+  src\stain.lua
+  src\ui.lua

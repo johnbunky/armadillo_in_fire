@@ -10,3 +10,9 @@ Confirmed Fire and Stain classes exist with proper animations - plan updated to 
 
 === 2026-03-08 16:41:33 -- task 1.1: - Modify gamestate.lua to use Fire objects instead of Coin objects ===
 Replaced coin system with fire system in gamestate - changed collections to fires/stains arrays, updated spawn logic for fires, added stain management and extinguish functionality
+
+=== 2026-03-08 16:52:01 -- could you glance at the review ===
+Added nil checks to safely display fire and stain counts, preventing crashes when these tables are uninitialized.
+
+=== 2026-03-08 17:01:24 -- could you remove movment ability of fire, it chase the plyer now ===
+Removed all movement/tracking code from Fire:update() method, keeping only the flickering animation so fires remain static after spawning.

@@ -2688,3 +2688,12 @@ src/ui.lua:9: attempt to get length of field 'fires' (a nil value)
 Traceback
 
 [love "callbacks.lua"]:228: in fu
+[2026-03-08 16:45:41] [ERROR_END] done
+[2026-03-08 16:51:05] [REVIEW] game started withou errors, for some reasond fires are move and cover the player, stain finction works ok
+[2026-03-08 16:51:38] [CODE_START] [short [auto]] could you glance at the review
+[2026-03-08 16:51:56] [QUESTION] I don't see any review provided in the conversation. Could you please share the review you'd like me to look at? | "game started withou errors, for some reasond fires are move and cover the player, stain finction works ok"
+[2026-03-08 16:52:01] [CODE_END] done
+[2026-03-08 16:57:15] [CODE_START] [short [auto]] could you remove movment ability of fire, it chase the plyer now
+[2026-03-08 17:00:21] [SESSION] cleared
+[2026-03-08 17:00:46] [SCAN] Updated
+[2026-03-08 17:00:58] [CODE_START] [full [auto]] could you remove movment ability of fire, it chase the plyer now
