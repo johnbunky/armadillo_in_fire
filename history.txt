@@ -750,3 +750,331 @@ end
 
 DECISION_LOG: Changed background color from light gray (0.7, 0.7, 0.8) to grass-like light green (0.6, 0.8, 0.4) for better visual theme matching the fire extinguishing gameplay concept.
 <<<MSG>>>
+<<<ROLE:user>>>
+task 2,3: Rename Coin class to Fire class with red/orange coloring Update Fire class to have flame-like visual effects (flickering animation)
+<<<MSG>>>
+<<<ROLE:assistant>>>
+-- FILE: src\fire.lua --
+local Fire = {}
+Fire.__index = Fire
+
+function Fire:new(x, y, radius, color)
+    local fire = {}
+    setmetatable(fire, Fire)
+    
+    fire.x = x or 0
+    fire.y = y or 0
+    fire.radius = radius or 10
+    fire.baseColor = color or {1, 0.5, 0}  -- orange by default
+    fire.color = {fire.baseColor[1], fire.baseColor[2], fire.baseColor[3]}
+    
+    -- Flickering animation properties
+    fire.flickerTimer = 0
+    fire.flickerSpeed = 8  -- How fast the flicker cycles
+    fire.flickerIntensity = 0.3  -- How much the color varies
+    fire.sizeVariation = 0.2  -- How much the size varies
+    fire.currentRadius = fire.radius
+    
+    -- Shadow properties
+    fire.shadowOffset = {x = 2, y = 3}  -- Smaller shadow offset for fires
+    fire.shadowColor = {0, 0, 0, 0.25}  -- Semi-transparent black shadow, slightly lighter than balls
+    fire.shadowScale = {x = 1.1, y = 0.5}  -- Shadow is wider and flatter than fire
+    
+    return fire
+end
+
+function Fire:update(dt)
+    -- Update flicker animation
+    self.flickerTimer = self.flickerTimer + dt * self.flickerSpeed
+    
+    -- Calculate flicker effects using sine waves with different frequencies
+    local flicker1 = math.sin(self.flickerTimer) * 0.5 + 0.5
+    local flicker2 = math.sin(self.flickerTimer * 1.3) * 0.5 + 0.5
+    local flicker3 = math.sin(self.flickerTimer * 0.7) * 0.5 + 0.5
+    
+    -- Apply flicker to color (make it vary between orange and red)
+    local intensity = 1 - (flicker1 * self.flickerIntensity)
+    self.color[1] = math.min(1, self.baseColor[1] + flicker2 * 0.2)  -- Red component
+    self.color[2] = self.baseColor[2] * intensity  -- Green component (makes it more red when dimmed)
+    self.color[3] = self.baseColor[3] * (intensity * 0.5)  -- Blue component (very little blue in fire)
+    
+    -- Apply size variation
+    local sizeFlicker = 1 + (flicker3 * self.sizeVariation - self.sizeVariation * 0.5)
+    self.currentRadius = self.radius * sizeFlicker
+end
+
+function Fire:drawShadow()
+    -- Draw shadow as an ellipse beneath the fire
+    love.graphics.setColor(self.shadowColor[1], self.shadowColor[2], self.shadowColor[3], self.shadowColor[4])
+    
+    local shadowX = self.x + self.shadowOffset.x
+    local shadowY = self.y + self.shadowOffset.y
+    local shadowRadiusX = self.currentRadius * self.shadowScale.x
+    local shadowRadiusY = self.currentRadius * self.shadowScale.y
+    
+    love.graphics.ellipse("fill", shadowX, shadowY, shadowRadiusX, shadowRadiusY)
+end
+
+function Fire:draw()
+    -- Draw main fire circle with flickering color and size
+    love.graphics.setColor(self.color[1], self.color[2], self.color[3])
+    love.graphics.circle("fill", self.x, self.y, self.currentRadius)
+    
+    -- Draw inner flame core (brighter center)
+    local coreIntensity = 0.8 + math.sin(self.flickerTimer * 2) * 0.2
+    love.graphics.setColor(1, 0.8 + coreIntensity * 0.2, coreIntensity * 0.3)
+    love.graphics.circle("fill", self.x, self.y, self.currentRadius * 0.6)
+    
+    -- Draw flame tips (small additional circles for flame effect)
+    local tipCount = 3
+    for i = 1, tipCount do
+        local angle = (i / tipCount) * math.pi * 2 + self.flickerTimer
+        local tipDistance = self.currentRadius * 0.7
+        local tipX = self.x + math.cos(angle) * tipDistance
+        local tipY = self.y + math.sin(angle) * tipDistance
+        local tipRadius = self.currentRadius * 0.3 * (0.8 + math.sin(self.flickerTimer * 3 + i) * 0.2)
+        
+        love.graphics.setColor(1, 0.6, 0.1, 0.7)
+        love.graphics.circle("fill", tipX, tipY, tipRadius)
+    end
+end
+
+return Fire
+-- END: src\fire.lua --
+
+-- FILE: src\gamestate.lua --
+local Ball = require("src/ball")
+local Fire = require("src/fire")
+
+local GameState = {}
+
+function GameState:new()
+    local gameState = {}
+    setmetatable(gameState, {__index = self})
+    
+    gameState.state = "playing"
+    gameState.playerBall = nil
+    gameState.pushableBall = nil
+    gameState.fires = {}
+    gameState.maxFires = 5
+    gameState.respawnTimer = 0
+    gameState.respawnDelay = 2.0  -- 2 seconds delay before respawning
+    
+    return gameState
+end
+
+function GameState:init()
+    -- Create the two balls
+    self.playerBall = Ball:new(200, 300, 25, {0.2, 0.8, 1}, true)  -- Blue player ball
+    self.pushableBall = Ball:new(500, 300, 30, {1, 0.3, 0.3}, false)  -- Red pushable ball
+    
+    -- Initialize fires
+    self:spawnFires(self.maxFires)
+end
+
+function GameState:update(dt)
+    -- Update all fires (for flickering animation)
+    for _, fire in ipairs(self.fires) do
+        fire:update(dt)
+    end
+    
+    -- Update respawn timer
+    if #self.fires < self.maxFires then
+        self.respawnTimer = self.respawnTimer + dt
+        
+        -- Check if it's time to spawn a new fire
+        if self.respawnTimer >= self.respawnDelay then
+            self:spawnSingleFire()
+            self.respawnTimer = 0
+        end
+    else
+        -- Reset timer when we have max fires
+        self.respawnTimer = 0
+    end
+end
+
+-- Spawn fires at random positions
+function GameState:spawnFires(count)
+    self.fires = {}
+    for i = 1, count do
+        self:spawnSingleFire()
+    end
+end
+
+-- Spawn a single fire at a valid position
+function GameState:spawnSingleFire()
+    local x, y
+    local validPosition = false
+    local attempts = 0
+    
+    -- Try to find a valid position that doesn't overlap with balls or other fires
+    while not validPosition and attempts < 100 do
+        x = math.random(50, love.graphics.getWidth() - 50)
+        y = math.random(50, love.graphics.getHeight() - 50)
+        
+        -- Check distance from both balls
+        local distToPlayer = math.sqrt((x - self.playerBall.x)^2 + (y - self.playerBall.y)^2)
+        local distToPush = math.sqrt((x - self.pushableBall.x)^2 + (y - self.pushableBall.y)^2)
+        
+        -- Check distance from existing fires
+        local tooCloseToFires = false
+        for _, fire in ipairs(self.fires) do
+            local distToFire = math.sqrt((x - fire.x)^2 + (y - fire.y)^2)
+            if distToFire < 50 then  -- Minimum distance between fires
+                tooCloseToFires = true
+                break
+            end
+        end
+        
+        if distToPlayer > 80 and distToPush > 80 and not tooCloseToFires then
+            validPosition = true
+        end
+        attempts = attempts + 1
+    end
+    
+    -- Create fire at found position (or random if no valid position found after many attempts)
+    if attempts >= 100 then
+        -- Fallback: place fire at random position if we can't find a good spot
+        x = math.random(50, love.graphics.getWidth() - 50)
+        y = math.random(50, love.graphics.getHeight() - 50)
+    end
+    
+    table.insert(self.fires, Fire:new(x, y, 12, {1, 0.5, 0}))
+end
+
+function GameState:extinguishFire(index, audio)
+    -- Play fire extinguish sound effect
+    if audio then
+        audio:playCoinCollect()  -- TODO: Will be updated to fire extinguish sound
+    end
+    
+    -- Remove the fire and reset respawn timer to start countdown
+    table.remove(self.fires, index)
+    self.respawnTimer = 0
+end
+
+-- Keep old method name for compatibility until main.lua is updated
+function GameState:collectCoin(index, audio)
+    self:extinguishFire(index, audio)
+end
+
+return GameState
+-- END: src\gamestate.lua --
+
+-- FILE: main.lua --
+local GameState = require("src/gamestate")
+local Physics = require("src/physics")
+local UI = require("src/ui")
+local Audio = require("src/audio")
+
+-- Initialize game
+local gameState
+local audio
+
+function love.load()
+    gameState = GameState:new()
+    gameState:init()
+    
+    -- Initialize audio system
+    audio = Audio
+    audio:init()
+    
+    -- Create assets/sounds directory if it doesn't exist
+    local info = love.filesystem.getInfo("assets")
+    if not info then
+        love.filesystem.createDirectory("assets")
+    end
+    
+    local soundsInfo = love.filesystem.getInfo("assets/sounds")
+    if not soundsInfo then
+        love.filesystem.createDirectory("assets/sounds")
+    end
+end
+
+function love.update(dt)
+    if gameState.state == "playing" then
+        -- Update game state (handles fire respawning and animations)
+        gameState:update(dt)
+        
+        -- Player ball movement
+        local speed = 300
+        gameState.playerBall.vx = 0
+        gameState.playerBall.vy = 0
+        
+        if love.keyboard.isDown("left", "a") then
+            gameState.playerBall.vx = -speed
+        end
+        if love.keyboard.isDown("right", "d") then
+            gameState.playerBall.vx = speed
+        end
+        if love.keyboard.isDown("up", "w") then
+            gameState.playerBall.vy = -speed
+        end
+        if love.keyboard.isDown("down", "s") then
+            gameState.playerBall.vy = speed
+        end
+        
+        -- Update balls with audio support
+        gameState.playerBall:update(dt, audio)
+        gameState.pushableBall:update(dt, audio)
+        
+        -- Handle collision between balls with audio
+        Physics.handleCollision(gameState.playerBall, gameState.pushableBall, audio)
+        
+        -- Check collision between red ball and fires
+        for i = #gameState.fires, 1, -1 do
+            if Physics.checkCoinCollision(gameState.pushableBall, gameState.fires[i]) then
+                -- Extinguish fire with red ball
+                gameState:extinguishFire(i, audio)
+            end
+        end
+    end
+end
+
+function love.draw()
+    -- Clear screen with light green grass-like background
+    love.graphics.setBackgroundColor(0.6, 0.8, 0.4)
+    
+    if gameState.state == "playing" then
+        -- Draw shadows first (behind all objects)
+        gameState.playerBall:drawShadow()
+        gameState.pushableBall:drawShadow()
+        
+        for i, fire in ipairs(gameState.fires) do
+            fire:drawShadow()
+        end
+        
+        -- Draw balls
+        gameState.playerBall:draw()
+        gameState.pushableBall:draw()
+        
+        -- Draw fires
+        for i, fire in ipairs(gameState.fires) do
+            fire:draw()
+        end
+        
+        -- Draw UI with audio reference
+        UI.draw(gameState, audio)
+    end
+end
+
+function love.keypressed(key)
+    if key == "escape" then
+        love.event.quit()
+    elseif key == "m" then
+        -- Toggle audio mute
+        audio:toggle()
+    elseif key == "=" or key == "+" then
+        -- Increase volume
+        local currentVolume = audio.volume
+        audio:setVolume(currentVolume + 0.1)
+    elseif key == "-" then
+        -- Decrease volume
+        local currentVolume = audio.volume
+        audio:setVolume(currentVolume - 0.1)
+    end
+end
+-- END: main.lua --
+
+DECISION_LOG: Renamed Coin to Fire class with red/orange coloring, added flickering animation with sine wave calculations for color intensity, size variation, and flame tip effects to create realistic fire visuals.
+<<<MSG>>>

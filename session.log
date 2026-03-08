@@ -2644,3 +2644,6 @@ The game demonstrates basic 2D physics principles and provides an interactive pu
 [2026-03-08 10:37:11] [PLAN_START] let´s keep the existing menu plan, and add one more game flow change it should be fire instead of coins, and fire damages the player, red ball stoppped a fire, back ground should be light green, like a grass, after fire stopped by red ball there is a stain on this place that dissapear in some seconds, may be dissole
 [2026-03-08 10:37:38] [PLAN_END] let´s keep the existing menu plan, and add one more game flow change it should be fire instead of coins, and fire damages the player, red ball stoppped a fire, back ground should be light green, like a grass, after fire stopped by red ball there is a stain on this place that dissapear in some seconds, may be dissole
 [2026-03-08 10:40:45] [CODE_START] [short [auto]] task 1: Change background color from light gray to light green (grass-like)
+[2026-03-08 10:41:08] [CODE_END] done
+[2026-03-08 10:43:04] [CODE_START] [short [auto]] task 2,3: Rename Coin class to Fire class with red/orange coloring
+[2026-03-08 10:43:49] [CODE_START] [short [auto]] task 2,3: Rename Coin class to Fire class with red/orange coloring Update Fire class to have flame-like visual effects (flickering animation)

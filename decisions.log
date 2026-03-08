@@ -7,3 +7,6 @@ Created comprehensive .gitignore covering Love2D build files, OS files, editor c
 
 === 2026-03-08 10:41:00 -- task 1: Change background color from light gray to light green (grass-like) ===
 Changed background color from light gray (0.7, 0.7, 0.8) to grass-like light green (0.6, 0.8, 0.4) for better visual theme matching the fire extinguishing gameplay concept.
+
+=== 2026-03-08 10:44:26 -- task 2,3: Rename Coin class to Fire class with red/orange coloring Update Fire class to have flame-like visual effects (flickering animation) ===
+Renamed Coin to Fire class with red/orange coloring, added flickering animation with sine wave calculations for color intensity, size variation, and flame tip effects to create realistic fire visuals.
