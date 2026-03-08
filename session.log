@@ -2679,3 +2679,12 @@ src/ui.lua:10: attempt to get length of field 'coins' (a nil value)
 Traceback
 
 [love "callbacks.lua"]:228: in f
+[2026-03-08 16:44:36] [ERROR_END] done
+[2026-03-08 16:45:29] [ERROR_INPUT] Error
+
+src/ui.lua:9: attempt to get length of field 'fires' (a nil value)
+
+
+Traceback
+
+[love "callbacks.lua"]:228: in fu

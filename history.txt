@@ -36,7 +36,6 @@ src/ui.lua:10: in function 'draw'
 main.lua:105: in function 'draw'
 [love "callbacks.lua"]:168: in function <[love "callbacks.lua"]:144>
 [C]: in function 'xpcall'
-
 <<<MSG>>>
 <<<ROLE:assistant>>>
 ROOT_CAUSE: The error message shows "attempt to get length of field 'coins'" but the provided file shows "fires" - there's a mismatch between the actual running code and the provided file
@@ -59,6 +58,52 @@ function UI:draw(gameState)
     
     -- Draw game state
     love.graphics.print("State: " .. gameState.state, 10, 50)
+end
+
+return UI
+-- END: src/ui.lua --
+<<<MSG>>>
+<<<ROLE:user>>>
+This error occurred at runtime:
+
+Error
+
+src/ui.lua:9: attempt to get length of field 'fires' (a nil value)
+
+
+Traceback
+
+[love "callbacks.lua"]:228: in function 'handler'
+src/ui.lua:9: in function 'draw'
+main.lua:105: in function 'draw'
+[love "callbacks.lua"]:168: in function <[love "callbacks.lua"]:144>
+[C]: in function 'xpcall'
+
+<<<MSG>>>
+<<<ROLE:assistant>>>
+ROOT_CAUSE: gameState.fires is nil, meaning the fires table is not being initialized in the gameState object
+
+FIX: Add nil checks and default to 0 when fires or stains tables don't exist
+
+CONFIDENCE: high
+
+-- FILE: src/ui.lua --
+local UI = {}
+
+function UI:draw(gameState)
+    -- Draw HUD
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.setFont(love.graphics.getFont())
+    
+    -- Draw fire count and health instead of coin count
+    local fireCount = gameState.fires and #gameState.fires or 0
+    local stainCount = gameState.stains and #gameState.stains or 0
+    
+    love.graphics.print("Active Fires: " .. fireCount, 10, 10)
+    love.graphics.print("Active Stains: " .. stainCount, 10, 30)
+    
+    -- Draw game state
+    love.graphics.print("State: " .. (gameState.state or "unknown"), 10, 50)
 end
 
 return UI

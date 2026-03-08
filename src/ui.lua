@@ -6,11 +6,14 @@ function UI:draw(gameState)
     love.graphics.setFont(love.graphics.getFont())
     
     -- Draw fire count and health instead of coin count
-    love.graphics.print("Active Fires: " .. #gameState.fires, 10, 10)
-    love.graphics.print("Active Stains: " .. #gameState.stains, 10, 30)
+    local fireCount = gameState.fires and #gameState.fires or 0
+    local stainCount = gameState.stains and #gameState.stains or 0
+    
+    love.graphics.print("Active Fires: " .. fireCount, 10, 10)
+    love.graphics.print("Active Stains: " .. stainCount, 10, 30)
     
     -- Draw game state
-    love.graphics.print("State: " .. gameState.state, 10, 50)
+    love.graphics.print("State: " .. (gameState.state or "unknown"), 10, 50)
 end
 
 return UI
