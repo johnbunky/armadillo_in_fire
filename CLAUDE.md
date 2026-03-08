@@ -10,6 +10,7 @@ Love2D + Lua
 Complete core game with modular structure, physics, shadows, audio, and coin collection system
 
 ## Open Tasks
+- [x] keep coins as coins, but change spawn strategy: instead of random position, predict player movement 0.28s ahead, spawn coin 65px from predicted position, 1.95s spawn delay, 58% chance to cluster near existing coin. Don't change anything else
 - [x] task 1: Change background color from light gray to light green (grass-like)
 
 ### Plan: let´s keep the existing menu plan, and add one more game flow change it should be fire instead of coins, and fire damages the player, red ball stoppped a fire, back ground should be light green, like a grass, after fire stopped by red ball there is a stain on this place that dissapear in some seconds, may be dissole [2026-03-08 10:37:38]

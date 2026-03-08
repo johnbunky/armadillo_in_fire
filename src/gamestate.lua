@@ -13,7 +13,7 @@ function GameState:new()
     gameState.coins = {}
     gameState.maxCoins = 5
     gameState.respawnTimer = 0
-    gameState.respawnDelay = 2.0  -- 2 seconds delay before respawning
+    gameState.respawnDelay = 1.95  -- 1.95 seconds delay before respawning
     
     return gameState
 end
@@ -43,6 +43,15 @@ function GameState:update(dt)
     end
 end
 
+-- Predict player position 0.28 seconds ahead
+function GameState:predictPlayerPosition()
+    local predictionTime = 0.28
+    local predictedX = self.playerBall.x + self.playerBall.vx * predictionTime
+    local predictedY = self.playerBall.y + self.playerBall.vy * predictionTime
+    
+    return predictedX, predictedY
+end
+
 -- Spawn coins at random positions
 function GameState:spawnCoins(count)
     self.coins = {}
@@ -51,40 +60,62 @@ function GameState:spawnCoins(count)
     end
 end
 
--- Spawn a single coin at a valid position
+-- Spawn a single coin using new strategy
 function GameState:spawnSingleCoin()
     local x, y
     local validPosition = false
     local attempts = 0
     
-    -- Try to find a valid position that doesn't overlap with balls or other coins
+    -- 58% chance to cluster near existing coin
+    local clusterChance = 0.58
+    local shouldCluster = math.random() < clusterChance and #self.coins > 0
+    
+    -- Try to find a valid position
     while not validPosition and attempts < 100 do
-        x = math.random(50, love.graphics.getWidth() - 50)
-        y = math.random(50, love.graphics.getHeight() - 50)
+        if shouldCluster then
+            -- Spawn near an existing coin
+            local existingCoin = self.coins[math.random(#self.coins)]
+            local angle = math.random() * 2 * math.pi
+            local distance = 40 + math.random(30)  -- 40-70 pixels from existing coin
+            x = existingCoin.x + math.cos(angle) * distance
+            y = existingCoin.y + math.sin(angle) * distance
+        else
+            -- Spawn 65px from predicted player position
+            local predictedX, predictedY = self:predictPlayerPosition()
+            local angle = math.random() * 2 * math.pi
+            x = predictedX + math.cos(angle) * 65
+            y = predictedY + math.sin(angle) * 65
+        end
+        
+        -- Clamp to screen bounds
+        x = math.max(50, math.min(x, love.graphics.getWidth() - 50))
+        y = math.max(50, math.min(y, love.graphics.getHeight() - 50))
         
         -- Check distance from both balls
         local distToPlayer = math.sqrt((x - self.playerBall.x)^2 + (y - self.playerBall.y)^2)
         local distToPush = math.sqrt((x - self.pushableBall.x)^2 + (y - self.pushableBall.y)^2)
         
-        -- Check distance from existing coins
+        -- Check distance from existing coins (but allow clustering)
         local tooCloseToCoins = false
-        for _, coin in ipairs(self.coins) do
-            local distToCoin = math.sqrt((x - coin.x)^2 + (y - coin.y)^2)
-            if distToCoin < 50 then  -- Minimum distance between coins
-                tooCloseToCoins = true
-                break
+        if not shouldCluster then
+            for _, coin in ipairs(self.coins) do
+                local distToCoin = math.sqrt((x - coin.x)^2 + (y - coin.y)^2)
+                if distToCoin < 30 then  -- Minimum distance when not clustering
+                    tooCloseToCoins = true
+                    break
+                end
             end
         end
         
-        if distToPlayer > 80 and distToPush > 80 and not tooCloseToCoins then
+        if distToPlayer > 40 and distToPush > 40 and not tooCloseToCoins then
             validPosition = true
         end
         attempts = attempts + 1
     end
     
-    -- Create coin at found position (or random if no valid position found after many attempts)
+    -- Create coin at found position (or fallback if no valid position found)
     if attempts >= 100 then
-        -- Fallback: place coin at random position if we can't find a good spot
+        -- Fallback: place coin at random position
         x = math.random(50, love.graphics.getWidth() - 50)
         y = math.random(50, love.graphics.getHeight() - 50)
     end
