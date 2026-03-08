@@ -10,6 +10,21 @@ Love2D + Lua
 Complete core game with modular structure, physics, shadows, audio, and coin collection system
 
 ## Open Tasks
+- [x] task 1: Change background color from light gray to light green (grass-like)
+
+### Plan: let´s keep the existing menu plan, and add one more game flow change it should be fire instead of coins, and fire damages the player, red ball stoppped a fire, back ground should be light green, like a grass, after fire stopped by red ball there is a stain on this place that dissapear in some seconds, may be dissole [2026-03-08 10:37:38]
+1. Change background color from light gray to light green (grass-like)
+2. Rename Coin class to Fire class with red/orange coloring
+3. Update Fire class to have flame-like visual effects (flickering animation)
+4. Add damage system to player ball when touching fire
+5. Modify collision logic so red ball extinguishes fire instead of player collecting
+6. Create Stain class for marks left after fire extinguishing
+7. Add stain spawning when fire is extinguished by red ball
+8. Implement stain dissolve animation over time
+9. Update UI text to reflect fire mechanics instead of coin collection
+10. Update audio effects to match fire theme (crackling, extinguish sounds)
+11. Modify gamestate to track fire/stain spawning and management
+12. Add player health/damage display to UI
 - [x] could you create .gitignore and fill that by all required love2d lua game as well as .log and history.txt etc
 - [x] could you make backgound brighter, shadows are not visible now
 

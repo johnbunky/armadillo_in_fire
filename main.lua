@@ -68,8 +68,8 @@ function love.update(dt)
 end
 
 function love.draw()
-    -- Clear screen with lighter gray background to make shadows more visible
-    love.graphics.setBackgroundColor(0.7, 0.7, 0.8)
+    -- Clear screen with light green grass-like background
+    love.graphics.setBackgroundColor(0.6, 0.8, 0.4)
     
     if gameState.state == "playing" then
         -- Draw shadows first (behind all objects)
