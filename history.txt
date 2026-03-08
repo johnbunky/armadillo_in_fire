@@ -1,1091 +1,8 @@
 <<<MSG>>>
 <<<ROLE:user>>>
 [SUMMARY OF PREVIOUS CONVERSATION]
-**DECISIONS MADE:**
-- Created .gitignore file with comprehensive Love2D exclusions (build files, OS files, editor files, logs, temporary files, history.txt, cache files)
-- User requested brighter background color to make shadows more visible
-- Confirmed to proceed with background color change first before menu system implementation
-
-**CURRENT FILE STATE:**
-- .gitignore: Created with Love2D-specific exclusions including *.log and history.txt
-- main.lua: Incomplete (cuts off at "gameSta")
-- All other files: Status unknown from truncated project tree
-
-**OPEN PROBLEMS:**
-- Need to change background color to brighter shade to improve shadow visibility
-- Menu system implementation still pending
-- main.lua file appears incomplete/truncated
-
-**KEY FACTS ESTABLISHED:**
-- Project has basic Love2D structure with audio, physics, UI, and game state systems
-- Shadow rendering system exists but shadows not visible against current background
-- Audio system with fallback for missing files is implemented
-<<<MSG>>>
-<<<ROLE:user>>>
-=== PROJECT TREE ===
-  conf.lua
-  main.lua
-  src\audio.lua
-  src\ball.lua
-  src\coin.lua
-  src\gamestate.lua
-  src\physics.lua
-  src\ui.lua
-
-=== FILE CONTENTS ===
-
--- FILE: conf.lua --
-function love.conf(t)
-    t.title = "Two Balls - Push Game"
-    t.window.width = 800
-    t.window.height = 600
-    t.window.resizable = false
-end
--- END: conf.lua --
-
--- FILE: main.lua --
-local GameState = require("src/gamestate")
-local Physics = require("src/physics")
-local UI = require("src/ui")
-local Audio = require("src/audio")
-
--- Initialize game
-local gameState
-local audio
-
-function love.load()
-    gameState = GameState:new()
-    gameState:init()
-    
-    -- Initialize audio system
-    audio = Audio
-    audio:init()
-    
-    -- Create assets/sounds directory if it doesn't exist
-    local info = love.filesystem.getInfo("assets")
-    if not info then
-        love.filesystem.createDirectory("assets")
-    end
-    
-    local soundsInfo = love.filesystem.getInfo("assets/sounds")
-    if not soundsInfo then
-        love.filesystem.createDirectory("assets/sounds")
-    end
-end
-
-function love.update(dt)
-    if gameState.state == "playing" then
-        -- Update game state (handles coin respawning)
-        gameState:update(dt)
-        
-        -- Player ball movement
-        local speed = 300
-        gameState.playerBall.vx = 0
-        gameState.playerBall.vy = 0
-        
-        if love.keyboard.isDown("left", "a") then
-            gameState.playerBall.vx = -speed
-        end
-        if love.keyboard.isDown("right", "d") then
-            gameState.playerBall.vx = speed
-        end
-        if love.keyboard.isDown("up", "w") then
-            gameState.playerBall.vy = -speed
-        end
-        if love.keyboard.isDown("down", "s") then
-            gameState.playerBall.vy = speed
-        end
-        
-        -- Update balls with audio support
-        gameState.playerBall:update(dt, audio)
-        gameState.pushableBall:update(dt, audio)
-        
-        -- Handle collision between balls with audio
-        Physics.handleCollision(gameState.playerBall, gameState.pushableBall, audio)
-        
-        -- Check collision between red ball and coins
-        for i = #gameState.coins, 1, -1 do
-            if Physics.checkCoinCollision(gameState.pushableBall, gameState.coins[i]) then
-                -- Use the new collectCoin method with audio
-                gameState:collectCoin(i, audio)
-            end
-        end
-    end
-end
-
-function love.draw()
-    -- Clear screen with lighter gray background to make shadows more visible
-    love.graphics.setBackgroundColor(0.7, 0.7, 0.8)
-    
-    if gameState.state == "playing" then
-        -- Draw shadows first (behind all objects)
-        gameState.playerBall:drawShadow()
-        gameState.pushableBall:drawShadow()
-        
-        for i, coin in ipairs(gameState.coins) do
-            coin:drawShadow()
-        end
-        
-        -- Draw balls
-        gameState.playerBall:draw()
-        gameState.pushableBall:draw()
-        
-        -- Draw coins
-        for i, coin in ipairs(gameState.coins) do
-            coin:draw()
-        end
-        
-        -- Draw UI with audio reference
-        UI.draw(gameState, audio)
-    end
-end
-
-function love.keypressed(key)
-    if key == "escape" then
-        love.event.quit()
-    elseif key == "m" then
-        -- Toggle audio mute
-        audio:toggle()
-    elseif key == "=" or key == "+" then
-        -- Increase volume
-        local currentVolume = audio.volume
-        audio:setVolume(currentVolume + 0.1)
-    elseif key == "-" then
-        -- Decrease volume
-        local currentVolume = audio.volume
-        audio:setVolume(currentVolume - 0.1)
-    end
-end
--- END: main.lua --
-
--- FILE: src\audio.lua --
-local Audio = {}
-
--- Audio state
-Audio.sounds = {}
-Audio.enabled = true
-Audio.volume = 0.7
-
--- Generate a simple tone sound programmatically
-function Audio:generateTone(frequency, duration, volume)
-    local sampleRate = 44100
-    local samples = sampleRate * duration
-    local soundData = love.sound.newSoundData(samples, sampleRate, 16, 1)
-    
-    for i = 0, samples - 1 do
-        local t = i / sampleRate
-        local wave = math.sin(2 * math.pi * frequency * t) * volume
-        -- Add fade out to prevent clicks
-        local fadeOut = math.max(0, 1 - (t / duration) * 2)
-        wave = wave * fadeOut
-        soundData:setSample(i, wave)
-    end
-    
-    return love.audio.newSource(soundData)
-end
-
--- Initialize audio system and load sounds
-function Audio:init()
-    -- Create sounds directory path
-    local soundsPath = "assets/sounds/"
-    
-    -- Try to load sound files, generate fallback sounds if files don't exist
-    self.sounds = {
-        ballCollision = self:loadSound(soundsPath .. "bounce.wav", "static") or self:generateTone(200, 0.1, 0.5),
-        coinCollect = self:loadSound(soundsPath .. "pickup.wav", "static") or self:generateTone(800, 0.2, 0.3),
-        ballPush = self:loadSound(soundsPath .. "push.wav", "static") or self:generateTone(150, 0.15, 0.4)
-    }
-    
-    -- Set default volume for all sounds
-    for name, sound in pairs(self.sounds) do
-        if sound then
-            sound:setVolume(self.volume)
-        end
-    end
-    
-    print("Audio system initialized with " .. (self.sounds.ballCollision and "loaded" or "generated") .. " sounds")
-end
-
--- Load a sound file with error handling
-function Audio:loadSound(filepath, sourceType)
-    local success, sound = pcall(love.audio.newSource, filepath, sourceType or "static")
-    if success then
-        print("Loaded sound: " .. filepath)
-        return sound
-    else
-        print("Could not load sound: " .. filepath .. " (will use generated sound)")
-        return nil
-    end
-end
-
--- Play a sound effect
-function Audio:playSound(soundName)
-    if not self.enabled then
-        return
-    end
-    
-    local sound = self.sounds[soundName]
-    if sound then
-        -- Stop the sound if it's already playing to allow overlapping
-        sound:stop()
-        sound:play()
-    end
-end
-
--- Set master volume for all sounds
-function Audio:setVolume(volume)
-    self.volume = math.max(0, math.min(1, volume))  -- Clamp between 0 and 1
-    
-    for name, sound in pairs(self.sounds) do
-        if sound then
-            sound:setVolume(self.volume)
-        end
-    end
-end
-
--- Toggle audio on/off
-function Audio:toggle()
-    self.enabled = not self.enabled
-    print("Audio " .. (self.enabled and "enabled" or "disabled"))
-end
-
--- Check if audio is enabled
-function Audio:isEnabled()
-    return self.enabled
-end
-
--- Specific sound effect functions
-function Audio:playBallCollision()
-    self:playSound("ballCollision")
-end
-
-function Audio:playCoinCollect()
-    self:playSound("coinCollect")
-end
-
-function Audio:playBallPush()
-    self:playSound("ballPush")
-end
-
-return Audio
--- END: src\audio.lua --
-
--- FILE: src\ball.lua --
-local Ball = {}
-Ball.__index = Ball
-
-function Ball:new(x, y, radius, color, isPlayer)
-    local ball = {}
-    setmetatable(ball, Ball)
-    
-    ball.x = x or 0
-    ball.y = y or 0
-    ball.radius = radius or 20
-    ball.color = color or {1, 1, 1}  -- white by default
-    ball.vx = 0  -- velocity x
-    ball.vy = 0  -- velocity y
-    ball.isPlayer = isPlayer or false
-    
-    -- Shadow properties
-    ball.shadowOffset = {x = 3, y = 5}  -- Shadow offset from ball position
-    ball.shadowColor = {0, 0, 0, 0.3}   -- Semi-transparent black shadow
-    ball.shadowScale = {x = 1.2, y = 0.6}  -- Shadow is wider and flatter than ball
-    
-    return ball
-end
-
-function Ball:update(dt, audio)
-    -- Apply friction/damping
-    local friction = 0.98
-    if not self.isPlayer then
-        self.vx = self.vx * friction
-        self.vy = self.vy * friction
-        
-        -- Stop very small movements
-        if math.abs(self.vx) < 1 then self.vx = 0 end
-        if math.abs(self.vy) < 1 then self.vy = 0 end
-    end
-    
-    -- Update position based on velocity
-    self.x = self.x + self.vx * dt
-    self.y = self.y + self.vy * dt
-    
-    -- Handle boundary collisions with audio
-    local Physics = require("src/physics")
-    Physics.handleBoundaryCollision(self, audio)
-end
-
-function Ball:drawShadow()
-    -- Draw shadow as an ellipse beneath the ball
-    love.graphics.setColor(self.shadowColor[1], self.shadowColor[2], self.shadowColor[3], self.shadowColor[4])
-    
-    local shadowX = self.x + self.shadowOffset.x
-    local shadowY = self.y + self.shadowOffset.y
-    local shadowRadiusX = self.radius * self.shadowScale.x
-    local shadowRadiusY = self.radius * self.shadowScale.y
-    
-    love.graphics.ellipse("fill", shadowX, shadowY, shadowRadiusX, shadowRadiusY)
-end
-
-function Ball:draw()
-    love.graphics.setColor(self.color[1], self.color[2], self.color[3])
-    love.graphics.circle("fill", self.x, self.y, self.radius)
-end
-
-return Ball
--- END: src\ball.lua --
-
--- FILE: src\coin.lua --
-local Coin = {}
-Coin.__index = Coin
-
-function Coin:new(x, y, radius, color)
-    local coin = {}
-    setmetatable(coin, Coin)
-    
-    coin.x = x or 0
-    coin.y = y or 0
-    coin.radius = radius or 10
-    coin.color = color or {1, 1, 0}  -- yellow by default
-    
-    -- Shadow properties
-    coin.shadowOffset = {x = 2, y = 3}  -- Smaller shadow offset for coins
-    coin.shadowColor = {0, 0, 0, 0.25}  -- Semi-transparent black shadow, slightly lighter than balls
-    coin.shadowScale = {x = 1.1, y = 0.5}  -- Shadow is wider and flatter than coin
-    
-    return coin
-end
-
-function Coin:drawShadow()
-    -- Draw shadow as an ellipse beneath the coin
-    love.graphics.setColor(self.shadowColor[1], self.shadowColor[2], self.shadowColor[3], self.shadowColor[4])
-    
-    local shadowX = self.x + self.shadowOffset.x
-    local shadowY = self.y + self.shadowOffset.y
-    local shadowRadiusX = self.radius * self.shadowScale.x
-    local shadowRadiusY = self.radius * self.shadowScale.y
-    
-    love.graphics.ellipse("fill", shadowX, shadowY, shadowRadiusX, shadowRadiusY)
-end
-
-function Coin:draw()
-    love.graphics.setColor(self.color[1], self.color[2], self.color[3])
-    love.graphics.circle("fill", self.x, self.y, self.radius)
-end
-
-return Coin
--- END: src\coin.lua --
-
--- FILE: src\gamestate.lua --
-local Ball = require("src/ball")
-local Coin = require("src/coin")
-
-local GameState = {}
-
-function GameState:new()
-    local gameState = {}
-    setmetatable(gameState, {__index = self})
-    
-    gameState.state = "playing"
-    gameState.playerBall = nil
-    gameState.pushableBall = nil
-    gameState.coins = {}
-    gameState.maxCoins = 5
-    gameState.respawnTimer = 0
-    gameState.respawnDelay = 2.0  -- 2 seconds delay before respawning
-    
-    return gameState
-end
-
-function GameState:init()
-    -- Create the two balls
-    self.playerBall = Ball:new(200, 300, 25, {0.2, 0.8, 1}, true)  -- Blue player ball
-    self.pushableBall = Ball:new(500, 300, 30, {1, 0.3, 0.3}, false)  -- Red pushable ball
-    
-    -- Initialize coins
-    self:spawnCoins(self.maxCoins)
-end
-
-function GameState:update(dt)
-    -- Update respawn timer
-    if #self.coins < self.maxCoins then
-        self.respawnTimer = self.respawnTimer + dt
-        
-        -- Check if it's time to spawn a new coin
-        if self.respawnTimer >= self.respawnDelay then
-            self:spawnSingleCoin()
-            self.respawnTimer = 0
-        end
-    else
-        -- Reset timer when we have max coins
-        self.respawnTimer = 0
-    end
-end
-
--- Spawn coins at random positions
-function GameState:spawnCoins(count)
-    self.coins = {}
-    for i = 1, count do
-        self:spawnSingleCoin()
-    end
-end
-
--- Spawn a single coin at a valid position
-function GameState:spawnSingleCoin()
-    local x, y
-    local validPosition = false
-    local attempts = 0
-    
-    -- Try to find a valid position that doesn't overlap with balls or other coins
-    while not validPosition and attempts < 100 do
-        x = math.random(50, love.graphics.getWidth() - 50)
-        y = math.random(50, love.graphics.getHeight() - 50)
-        
-        -- Check distance from both balls
-        local distToPlayer = math.sqrt((x - self.playerBall.x)^2 + (y - self.playerBall.y)^2)
-        local distToPush = math.sqrt((x - self.pushableBall.x)^2 + (y - self.pushableBall.y)^2)
-        
-        -- Check distance from existing coins
-        local tooCloseToCoins = false
-        for _, coin in ipairs(self.coins) do
-            local distToCoin = math.sqrt((x - coin.x)^2 + (y - coin.y)^2)
-            if distToCoin < 50 then  -- Minimum distance between coins
-                tooCloseToCoins = true
-                break
-            end
-        end
-        
-        if distToPlayer > 80 and distToPush > 80 and not tooCloseToCoins then
-            validPosition = true
-        end
-        attempts = attempts + 1
-    end
-    
-    -- Create coin at found position (or random if no valid position found after many attempts)
-    if attempts >= 100 then
-        -- Fallback: place coin at random position if we can't find a good spot
-        x = math.random(50, love.graphics.getWidth() - 50)
-        y = math.random(50, love.graphics.getHeight() - 50)
-    end
-    
-    table.insert(self.coins, Coin:new(x, y, 12, {1, 0.8, 0}))
-end
-
-function GameState:collectCoin(index, audio)
-    -- Play coin collection sound effect
-    if audio then
-        audio:playCoinCollect()
-    end
-    
-    -- Remove the coin and reset respawn timer to start countdown
-    table.remove(self.coins, index)
-    self.respawnTimer = 0
-end
-
-return GameState
--- END: src\gamestate.lua --
-
--- FILE: src\physics.lua --
-local Physics = {}
-
--- Collision detection function
-function Physics.checkCollision(ball1, ball2)
-    local dx = ball1.x - ball2.x
-    local dy = ball1.y - ball2.y
-    local distance = math.sqrt(dx * dx + dy * dy)
-    return distance < (ball1.radius + ball2.radius)
-end
-
--- Check collision between ball and coin
-function Physics.checkCoinCollision(ball, coin)
-    local dx = ball.x - coin.x
-    local dy = ball.y - coin.y
-    local distance = math.sqrt(dx * dx + dy * dy)
-    return distance < (ball.radius + coin.radius)
-end
-
--- Handle collision physics with audio support
-function Physics.handleCollision(playerBall, pushBall, audio)
-    if not Physics.checkCollision(playerBall, pushBall) then
-        return
-    end
-    
-    -- Calculate collision direction
-    local dx = pushBall.x - playerBall.x
-    local dy = pushBall.y - playerBall.y
-    local distance = math.sqrt(dx * dx + dy * dy)
-    
-    -- Avoid division by zero
-    if distance == 0 then
-        dx, dy = 1, 0
-        distance = 1
-    end
-    
-    -- Normalize direction
-    dx = dx / distance
-    dy = dy / distance
-    
-    -- Separate balls to prevent overlap
-    local overlap = (playerBall.radius + pushBall.radius) - distance
-    pushBall.x = pushBall.x + dx * overlap * 0.6
-    pushBall.y = pushBall.y + dy * overlap * 0.4
-    playerBall.x = playerBall.x - dx * overlap * 0.4
-    playerBall.y = playerBall.y - dy * overlap * 0.4
-    
-    -- Transfer momentum (player ball pushes the other)
-    local pushForce = 200
-    pushBall.vx = pushBall.vx + dx * pushForce
-    pushBall.vy = pushBall.vy + dy * pushForce
-    
-    -- Play collision sound effect
-    if audio then
-        audio:playBallPush()
-    end
-end
-
--- Handle ball boundary collision with audio support
-function Physics.handleBoundaryCollision(ball, audio)
-    local bounced = false
-    local bounceReduction = 0.7
-    
-    -- Check and handle boundary collisions
-    if ball.x - ball.radius < 0 then
-        ball.x = ball.radius
-        ball.vx = -ball.vx * bounceReduction
-        bounced = true
-    elseif ball.x + ball.radius > love.graphics.getWidth() then
-        ball.x = love.graphics.getWidth() - ball.radius
-        ball.vx = -ball.vx * bounceReduction
-        bounced = true
-    end
-    
-    if ball.y - ball.radius < 0 then
-        ball.y = ball.radius
-        ball.vy = -ball.vy * bounceReduction
-        bounced = true
-    elseif ball.y + ball.radius > love.graphics.getHeight() then
-        ball.y = love.graphics.getHeight() - ball.radius
-        ball.vy = -ball.vy * bounceReduction
-        bounced = true
-    end
-    
-    -- Play bounce sound if ball hit a wall
-    if bounced and audio then
-        -- Only play bounce sound for fast-moving balls to avoid spam
-        local speed = math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy)
-        if speed > 50 then
-            audio:playBallCollision()
-        end
-    end
-    
-    return bounced
-end
-
-return Physics
--- END: src\physics.lua --
-
--- FILE: src\ui.lua --
-local UI = {}
-
-function UI.draw(gameState, audio)
-    -- Draw instructions
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.print("Use WASD or Arrow Keys to move the blue ball", 10, 10)
-    love.graphics.print("Push the red ball to collect yellow coins!", 10, 30)
-    love.graphics.print("Press ESC to quit", 10, 50)
-    love.graphics.print("Press M to toggle audio", 10, 70)
-    love.graphics.print("Coins remaining: " .. #gameState.coins, 10, 90)
-    
-    -- Show audio status
-    local audioStatus = audio and audio:isEnabled() and "ON" or "OFF"
-    love.graphics.print("Audio: " .. audioStatus, 10, 110)
-end
-
-return UI
--- END: src\ui.lua --
-
-=== GOAL ===
-let´s keep the existing menu plan, and add one more game flow change it should be fire instead of coins, and fire damages the player, red ball stoppped a fire, back ground should be light green, like a grass, after fire stopped by red ball there is a stain on this place that dissapear in some seconds, may be dissole
-<<<MSG>>>
-<<<ROLE:assistant>>>
-TASKS:
-1. Change background color from light gray to light green (grass-like)
-2. Rename Coin class to Fire class with red/orange coloring
-3. Update Fire class to have flame-like visual effects (flickering animation)
-4. Add damage system to player ball when touching fire
-5. Modify collision logic so red ball extinguishes fire instead of player collecting
-6. Create Stain class for marks left after fire extinguishing
-7. Add stain spawning when fire is extinguished by red ball
-8. Implement stain dissolve animation over time
-9. Update UI text to reflect fire mechanics instead of coin collection
-10. Update audio effects to match fire theme (crackling, extinguish sounds)
-11. Modify gamestate to track fire/stain spawning and management
-12. Add player health/damage display to UI
-
-NOTES:
-- Fire should damage player on contact, not be collected
-- Only red ball can safely extinguish fires
-- Stains should appear where fires were extinguished and fade over time
-- Keep existing physics and movement systems intact
-- Audio system should be updated but maintain fallback generation capability
-<<<MSG>>>
-<<<ROLE:user>>>
-task 1: Change background color from light gray to light green (grass-like)
-<<<MSG>>>
-<<<ROLE:assistant>>>
--- FILE: main.lua --
-local GameState = require("src/gamestate")
-local Physics = require("src/physics")
-local UI = require("src/ui")
-local Audio = require("src/audio")
-
--- Initialize game
-local gameState
-local audio
-
-function love.load()
-    gameState = GameState:new()
-    gameState:init()
-    
-    -- Initialize audio system
-    audio = Audio
-    audio:init()
-    
-    -- Create assets/sounds directory if it doesn't exist
-    local info = love.filesystem.getInfo("assets")
-    if not info then
-        love.filesystem.createDirectory("assets")
-    end
-    
-    local soundsInfo = love.filesystem.getInfo("assets/sounds")
-    if not soundsInfo then
-        love.filesystem.createDirectory("assets/sounds")
-    end
-end
-
-function love.update(dt)
-    if gameState.state == "playing" then
-        -- Update game state (handles coin respawning)
-        gameState:update(dt)
-        
-        -- Player ball movement
-        local speed = 300
-        gameState.playerBall.vx = 0
-        gameState.playerBall.vy = 0
-        
-        if love.keyboard.isDown("left", "a") then
-            gameState.playerBall.vx = -speed
-        end
-        if love.keyboard.isDown("right", "d") then
-            gameState.playerBall.vx = speed
-        end
-        if love.keyboard.isDown("up", "w") then
-            gameState.playerBall.vy = -speed
-        end
-        if love.keyboard.isDown("down", "s") then
-            gameState.playerBall.vy = speed
-        end
-        
-        -- Update balls with audio support
-        gameState.playerBall:update(dt, audio)
-        gameState.pushableBall:update(dt, audio)
-        
-        -- Handle collision between balls with audio
-        Physics.handleCollision(gameState.playerBall, gameState.pushableBall, audio)
-        
-        -- Check collision between red ball and coins
-        for i = #gameState.coins, 1, -1 do
-            if Physics.checkCoinCollision(gameState.pushableBall, gameState.coins[i]) then
-                -- Use the new collectCoin method with audio
-                gameState:collectCoin(i, audio)
-            end
-        end
-    end
-end
-
-function love.draw()
-    -- Clear screen with light green grass-like background
-    love.graphics.setBackgroundColor(0.6, 0.8, 0.4)
-    
-    if gameState.state == "playing" then
-        -- Draw shadows first (behind all objects)
-        gameState.playerBall:drawShadow()
-        gameState.pushableBall:drawShadow()
-        
-        for i, coin in ipairs(gameState.coins) do
-            coin:drawShadow()
-        end
-        
-        -- Draw balls
-        gameState.playerBall:draw()
-        gameState.pushableBall:draw()
-        
-        -- Draw coins
-        for i, coin in ipairs(gameState.coins) do
-            coin:draw()
-        end
-        
-        -- Draw UI with audio reference
-        UI.draw(gameState, audio)
-    end
-end
-
-function love.keypressed(key)
-    if key == "escape" then
-        love.event.quit()
-    elseif key == "m" then
-        -- Toggle audio mute
-        audio:toggle()
-    elseif key == "=" or key == "+" then
-        -- Increase volume
-        local currentVolume = audio.volume
-        audio:setVolume(currentVolume + 0.1)
-    elseif key == "-" then
-        -- Decrease volume
-        local currentVolume = audio.volume
-        audio:setVolume(currentVolume - 0.1)
-    end
-end
--- END: main.lua --
-
-DECISION_LOG: Changed background color from light gray (0.7, 0.7, 0.8) to grass-like light green (0.6, 0.8, 0.4) for better visual theme matching the fire extinguishing gameplay concept.
-<<<MSG>>>
-<<<ROLE:user>>>
-task 2,3: Rename Coin class to Fire class with red/orange coloring Update Fire class to have flame-like visual effects (flickering animation)
-<<<MSG>>>
-<<<ROLE:assistant>>>
--- FILE: src\fire.lua --
-local Fire = {}
-Fire.__index = Fire
-
-function Fire:new(x, y, radius, color)
-    local fire = {}
-    setmetatable(fire, Fire)
-    
-    fire.x = x or 0
-    fire.y = y or 0
-    fire.radius = radius or 10
-    fire.baseColor = color or {1, 0.5, 0}  -- orange by default
-    fire.color = {fire.baseColor[1], fire.baseColor[2], fire.baseColor[3]}
-    
-    -- Flickering animation properties
-    fire.flickerTimer = 0
-    fire.flickerSpeed = 8  -- How fast the flicker cycles
-    fire.flickerIntensity = 0.3  -- How much the color varies
-    fire.sizeVariation = 0.2  -- How much the size varies
-    fire.currentRadius = fire.radius
-    
-    -- Shadow properties
-    fire.shadowOffset = {x = 2, y = 3}  -- Smaller shadow offset for fires
-    fire.shadowColor = {0, 0, 0, 0.25}  -- Semi-transparent black shadow, slightly lighter than balls
-    fire.shadowScale = {x = 1.1, y = 0.5}  -- Shadow is wider and flatter than fire
-    
-    return fire
-end
-
-function Fire:update(dt)
-    -- Update flicker animation
-    self.flickerTimer = self.flickerTimer + dt * self.flickerSpeed
-    
-    -- Calculate flicker effects using sine waves with different frequencies
-    local flicker1 = math.sin(self.flickerTimer) * 0.5 + 0.5
-    local flicker2 = math.sin(self.flickerTimer * 1.3) * 0.5 + 0.5
-    local flicker3 = math.sin(self.flickerTimer * 0.7) * 0.5 + 0.5
-    
-    -- Apply flicker to color (make it vary between orange and red)
-    local intensity = 1 - (flicker1 * self.flickerIntensity)
-    self.color[1] = math.min(1, self.baseColor[1] + flicker2 * 0.2)  -- Red component
-    self.color[2] = self.baseColor[2] * intensity  -- Green component (makes it more red when dimmed)
-    self.color[3] = self.baseColor[3] * (intensity * 0.5)  -- Blue component (very little blue in fire)
-    
-    -- Apply size variation
-    local sizeFlicker = 1 + (flicker3 * self.sizeVariation - self.sizeVariation * 0.5)
-    self.currentRadius = self.radius * sizeFlicker
-end
-
-function Fire:drawShadow()
-    -- Draw shadow as an ellipse beneath the fire
-    love.graphics.setColor(self.shadowColor[1], self.shadowColor[2], self.shadowColor[3], self.shadowColor[4])
-    
-    local shadowX = self.x + self.shadowOffset.x
-    local shadowY = self.y + self.shadowOffset.y
-    local shadowRadiusX = self.currentRadius * self.shadowScale.x
-    local shadowRadiusY = self.currentRadius * self.shadowScale.y
-    
-    love.graphics.ellipse("fill", shadowX, shadowY, shadowRadiusX, shadowRadiusY)
-end
-
-function Fire:draw()
-    -- Draw main fire circle with flickering color and size
-    love.graphics.setColor(self.color[1], self.color[2], self.color[3])
-    love.graphics.circle("fill", self.x, self.y, self.currentRadius)
-    
-    -- Draw inner flame core (brighter center)
-    local coreIntensity = 0.8 + math.sin(self.flickerTimer * 2) * 0.2
-    love.graphics.setColor(1, 0.8 + coreIntensity * 0.2, coreIntensity * 0.3)
-    love.graphics.circle("fill", self.x, self.y, self.currentRadius * 0.6)
-    
-    -- Draw flame tips (small additional circles for flame effect)
-    local tipCount = 3
-    for i = 1, tipCount do
-        local angle = (i / tipCount) * math.pi * 2 + self.flickerTimer
-        local tipDistance = self.currentRadius * 0.7
-        local tipX = self.x + math.cos(angle) * tipDistance
-        local tipY = self.y + math.sin(angle) * tipDistance
-        local tipRadius = self.currentRadius * 0.3 * (0.8 + math.sin(self.flickerTimer * 3 + i) * 0.2)
-        
-        love.graphics.setColor(1, 0.6, 0.1, 0.7)
-        love.graphics.circle("fill", tipX, tipY, tipRadius)
-    end
-end
-
-return Fire
--- END: src\fire.lua --
-
--- FILE: src\gamestate.lua --
-local Ball = require("src/ball")
-local Fire = require("src/fire")
-
-local GameState = {}
-
-function GameState:new()
-    local gameState = {}
-    setmetatable(gameState, {__index = self})
-    
-    gameState.state = "playing"
-    gameState.playerBall = nil
-    gameState.pushableBall = nil
-    gameState.fires = {}
-    gameState.maxFires = 5
-    gameState.respawnTimer = 0
-    gameState.respawnDelay = 2.0  -- 2 seconds delay before respawning
-    
-    return gameState
-end
-
-function GameState:init()
-    -- Create the two balls
-    self.playerBall = Ball:new(200, 300, 25, {0.2, 0.8, 1}, true)  -- Blue player ball
-    self.pushableBall = Ball:new(500, 300, 30, {1, 0.3, 0.3}, false)  -- Red pushable ball
-    
-    -- Initialize fires
-    self:spawnFires(self.maxFires)
-end
-
-function GameState:update(dt)
-    -- Update all fires (for flickering animation)
-    for _, fire in ipairs(self.fires) do
-        fire:update(dt)
-    end
-    
-    -- Update respawn timer
-    if #self.fires < self.maxFires then
-        self.respawnTimer = self.respawnTimer + dt
-        
-        -- Check if it's time to spawn a new fire
-        if self.respawnTimer >= self.respawnDelay then
-            self:spawnSingleFire()
-            self.respawnTimer = 0
-        end
-    else
-        -- Reset timer when we have max fires
-        self.respawnTimer = 0
-    end
-end
-
--- Spawn fires at random positions
-function GameState:spawnFires(count)
-    self.fires = {}
-    for i = 1, count do
-        self:spawnSingleFire()
-    end
-end
-
--- Spawn a single fire at a valid position
-function GameState:spawnSingleFire()
-    local x, y
-    local validPosition = false
-    local attempts = 0
-    
-    -- Try to find a valid position that doesn't overlap with balls or other fires
-    while not validPosition and attempts < 100 do
-        x = math.random(50, love.graphics.getWidth() - 50)
-        y = math.random(50, love.graphics.getHeight() - 50)
-        
-        -- Check distance from both balls
-        local distToPlayer = math.sqrt((x - self.playerBall.x)^2 + (y - self.playerBall.y)^2)
-        local distToPush = math.sqrt((x - self.pushableBall.x)^2 + (y - self.pushableBall.y)^2)
-        
-        -- Check distance from existing fires
-        local tooCloseToFires = false
-        for _, fire in ipairs(self.fires) do
-            local distToFire = math.sqrt((x - fire.x)^2 + (y - fire.y)^2)
-            if distToFire < 50 then  -- Minimum distance between fires
-                tooCloseToFires = true
-                break
-            end
-        end
-        
-        if distToPlayer > 80 and distToPush > 80 and not tooCloseToFires then
-            validPosition = true
-        end
-        attempts = attempts + 1
-    end
-    
-    -- Create fire at found position (or random if no valid position found after many attempts)
-    if attempts >= 100 then
-        -- Fallback: place fire at random position if we can't find a good spot
-        x = math.random(50, love.graphics.getWidth() - 50)
-        y = math.random(50, love.graphics.getHeight() - 50)
-    end
-    
-    table.insert(self.fires, Fire:new(x, y, 12, {1, 0.5, 0}))
-end
-
-function GameState:extinguishFire(index, audio)
-    -- Play fire extinguish sound effect
-    if audio then
-        audio:playCoinCollect()  -- TODO: Will be updated to fire extinguish sound
-    end
-    
-    -- Remove the fire and reset respawn timer to start countdown
-    table.remove(self.fires, index)
-    self.respawnTimer = 0
-end
-
--- Keep old method name for compatibility until main.lua is updated
-function GameState:collectCoin(index, audio)
-    self:extinguishFire(index, audio)
-end
-
-return GameState
--- END: src\gamestate.lua --
-
--- FILE: main.lua --
-local GameState = require("src/gamestate")
-local Physics = require("src/physics")
-local UI = require("src/ui")
-local Audio = require("src/audio")
-
--- Initialize game
-local gameState
-local audio
-
-function love.load()
-    gameState = GameState:new()
-    gameState:init()
-    
-    -- Initialize audio system
-    audio = Audio
-    audio:init()
-    
-    -- Create assets/sounds directory if it doesn't exist
-    local info = love.filesystem.getInfo("assets")
-    if not info then
-        love.filesystem.createDirectory("assets")
-    end
-    
-    local soundsInfo = love.filesystem.getInfo("assets/sounds")
-    if not soundsInfo then
-        love.filesystem.createDirectory("assets/sounds")
-    end
-end
-
-function love.update(dt)
-    if gameState.state == "playing" then
-        -- Update game state (handles fire respawning and animations)
-        gameState:update(dt)
-        
-        -- Player ball movement
-        local speed = 300
-        gameState.playerBall.vx = 0
-        gameState.playerBall.vy = 0
-        
-        if love.keyboard.isDown("left", "a") then
-            gameState.playerBall.vx = -speed
-        end
-        if love.keyboard.isDown("right", "d") then
-            gameState.playerBall.vx = speed
-        end
-        if love.keyboard.isDown("up", "w") then
-            gameState.playerBall.vy = -speed
-        end
-        if love.keyboard.isDown("down", "s") then
-            gameState.playerBall.vy = speed
-        end
-        
-        -- Update balls with audio support
-        gameState.playerBall:update(dt, audio)
-        gameState.pushableBall:update(dt, audio)
-        
-        -- Handle collision between balls with audio
-        Physics.handleCollision(gameState.playerBall, gameState.pushableBall, audio)
-        
-        -- Check collision between red ball and fires
-        for i = #gameState.fires, 1, -1 do
-            if Physics.checkCoinCollision(gameState.pushableBall, gameState.fires[i]) then
-                -- Extinguish fire with red ball
-                gameState:extinguishFire(i, audio)
-            end
-        end
-    end
-end
-
-function love.draw()
-    -- Clear screen with light green grass-like background
-    love.graphics.setBackgroundColor(0.6, 0.8, 0.4)
-    
-    if gameState.state == "playing" then
-        -- Draw shadows first (behind all objects)
-        gameState.playerBall:drawShadow()
-        gameState.pushableBall:drawShadow()
-        
-        for i, fire in ipairs(gameState.fires) do
-            fire:drawShadow()
-        end
-        
-        -- Draw balls
-        gameState.playerBall:draw()
-        gameState.pushableBall:draw()
-        
-        -- Draw fires
-        for i, fire in ipairs(gameState.fires) do
-            fire:draw()
-        end
-        
-        -- Draw UI with audio reference
-        UI.draw(gameState, audio)
-    end
-end
-
-function love.keypressed(key)
-    if key == "escape" then
-        love.event.quit()
-    elseif key == "m" then
-        -- Toggle audio mute
-        audio:toggle()
-    elseif key == "=" or key == "+" then
-        -- Increase volume
-        local currentVolume = audio.volume
-        audio:setVolume(currentVolume + 0.1)
-    elseif key == "-" then
-        -- Decrease volume
-        local currentVolume = audio.volume
-        audio:setVolume(currentVolume - 0.1)
-    end
-end
--- END: main.lua --
-
-DECISION_LOG: Renamed Coin to Fire class with red/orange coloring, added flickering animation with sine wave calculations for color intensity, size variation, and flame tip effects to create realistic fire visuals.
-<<<MSG>>>
-<<<ROLE:user>>>
-This error occurred at runtime:
-
-Error
-<<<MSG>>>
-<<<ROLE:assistant>>>
-ROOT_CAUSE: Physics.checkCoinCollision function name is outdated - should be checkFireCollision to match the Fire class rename
-FIX: Rename checkCoinCollision to checkFireCollision in physics.lua and update all references in main.lua
+ROOT_CAUSE: The Physics module doesn't have a checkFireCollision function defined
+FIX: Add checkFireCollision function to physics.lua
 CONFIDENCE: high
 
 -- FILE: src\physics.lua --
@@ -1104,133 +21,294 @@ function Physics.checkFireCollision(ball, fire)
     local dx = ball.x - fire.x
     local dy = ball.y - fire.y
     local distance = math.sqrt(dx * dx + dy * dy)
-    return distance < (ball.radius + fire.currentRadius)
+    return distance < (ball.radius + fire.radius)
 end
 
--- Keep old method name for compatibility
-function Physics.checkCoinCollision(ball, fire)
-    return Physics.checkFireCollision(ball, fire)
-end
-
--- Handle collision physics with audio support
-function Physics.handleCollision(playerBall, pushBall, audio)
-    if not Physics.checkCollision(playerBall, pushBall) then
-        return
-    end
-    
-    -- Calculate collision direction
-    local dx = pushBall.x - playerBall.x
-    local dy = pushBall.y - playerBall.y
+-- Collision response function
+function Physics.resolveCollision(ball1, ball2)
+    local dx = ball1.x - ball2.x
+    local dy = ball1.y - ball2.y
     local distance = math.sqrt(dx * dx + dy * dy)
     
-    -- Avoid division by zero
-    if distance == 0 then
-        dx, dy = 1, 0
-        distance = 1
-    end
+    if distance == 0 then return end  -- Prevent division by zero
     
-    -- Normalize direction
-    dx = dx / distance
-    dy = dy / distance
+    -- Normalize the collision vector
+    local nx = dx / distance
+    local ny = dy / distance
     
-    -- Separate balls to prevent overlap
-    local overlap = (playerBall.radius + pushBall.radius) - distance
-    pushBall.x = pushBall.x + dx * overlap * 0.6
-    pushBall.y = pushBall.y + dy * overlap * 0.4
-    playerBall.x = playerBall.x - dx * overlap * 0.4
-    playerBall.y = playerBall.y - dy * overlap * 0.4
+    -- Calculate overlap
+    local overlap = (ball1.radius + ball2.radius) - distance
     
-    -- Transfer momentum (player ball pushes the other)
-    local pushForce = 200
-    pushBall.vx = pushBall.vx + dx * pushForce
-    pushBall.vy = pushBall.vy + dy * pushForce
+    -- Separate the balls
+    local separationX = nx * overlap * 0.5
+    local separationY = ny * overlap * 0.5
     
-    -- Play collision sound effect
-    if audio then
-        audio:playBallPush()
-    end
-end
-
--- Handle ball boundary collision with audio support
-function Physics.handleBoundaryCollision(ball, audio)
-    local bounced = false
-    local bounceReduction = 0.7
+    ball1.x = ball1.x + separationX
+    ball1.y = ball1.y + separationY
+    ball2.x = ball2.x - separationX
+    ball2.y = ball2.y - separationY
     
-    -- Check and handle boundary collisions
-    if ball.x - ball.radius < 0 then
-        ball.x = ball.radius
-        ball.vx = -ball.vx * bounceReduction
-        bounced = true
-    elseif ball.x + ball.radius > love.graphics.getWidth() then
-        ball.x = love.graphics.getWidth() - ball.radius
-        ball.vx = -ball.vx * bounceReduction
-        bounced = true
-    end
+    -- Apply velocity changes (simple elastic collision)
+    local relativeVelocityX = ball1.vx - ball2.vx
+    local relativeVelocityY = ball1.vy - ball2.vy
     
-    if ball.y - ball.radius < 0 then
-        ball.y = ball.radius
-        ball.vy = -ball.vy * bounceReduction
-        bounced = true
-    elseif ball.y + ball.radius > love.graphics.getHeight() then
-        ball.y = love.graphics.getHeight() - ball.radius
-        ball.vy = -ball.vy * bounceReduction
-        bounced = true
-    end
+    local velocityAlongNormal = relativeVelocityX * nx + relativeVelocityY * ny
     
-    -- Play bounce sound if ball hit a wall
-    if bounced and audio then
-        -- Only play bounce sound for fast-moving balls to avoid spam
-        local speed = math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy)
-        if speed > 50 then
-            audio:playBallCollision()
-        end
-    end
+    if velocityAlongNormal > 0 then return end  -- Objects separating
     
-    return bounced
+    local restitution = 0.8  -- Bounciness factor
+    local impulse = -(1 + restitution) * velocityAlongNormal / 2
+    
+    ball1.vx = ball1.vx + impulse * nx
+    ball1.vy = ball1.vy + impulse * ny
+    ball2.vx = ball2.vx - impulse * nx
+    ball2.vy = ball2.vy - impulse * ny
 end
 
 return Physics
--- END: src\physics.lua --
 <<<MSG>>>
 <<<ROLE:user>>>
 This error occurred at runtime:
 
 Error
 
-src/ui.lua:10: attempt to get length of field 'coins' (a nil value)
+src/gamestate.lua:56: attempt to call field 'checkFireCollision' (a nil value)
 
 
 Traceback
 
 [love "callbacks.lua"]:228: in function 'handler'
-src/ui.lua:10: in function 'draw'
-main.lua:93: in function 'draw'
-[love "callbacks.lua"]:168: in function <[love "callbacks.lua"]:144>
+src/gamestate.lua:56: in function 'checkPlayerFireDamage'
+main.lua:69: in function 'update'
+[love "callbacks.lua"]:162: in function <[love "callbacks.lua"]:144>
+[C]: in function 'xpcall'
+<<<MSG>>>
+<<<ROLE:assistant>>>
+ROOT_CAUSE: The Physics module is not being imported/required in gamestate.lua
+FIX: Add require statement for Physics module at the top of gamestate.lua
+CONFIDENCE: high
+
+Looking at the error, `Physics.checkFireCollision` is being called in gamestate.lua at line 56, but the Physics module hasn't been imported. The function exists in physics.lua but gamestate.lua doesn't have access to it.
+
+You need to add this line at the top of gamestate.lua:
+```lua
+local Physics = require('src.physics')
+```
+<<<MSG>>>
+<<<ROLE:user>>>
+This error occurred at runtime:
+
+Error
+
+src/gamestate.lua:57: attempt to call field 'checkFireCollision' (a nil value)
+
+
+Traceback
+
+[love "callbacks.lua"]:228: in function 'handler'
+src/gamestate.lua:57: in function 'checkPlayerFireDamage'
+main.lua:69: in function 'update'
+[love "callbacks.lua"]:162: in function <[love "callbacks.lua"]:144>
 [C]: in function 'xpcall'
 
 <<<MSG>>>
 <<<ROLE:assistant>>>
-ROOT_CAUSE: UI.lua is still referencing 'coins' field which was renamed to 'fires' in the gamestate
-FIX: Update UI.lua to reference gameState.fires instead of gameState.coins and update display text
+ROOT_CAUSE: The Physics module is still not properly imported in gamestate.lua
+FIX: Add the require statement for Physics module at the top of gamestate.lua
 CONFIDENCE: high
 
--- FILE: src\ui.lua --
-local UI = {}
+The error persists because gamestate.lua still doesn't have the Physics module imported. I need to see the current gamestate.lua file to add the missing require statement.
 
-function UI.draw(gameState, audio)
-    -- Draw instructions
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.print("Use WASD or Arrow Keys to move the blue ball", 10, 10)
-    love.graphics.print("Push the red ball to extinguish fires!", 10, 30)
-    love.graphics.print("Press ESC to quit", 10, 50)
-    love.graphics.print("Press M to toggle audio", 10, 70)
-    love.graphics.print("Fires remaining: " .. #gameState.fires, 10, 90)
-    
-    -- Show audio status
-    local audioStatus = audio and audio:isEnabled() and "ON" or "OFF"
-    love.graphics.print("Audio: " .. audioStatus, 10, 110)
+-- FILE: src/gamestate.lua --
+local Physics = require('src.physics')
+
+local GameState = {}
+
+-- Initialize game state
+function GameState.init()
+    GameState.balls = {}
+    GameState.fires = {}
+    GameState.player = {
+        x = 400,
+        y = 300,
+        radius = 20,
+        vx = 0,
+        vy = 0,
+        health = 100,
+        maxHealth = 100
+    }
+    GameState.spawnTimer = 0
+    GameState.fireSpawnTimer = 0
+    GameState.score = 0
 end
 
-return UI
--- END: src\ui.lua --
+-- Add a new ball
+function GameState.addBall(x, y, vx, vy, radius)
+    table.insert(GameState.balls, {
+        x = x,
+        y = y,
+        vx = vx,
+        vy = vy,
+        radius = radius or 15
+    })
+end
+
+-- Add a new fire
+function GameState.addFire(x, y)
+    table.insert(GameState.fires, {
+        x = x,
+        y = y,
+        radius = 25,
+        age = 0
+    })
+end
+
+-- Update game state
+function GameState.update(dt)
+    -- Update player
+    GameState.updatePlayer(dt)
+    
+    -- Update balls
+    GameState.updateBalls(dt)
+    
+    -- Update fires
+    GameState.updateFires(dt)
+    
+    -- Spawn new balls
+    GameState.spawnTimer = GameState.spawnTimer + dt
+    if GameState.spawnTimer > 2 then
+        GameState.spawnBall()
+        GameState.spawnTimer = 0
+    end
+    
+    -- Spawn new fires
+    GameState.fireSpawnTimer = GameState.fireSpawnTimer + dt
+    if GameState.fireSpawnTimer > 3 then
+        GameState.spawnFire()
+        GameState.fireSpawnTimer = 0
+    end
+    
+    -- Check collisions
+    GameState.checkCollisions()
+    GameState.checkPlayerFireDamage()
+end
+
+function GameState.checkPlayerFireDamage()
+    for _, fire in ipairs(GameState.fires) do
+        if Physics.checkFireCollision(GameState.player, fire) then
+            GameState.player.health = GameState.player.health - 20
+            if GameState.player.health <= 0 then
+                GameState.player.health = 0
+                -- Game over logic here
+            end
+        end
+    end
+end
+
+function GameState.updatePlayer(dt)
+    -- Player movement will be handled by input
+    -- Apply basic physics
+    GameState.player.x = GameState.player.x + GameState.player.vx * dt
+    GameState.player.y = GameState.player.y + GameState.player.vy * dt
+    
+    -- Apply friction
+    GameState.player.vx = GameState.player.vx * 0.95
+    GameState.player.vy = GameState.player.vy * 0.95
+    
+    -- Keep player in bounds
+    local screenWidth = love.graphics.getWidth()
+    local screenHeight = love.graphics.getHeight()
+    
+    if GameState.player.x < GameState.player.radius then
+        GameState.player.x = GameState.player.radius
+    elseif GameState.player.x > screenWidth - GameState.player.radius then
+        GameState.player.x = screenWidth - GameState.player.radius
+    end
+    
+    if GameState.player.y < GameState.player.radius then
+        GameState.player.y = GameState.player.radius
+    elseif GameState.player.y > screenHeight - GameState.player.radius then
+        GameState.player.y = screenHeight - GameState.player.radius
+    end
+end
+
+function GameState.updateBalls(dt)
+    for i = #GameState.balls, 1, -1 do
+        local ball = GameState.balls[i]
+        
+        -- Update position
+        ball.x = ball.x + ball.vx * dt
+        ball.y = ball.y + ball.vy * dt
+        
+        -- Bounce off walls
+        local screenWidth = love.graphics.getWidth()
+        local screenHeight = love.graphics.getHeight()
+        
+        if ball.x < ball.radius or ball.x > screenWidth - ball.radius then
+            ball.vx = -ball.vx
+            ball.x = math.max(ball.radius, math.min(screenWidth - ball.radius, ball.x))
+        end
+        
+        if ball.y < ball.radius or ball.y > screenHeight - ball.radius then
+            ball.vy = -ball.vy
+            ball.y = math.max(ball.radius, math.min(screenHeight - ball.radius, ball.y))
+        end
+    end
+end
+
+function GameState.updateFires(dt)
+    for i = #GameState.fires, 1, -1 do
+        local fire = GameState.fires[i]
+        
+        fire.age = fire.age + dt
+        
+        -- Remove old fires
+        if fire.age > 10 then
+            table.remove(GameState.fires, i)
+        end
+    end
+end
+
+function GameState.spawnBall()
+    local screenWidth = love.graphics.getWidth()
+    local screenHeight = love.graphics.getHeight()
+    
+    local x = math.random(50, screenWidth - 50)
+    local y = math.random(50, screenHeight - 50)
+    local vx = math.random(-200, 200)
+    local vy = math.random(-200, 200)
+    
+    GameState.addBall(x, y, vx, vy)
+end
+
+function GameState.spawnFire()
+    local screenWidth = love.graphics.getWidth()
+    local screenHeight = love.graphics.getHeight()
+    
+    local x = math.random(50, screenWidth - 50)
+    local y = math.random(50, screenHeight - 50)
+    
+    GameState.addFire(x, y)
+end
+
+function GameState.checkCollisions()
+    -- Check ball-ball collisions
+    for i = 1, #GameState.balls do
+        for j = i + 1, #GameState.balls do
+            if Physics.checkCollision(GameState.balls[i], GameState.balls[j]) then
+                Physics.resolveCollision(GameState.balls[i], GameState.balls[j])
+            end
+        end
+    end
+    
+    -- Check player-ball collisions
+    for _, ball in ipairs(GameState.balls) do
+        if Physics.checkCollision(GameState.player, ball) then
+            Physics.resolveCollision(GameState.player, ball)
+        end
+    end
+end
+
+return GameState
+-- END: src/gamestate.lua --
 <<<MSG>>>

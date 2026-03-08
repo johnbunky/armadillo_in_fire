@@ -64,6 +64,15 @@ function love.update(dt)
                 gameState:extinguishFire(i, audio)
             end
         end
+        
+        -- Check if player is touching fire and take damage
+        gameState:checkPlayerFireDamage(audio)
+    elseif gameState.state == "gameover" then
+        -- Handle game over state - restart on spacebar
+        if love.keyboard.isDown("space") then
+            gameState = GameState:new()
+            gameState:init()
+        end
     end
 end
 
@@ -91,6 +100,12 @@ function love.draw()
         
         -- Draw UI with audio reference
         UI.draw(gameState, audio)
+    elseif gameState.state == "gameover" then
+        -- Draw game over screen
+        love.graphics.setColor(1, 0, 0)
+        love.graphics.printf("GAME OVER", 0, love.graphics.getHeight() / 2 - 50, love.graphics.getWidth(), "center")
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.printf("Press SPACE to restart", 0, love.graphics.getHeight() / 2, love.graphics.getWidth(), "center")
     end
 end
 

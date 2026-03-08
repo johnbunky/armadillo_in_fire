@@ -13,6 +13,12 @@ function Ball:new(x, y, radius, color, isPlayer)
     ball.vy = 0  -- velocity y
     ball.isPlayer = isPlayer or false
     
+    -- Health system for player ball
+    if ball.isPlayer then
+        ball.maxHealth = 100
+        ball.health = ball.maxHealth
+    end
+    
     -- Shadow properties
     ball.shadowOffset = {x = 3, y = 5}  -- Shadow offset from ball position
     ball.shadowColor = {0, 0, 0, 0.3}   -- Semi-transparent black shadow
@@ -42,6 +48,35 @@ function Ball:update(dt, audio)
     Physics.handleBoundaryCollision(self, audio)
 end
 
+function Ball:takeDamage(damage, audio)
+    if not self.isPlayer then
+        return
+    end
+    
+    self.health = math.max(0, self.health - damage)
+    
+    -- Play damage sound effect
+    if audio then
+        audio:playPlayerDamage()
+    end
+    
+    return self.health <= 0  -- Return true if player died
+end
+
+function Ball:getHealthPercentage()
+    if not self.isPlayer then
+        return 1
+    end
+    return self.health / self.maxHealth
+end
+
+function Ball:isDead()
+    if not self.isPlayer then
+        return false
+    end
+    return self.health <= 0
+end
+
 function Ball:drawShadow()
     -- Draw shadow as an ellipse beneath the ball
     love.graphics.setColor(self.shadowColor[1], self.shadowColor[2], self.shadowColor[3], self.shadowColor[4])
@@ -55,7 +90,17 @@ function Ball:drawShadow()
 end
 
 function Ball:draw()
-    love.graphics.setColor(self.color[1], self.color[2], self.color[3])
+    -- For player ball, show health by changing color intensity when damaged
+    if self.isPlayer then
+        local healthPercent = self:getHealthPercentage()
+        local r = self.color[1]
+        local g = self.color[2] * healthPercent  -- Reduce green as health decreases
+        local b = self.color[3]
+        love.graphics.setColor(r, g, b)
+    else
+        love.graphics.setColor(self.color[1], self.color[2], self.color[3])
+    end
+    
     love.graphics.circle("fill", self.x, self.y, self.radius)
 end
 

@@ -2658,3 +2658,23 @@ src/ui.lua:10: attempt to get length of field 'coins' (a nil value)
 Traceback
 
 [love "callbacks.lua"]:228: in f
+[2026-03-08 11:29:07] [ERROR_END] done
+[2026-03-08 11:32:03] [CODE_START] [short [auto]] task 4: Add damage system to player ball when touching fire
+[2026-03-08 11:34:05] [QUESTION] Should the player have a health system with multiple hit points, or should touching fire be instant death/game over? Also, should there be any immunity period after taking damage to prevent rapid damage from the same fire? | the health system, shouldnt be any immuinty period
+[2026-03-08 11:37:04] [ERROR_INPUT] Error
+
+src/gamestate.lua:56: attempt to call field 'checkFireCollision' (a nil value)
+
+
+Traceback
+
+[love "callbacks.lua"
+[2026-03-08 11:37:17] [ERROR_END] done
+[2026-03-08 11:40:44] [ERROR_INPUT] Error
+
+src/gamestate.lua:57: attempt to call field 'checkFireCollision' (a nil value)
+
+
+Traceback
+
+[love "callbacks.lua"

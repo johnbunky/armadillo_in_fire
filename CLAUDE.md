@@ -10,6 +10,7 @@ Love2D + Lua
 Complete core game with modular structure, physics, shadows, audio, and coin collection system
 
 ## Open Tasks
+- [x] task 4: Add damage system to player ball when touching fire
 - [x] task 2,3: Rename Coin class to Fire class with red/orange coloring Update Fire class to have flame-like visual effects (flickering animation)
 - [x] task 1: Change background color from light gray to light green (grass-like)
 
