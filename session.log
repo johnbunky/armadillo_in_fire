@@ -2764,3 +2764,13 @@ Syntax error: src/gamestate.lua:1: unexpected symbol near '<'
 Traceback
 
 [love "callbacks.lua"]:228: in functi
+[2026-03-08 20:48:28] [ERROR_END] done
+[2026-03-08 20:49:05] [ERROR_INPUT] Error
+
+Syntax error: src/gamestate.lua:1: unexpected symbol near '<'
+
+
+
+Traceback
+
+[love "callbacks.lua"]:228: in functi

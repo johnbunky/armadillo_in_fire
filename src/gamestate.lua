@@ -20,7 +20,6 @@ function GameState:update(dt, player)
         end
     elseif self.currentState == "gameOver" then
         self.gameOverTime = self.gameOverTime + dt
-        
         if self.gameOverTime >= self.gameOverDelay then
             self:restart()
         end
