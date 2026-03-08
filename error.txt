@@ -1,11 +1,12 @@
 Error
 
-main.lua:61: attempt to get length of field 'coins' (a nil value)
+src/ui.lua:10: attempt to get length of field 'coins' (a nil value)
 
 
 Traceback
 
 [love "callbacks.lua"]:228: in function 'handler'
-main.lua:61: in function 'update'
-[love "callbacks.lua"]:162: in function <[love "callbacks.lua"]:144>
+src/ui.lua:10: in function 'draw'
+main.lua:105: in function 'draw'
+[love "callbacks.lua"]:168: in function <[love "callbacks.lua"]:144>
 [C]: in function 'xpcall'
