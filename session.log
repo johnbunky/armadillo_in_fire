@@ -2849,3 +2849,7 @@ stack traceback:
 [2026-03-09 15:06:52] [ERROR_INPUT] Error: main.lua:156: attempt to call method 'drawScore' (a nil value)
 stack traceback:
         [love "boot.lua"]:352: in
+[2026-03-09 15:07:21] [ERROR_END] done
+[2026-03-09 15:14:09] [ERROR_INPUT] Error: src/ui.lua:103: attempt to concatenate a table value
+stack traceback:
+        [love "boot.lua"]:352: in function 

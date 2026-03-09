@@ -100,8 +100,25 @@ end
 
 function UI.drawScore(score, lives)
     love.graphics.setColor(1, 1, 1, 1)
-    love.graphics.print("Score: " .. (score or 0), 10, love.graphics.getHeight() - 40)
-    love.graphics.print("Lives: " .. (lives or 0), 10, love.graphics.getHeight() - 20)
+    
+    -- Handle score being a table or number
+    local scoreValue = 0
+    if type(score) == "table" then
+        scoreValue = score.value or score.current or score[1] or 0
+    elseif type(score) == "number" then
+        scoreValue = score
+    end
+    
+    -- Handle lives being a table or number
+    local livesValue = 0
+    if type(lives) == "table" then
+        livesValue = lives.value or lives.current or lives[1] or 0
+    elseif type(lives) == "number" then
+        livesValue = lives
+    end
+    
+    love.graphics.print("Score: " .. scoreValue, 10, love.graphics.getHeight() - 40)
+    love.graphics.print("Lives: " .. livesValue, 10, love.graphics.getHeight() - 20)
 end
 
 return UI

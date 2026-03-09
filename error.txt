@@ -1,6 +1,7 @@
-Error: main.lua:156: attempt to call method 'drawScore' (a nil value)
+Error: src/ui.lua:103: attempt to concatenate a table value
 stack traceback:
-        [love "boot.lua"]:352: in function 'drawScore'
+        [love "boot.lua"]:352: in function '__concat'
+        src/ui.lua:103: in function 'drawScore'
         main.lua:156: in function 'draw'
         [love "callbacks.lua"]:168: in function <[love "callbacks.lua"]:144>
         [C]: in function 'xpcall'
