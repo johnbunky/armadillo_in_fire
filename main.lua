@@ -20,7 +20,7 @@ function love.load()
     gameState.gameOverDelay = 2.0
     gameState.nextFireSpawn = 2.0  -- First fire spawns after 2 seconds
     gameState.fireSpawnInterval = 1.95  -- Base spawn interval
-    gameState.maxFires = 15  -- Maximum fires on screen
+    gameState.maxFires = 5  -- Maximum fires on screen
     
     -- Create balls
     gameState.playerBall = Ball:new(100, 300, 25, {0.2, 0.8, 0.2}, true)  -- Green player ball
