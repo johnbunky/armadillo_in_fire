@@ -2853,3 +2853,5 @@ stack traceback:
 [2026-03-09 15:14:09] [ERROR_INPUT] Error: src/ui.lua:103: attempt to concatenate a table value
 stack traceback:
         [love "boot.lua"]:352: in function 
+[2026-03-09 15:14:33] [ERROR_END] done
+[2026-03-09 15:19:21] [CODE_START] [short [auto]] main menu was added and there are errors one by one like this Error: main.lua:157: attempt to call method 'drawLives' (a nil value), could you pass throuw whole code and fix the menu and game integration

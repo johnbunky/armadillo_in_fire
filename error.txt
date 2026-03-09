@@ -1,7 +1,6 @@
-Error: src/ui.lua:103: attempt to concatenate a table value
+Error: main.lua:157: attempt to call method 'drawLives' (a nil value)
 stack traceback:
-        [love "boot.lua"]:352: in function '__concat'
-        src/ui.lua:103: in function 'drawScore'
-        main.lua:156: in function 'draw'
+        [love "boot.lua"]:352: in function 'drawLives'
+        main.lua:157: in function 'draw'
         [love "callbacks.lua"]:168: in function <[love "callbacks.lua"]:144>
         [C]: in function 'xpcall'
