@@ -237,8 +237,10 @@ end
 
 function love.keypressed(key)
     if currentState == "menu" or currentState == "paused" or currentState == "game_over" then
+        -- Let menu handle the keypress and capture any action
         local menuAction = menu:keypressed(key)
         
+        -- Handle menu actions
         if menuAction == "start_game" then
             currentState = "playing"
             gameState:restart()
@@ -248,6 +250,9 @@ function love.keypressed(key)
             currentState = "playing"
             gameState:restart()
         end
+        
+        -- Also handle menu navigation keys that don't return actions
+        -- This is handled internally by menu:keypressed() now
         
     elseif currentState == "playing" then
         -- Game controls

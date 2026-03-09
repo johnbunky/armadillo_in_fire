@@ -2809,3 +2809,6 @@ Traceback
 [2026-03-09 14:27:11] [CODE_START] [short [auto]] it looks like you´ve already made all required changes but there is an issue no file, could you create the reqired one and complet the menu implementation
 [2026-03-09 14:28:10] [CODE_END] done
 [2026-03-09 14:32:06] [CODE_START] [short [auto]] task 6.3: Integrate menu state management
+[2026-03-09 14:32:41] [CODE_END] done
+[2026-03-09 14:35:09] [REVIEW] main menu looks amaizing, unforutately start game doesn´t work
+[2026-03-09 14:36:16] [CODE_START] [short [auto]] nothing happens if click on start game on main manu, expected result game starts

@@ -10,6 +10,7 @@ Love2D + Lua
 Complete core game with modular structure, physics, shadows, audio, and fire damage system. Features fire spawning using predictive player movement (0.28s ahead, 65px distance), red ball fire extinguishing with stain creation, player health system with damage/regeneration, game over mechanics, fire-themed audio system, and comprehensive damage visual feedback including floating damage numbers and health bar indicators.
 
 ## Open Tasks
+- [x] nothing happens if click on start game on main manu, expected result game starts
 - [x] task 6.3: Integrate menu state management
 - [x] it looks like you´ve already made all required changes but there is an issue no file, could you create the reqired one and complet the menu implementation
 - [x] task 6.1: Create menu system with navigation between screens
@@ -79,3 +80,5 @@ Complete core game with modular structure, physics, shadows, audio, and fire dam
   src\physics.lua
   src\stain.lua
   src\ui.lua
+
+- [2026-03-09 14:35:09] main menu looks amaizing, unforutately start game doesn´t work
