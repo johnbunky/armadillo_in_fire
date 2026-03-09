@@ -1,4 +1,4 @@
-# push-demo â€” Agent Briefing
+# push-demo ??? Agent Briefing
 
 ## Project Goal
 two balls, player pushes second ball
@@ -7,40 +7,30 @@ two balls, player pushes second ball
 Love2D + Lua
  
 ## Current Status
-Complete core game with modular structure, physics, shadows, audio, and AI coin behavior system. Features predictive coin spawning, player detection, red ball avoidance, and slow repositioning movement.
+Complete core game with modular structure, physics, shadows, audio, and fire damage system. Features fire spawning using predictive player movement (0.28s ahead, 65px distance), red ball fire extinguishing with stain creation, player health system with damage/regeneration, and game over mechanics.
 
 ## Open Tasks
-- [x] task 2.1: Implement game over condition when health reaches zero
-- [x] task 1.2: - Change collision detection from coin collection to fire damage
-- [x] could you remove movment ability of fire, it chase the plyer now
-- [x] task 1.1: - Modify gamestate.lua to use Fire objects instead of Coin objects
-- [x] coins spawn using evolved strategy: predict player movement 0.28s ahead, spawn coin 65px from predicted position, avoid red ball by 130px minimum distance when choosing spawn point. Coins stay static after spawning, no movement
- 
+- [x] task 5: Add damage indicator visual feedback
+- [x] task 4.2: Replace coin collection sounds with fire damage/extinguish sounds
+- [x] task 4.1:  Add fire-related sound effects (crackling, damage, extinguish)
+- [x] could you take a look whats wrong with the ui.lua
+- [x] could you pass throw the whole project and fix merge conflicts properly
+
 ### Current State Analysis:
 
-- ÔØî No damage system for player health
-
 ### Fire System Conversion Tasks:
-
-**2. Implement Player Damage System:**
-
-- Implement game over condition when health reaches zero
 
 **4. Update Audio System:**
 - Add fire-related sound effects (crackling, damage, extinguish)
 - Replace coin collection sounds with fire damage/extinguish sounds
 
 **5. Update UI System:**
-- Replace coin counter with player health display
-- Update instruction text to reflect fire mechanics
 - Add damage indicator visual feedback
 
 **6. Menu System Implementation (existing plan):**
 - Create menu system with navigation between screens
 - Add settings, help, and main menu screens
 - Integrate menu state management
-
-
 
 ## Decisions Made
 - Created modular project structure with separate Ball, Coin, Physics, GameState, and UI modules
@@ -54,22 +44,23 @@ Complete core game with modular structure, physics, shadows, audio, and AI coin 
 - Added volume control and mute toggle functionality
 - Set grass-like light green background (0.6, 0.8, 0.4) for visual theme
 - Created comprehensive .gitignore for Love2D projects
+- Converted system from coins to fires with static spawning behavior and predictive positioning
+- Implemented player damage system with health (100 max), fire damage (20 per hit), regeneration (10/sec), and game over mechanics
+- Added fire extinguishing by red ball contact with stain creation and dissolution
+- Removed fire movement/chasing behavior to keep fires static after spawn
 
 ## Known Issues
 
-## Feel Notes â€” only human writes here
+## Feel Notes ??? only human writes here
 
-- Earlier iterations focused on physics, friction, collision systems, and visual improvements
-- [2026-03-06 15:16:59] sounds and shadows are work well
-- [2026-03-06 15:26:48] background color is ok
-- [2026-03-06 15:38:47] oops, the background color is too dark again
-
+- Earlier iterations focused on physics, friction, collision systems, visual improvements, sounds, shadows, and background color adjustments
 - [2026-03-08 16:51:05] game started withou errors, for some reasond fires are move and cover the player, stain finction works ok
-- [2026-03-08 17:07:14] there is ony there fire, probably it would be great to icrease fire´s gradualy during playtime
+- [2026-03-08 17:07:14] there is ony there fire, probably it would be great to icrease fire?s gradualy during playtime
 - [2026-03-08 17:14:15] it works well, it would be ok to remove shadows from fire, and change fire shape from circle to triangle
 
 ## Project Structure
   conf.lua
+  gamestate.lua
   main.lua
   src\audio.lua
   src\ball.lua
@@ -81,3 +72,4 @@ Complete core game with modular structure, physics, shadows, audio, and AI coin 
   src\ui.lua
 
 
+- [2026-03-09 13:16:53] stain´s shape should be elips not circle

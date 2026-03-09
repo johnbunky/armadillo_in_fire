@@ -1,507 +1,118 @@
 <<<MSG>>>
 <<<ROLE:user>>>
 [SUMMARY OF PREVIOUS CONVERSATION]
-I'll replace the coin collection sounds with fire damage and extinguish sounds in the audio system.
+**DECISIONS MADE:**
+- Task 6.1: Create menu system with navigation between screens
 
--- FILE: src\audio.lua --
-local Audio = {}
+**CURRENT STATE OF FILES:**
+- All files unchanged, menu system implementation pending
 
--- Audio state
-Audio.sounds = {}
-Audio.enabled = true
-Audio.volume = 0.7
+**OPEN PROBLEMS:**
+- Audio replacements still incomplete (main.lua and ball.lua need updates)
+- Health/damage system testing needed
+- Menu system design and implementation required
 
--- Generate a simple tone sound programmatically
-function Audio:generateTone(frequency, duration, volume)
-    local sampleRate = 44100
-    local samples = sampleRate * duration
-    local soundData = love.sound.newSoundData(samples, sampleRate, 16, 1)
-    
-    for i = 0, samples - 1 do
-        local t = i / sampleRate
-        local wave = math.sin(2 * math.pi * frequency * t) 
-        -- Add envelope to prevent clicking
-        local envelope = 1
-        if t < 0.1 then
-            envelope = t / 0.1
-        elseif t > duration - 0.1 then
-            envelope = (duration - t) / 0.1
-        end
-        soundData:setSample(i, wave * volume * envelope)
-    end
-    
-    return love.audio.newSource(soundData, "static")
-end
+**KEY FACTS ESTABLISHED:**
+- Project has conf.lua, gamestate.lua, main.lua and src/ folder with 8 modules
+- Testing discussion initiated with focus on audio, health/damage, fire damage integration
+- Need to create tests folder structure and various unit/integration tests
 
--- Generate crackling fire sound using noise
-function Audio:generateCrackling(duration, volume)
-    local sampleRate = 44100
-    local samples = sampleRate * duration
-    local soundData = love.sound.newSoundData(samples, sampleRate, 16, 1)
-    
-    for i = 0, samples - 1 do
-        local t = i / sampleRate
-        -- Mix of frequencies for crackling effect
-        local wave1 = math.sin(2 * math.pi * 150 * t) * 0.3
-        local wave2 = math.sin(2 * math.pi * 300 * t) * 0.2
-        local noise = (math.random() - 0.5) * 0.4
-        local wave = (wave1 + wave2 + noise) * volume
-        
-        -- Envelope
-        local envelope = math.min(1, t / 0.05) * math.min(1, (duration - t) / 0.1)
-        soundData:setSample(i, wave * envelope)
-    end
-    
-    return love.audio.newSource(soundData, "static")
-end
-
-function Audio:init()
-    -- Fire damage sound - harsh, damaging tone
-    self.sounds.fire_damage = self:generateTone(220, 0.4, 0.6)
-    
-    -- Fire extinguish sound - whoosh/hiss effect
-    local extinguishData = love.sound.newSoundData(22050, 44100, 16, 1)
-    for i = 0, 22049 do
-        local t = i / 44100
-        local noise = (math.random() - 0.5) * 2
-        local envelope = math.exp(-t * 4) -- Quick decay
-        extinguishData:setSample(i, noise * envelope * 0.3)
-    end
-    self.sounds.fire_extinguish = love.audio.newSource(extinguishData, "static")
-    
-    -- Fire crackling ambient sound
-    self.sounds.fire_crackling = self:generateCrackling(1.0, 0.2)
-    
-    -- Game state sounds
-    self.sounds.game_over = self:generateTone(150, 1.0, 0.5)
-    
-    print("Audio system initialized with fire sounds")
-end
-
-function Audio:playFireDamage()
-    if self.enabled then
-        local sound = self.sounds.fire_damage
-        if sound then
-            sound:setVolume(self.volume * 0.8)
-            love.audio.play(sound)
-        end
-    end
-end
-
-function Audio:playFireExtinguish()
-    if self.enabled then
-        local sound = self.sounds.fire_extinguish
-        if sound then
-            sound:setVolume(self.volume)
-            love.audio.play(sound)
-        end
-    end
-end
-
-function Audio:playFireCrackling()
-    if self.enabled then
-        local sound = self.sounds.fire_crackling
+**NEW TASK:**
+- Task 6.1: Create menu system with navigation between screens
 <<<MSG>>>
 <<<ROLE:user>>>
-task 4.2: Replace coin collection sounds with fire damage/extinguish sounds
+task 6.1: Create menu system with navigation between screens
 <<<MSG>>>
 <<<ROLE:assistant>>>
-Looking at the audio system, I can see it already has fire damage and extinguish sounds defined, but I need to see how sounds are currently being triggered in the game to properly replace the coin collection calls with fire damage/extinguish calls.
+I need to understand the current project structure and gamestate system to create an appropriate menu system. Let me examine the existing files to see what's already in place.
 
-QUESTION: Can you provide the main game file (main.lua or game.lua) and/or the collision detection code where coin collection sounds are currently being played?
+QUESTION: Can you provide the current gamestate.lua file and the main.lua file so I can see how states are currently managed and design the menu system to integrate properly?
 <<<MSG>>>
 <<<ROLE:user>>>
 Here are the requested files:
 
--- FILE: main.lua --
-local Ball = require('src.ball')
-local Fire = require('src.fire')
-local Stain = require('src.stain')
-local Physics = require('src.physics')
-local Audio = require('src.audio')
-local UI = require('src.ui')
+-- FILE: gamestate.lua --
+local GameState = {}
+GameState.__index = GameState
 
--- Global game state
-local gameState = {}
-local audio
+function GameState:new()
+    local instance = {}
+    setmetatable(instance, GameState)
+    return instance
+end
 
-function love.load()
-    -- Initialize audio system
-    audio = Audio
-    audio:init()
-    
+function GameState:init()
     -- Initialize game state
-    gameState.state = "playing"
-    gameState.gameOverTime = 0
-    gameState.gameOverDelay = 2.0
-    gameState.nextFireSpawn = 2.0  -- First fire spawns after 2 seconds
-    gameState.fireSpawnInterval = 1.95  -- Base spawn interval
-    gameState.maxFires = 5  -- Maximum fires on screen
-    
-    -- Create balls
-    gameState.playerBall = Ball:new(100, 300, 25, {0.2, 0.8, 0.2}, true)  -- Green player ball
-    gameState.pushableBall = Ball:new(400, 300, 25, {0.8, 0.2, 0.2}, false)  -- Red pushable ball
-    
-    -- Initialize arrays
-    gameState.fires = {}
-    gameState.stains = {}
-    
-    -- Set window properties
-    love.graphics.setBackgroundColor(0.6, 0.8, 0.4)  -- Light green grass-like background
+    self.currentState = "menu"
+    self.player = nil
+    self.enemies = {}
+    self.bullets = {}
+    self.score = 0
+    self.level = 1
+    self.gameOver = false
+    self.paused = false
 end
 
-function gameState:update(dt)
-    -- Update fire spawn timer
-    self.nextFireSpawn = self.nextFireSpawn - dt
-    
-    if self.nextFireSpawn <= 0 and #self.fires < self.maxFires then
-        self:spawnFire()
-        self.nextFireSpawn = self.fireSpawnInterval
+function GameState:update(dt)
+    if self.paused or self.gameOver then
+        return
     end
     
-    -- Update fires
-    for i, fire in ipairs(self.fires) do
-        fire:update(dt, self.playerBall)
+    -- Update game logic here
+    if self.player then
+        self.player:update(dt)
     end
     
-    -- Update and remove dissolved stains
-    for i = #self.stains, 1, -1 do
-        if self.stains[i]:update(dt) then
-            table.remove(self.stains, i)
-        end
+    for i, enemy in ipairs(self.enemies) do
+        enemy:update(dt)
+    end
+    
+    for i, bullet in ipairs(self.bullets) do
+        bullet:update(dt)
     end
 end
 
-function gameState:spawnFire()
-    -- Predict player position
-    local predictionTime = 0.28
-    local predictedX = self.playerBall.x + self.playerBall.vx * predictionTime
-    local predictedY = self.playerBall.y + self.playerBall.vy * predictionTime
-    
-    -- Keep predicted position within bounds
-    predictedX = math.max(50, math.min(love.graphics.getWidth() - 50, predictedX))
-    predictedY = math.max(50, math.min(love.graphics.getHeight() - 50, predictedY))
-    
-    -- Calculate spawn position around predicted location
-    local spawnDistance = 65
-    local angle = math.random() * 2 * math.pi
-    local spawnX = predictedX + math.cos(angle) * spawnDistance
-    local spawnY = predictedY + math.sin(angle) * spawnDistance
-    
-    -- Keep spawn position within screen bounds
-    spawnX = math.max(30, math.min(love.graphics.getWidth() - 30, spawnX))
-    spawnY = math.max(30, math.min(love.graphics.getHeight() - 30, spawnY))
-    
-    -- Create new fire
-    local newFire = Fire:new(spawnX, spawnY, 15, {1, 0.3, 0})
-    table.insert(self.fires, newFire)
-end
-
-function gameState:extinguishFire(fireIndex, audio)
-    if self.fires[fireIndex] then
-        local fire = self.fires[fireIndex]
-        
-        -- Create stain at fire position
-        local stain = Stain:new(fire.x, fire.y, fire.radius + 5)
-        table.insert(self.stains, stain)
-        
-        -- Remove fire
-        table.remove(self.fires, fireIndex)
-        
-        -- Play extinguish sound
-        if audio then
-            audio:playCoinCollect()  -- Using coin collect sound for extinguish
-        end
-    end
-end
-
-function gameState:restart()
-    -- Reset player ball
-    self.playerBall.x = 100
-    self.playerBall.y = 300
-    self.playerBall.vx = 0
-    self.playerBall.vy = 0
-    self.playerBall.health = self.playerBall.maxHealth
-    self.playerBall.damageTimer = 0
-    self.playerBall.fireResistanceTime = 0
-    self.playerBall.timeSinceLastDamage = 0
-    
-    -- Reset pushable ball
-    self.pushableBall.x = 400
-    self.pushableBall.y = 300
-    self.pushableBall.vx = 0
-    self.pushableBall.vy = 0
-    
-    -- Clear fires and stains
-    self.fires = {}
-    self.stains = {}
-    
-    -- Reset state
-    self.state = "playing"
-    self.gameOverTime = 0
-    self.nextFireSpawn = 2.0
-end
-
-function love.update(dt)
-    if gameState.state == "playing" then
-        -- Check for game over
-        if gameState.playerBall:isDead() then
-            gameState.state = "game_over"
-            return
-        end
-        
-        -- Update game state (handles fire respawning and stain dissolving)
-        gameState:update(dt)
-        
-        -- Player ball movement
-        local speed = 300
-        gameState.playerBall.vx = 0
-        gameState.playerBall.vy = 0
-        
-        if love.keyboard.isDown("left", "a") then
-            gameState.playerBall.vx = -speed
-        end
-        if love.keyboard.isDown("right", "d") then
-            gameState.playerBall.vx = speed
-        end
-        if love.keyboard.isDown("up", "w") then
-            gameState.playerBall.vy = -speed
-        end
-        if love.keyboard.isDown("down", "s") then
-            gameState.playerBall.vy = speed
-        end
-        
-        -- Update balls with audio support
-        gameState.playerBall:update(dt, audio)
-        gameState.pushableBall:update(dt, audio)
-        
-        -- Handle collision between balls with audio
-        Physics.handleCollision(gameState.playerBall, gameState.pushableBall, audio)
-        
-        -- Check collision between red ball and fires (extinguishing)
-        for i = #gameState.fires, 1, -1 do
-            if Physics.checkCoinCollision(gameState.pushableBall, gameState.fires[i]) then
-                gameState:extinguishFire(i, audio)
-            end
-        end
-        
-        -- Check collision between player ball and fires (damage)
-        for i, fire in ipairs(gameState.fires) do
-            if Physics.checkCoinCollision(gameState.playerBall, fire) then
-                if gameState.playerBall.damageTimer >= gameState.playerBall.damageInterval then
-                    gameState.playerBall:takeDamage(20, audio)  -- 20 damage per hit
-                    gameState.playerBall.damageTimer = 0
-                end
-            end
-        end
-    elseif gameState.state == "game_over" then
-        -- Handle restart input
-        if love.keyboard.isDown("r", "space", "return") then
-            gameState:restart()
-        end
-    end
-end
-
-function love.draw()
-    if gameState.state == "playing" then
-        -- Draw shadows first (behind all objects) - skip fire shadows
-        gameState.playerBall:drawShadow()
-        gameState.pushableBall:drawShadow()
-        
-        -- Draw stains (on ground level)
-        for i, stain in ipairs(gameState.stains) do
-            stain:draw()
-        end
-        
-        -- Draw balls
-        gameState.playerBall:draw()
-        gameState.pushableBall:draw()
-        
-        -- Draw fires
-        for i, fire in ipairs(gameState.fires) do
-            fire:draw()
-        end
-        
-        -- Draw UI with audio reference
-        UI.draw(gameState, audio)
-    elseif gameState.state == "game_over" then
-        -- Draw game over screen
-        love.graphics.setColor(1, 1, 1, 1)
-        love.graphics.printf("GAME OVER", 0, love.graphics.getHeight() / 2 - 50, love.graphics.getWidth(), "center")
-        love.graphics.printf("Press R, SPACE, or ENTER to restart", 0, love.graphics.getHeight() / 2, love.graphics.getWidth(), "center")
-    end
-end
-
-function love.keypressed(key)
-    -- Audio controls
-    if key == "m" then
-        audio:toggle()
-    elseif key == "=" or key == "+" then
-        audio:setVolume(audio.volume + 0.1)
-    elseif key == "-" or key == "_" then
-        audio:setVolume(audio.volume - 0.1)
-    elseif key == "escape" then
-        love.event.quit()
-    elseif gameState.state == "game_over" and (key == "r" or key == "space" or key == "return") then
-        gameState:restart()
-    end
-end
-
--- END: main.lua --
-<<<MSG>>>
-<<<ROLE:assistant>>>
-Looking at the main.lua file, I can see there are two places where coin collection sounds are being used instead of the proper fire sounds:
-
-1. In `gameState:extinguishFire()` - uses `audio:playCoinCollect()` 
-2. In the player ball fire damage section - calls `gameState.playerBall:takeDamage(20, audio)`
-
-I need to see the Ball class to understand how `takeDamage` works, but I can fix the extinguish sound immediately. Let me also check if there are any other audio method calls that need updating.
-
-QUESTION: Can you provide the Ball class file (src/ball.lua) so I can see how the takeDamage method handles audio and ensure all coin collection sounds are properly replaced?
-<<<MSG>>>
-<<<ROLE:user>>>
-Here are the requested files:
-
--- FILE: src/ball.lua --
-local Ball = {}
-Ball.__index = Ball
-
-function Ball:new(x, y, radius, color, isPlayer)
-    local ball = {}
-    setmetatable(ball, Ball)
-    
-    ball.x = x or 0
-    ball.y = y or 0
-    ball.radius = radius or 20
-    ball.color = color or {1, 1, 1}  -- white by default
-    ball.vx = 0  -- velocity x
-    ball.vy = 0  -- velocity y
-    ball.isPlayer = isPlayer or false
-    
-    -- Player-specific properties
-    if ball.isPlayer then
-        ball.maxHealth = 100
-        ball.health = ball.maxHealth
-        ball.damageTimer = 0
-        ball.damageInterval = 0.5  -- Take damage every 0.5 seconds when touching fire
-        ball.fireResistanceTime = 0  -- Brief immunity after taking damage
-        ball.fireResistanceDuration = 0.2  -- 0.2 seconds of immunity
-        ball.regenRate = 10  -- Health regeneration per second when not taking damage
-        ball.regenDelay = 2.0  -- Delay before regeneration starts after damage
-        ball.timeSinceLastDamage = 0
+function GameState:draw()
+    -- Draw game objects here
+    if self.player then
+        self.player:draw()
     end
     
-    -- Shadow properties
-    ball.shadowOffset = {x = 3, y = 5}  -- Shadow offset from ball position
-    ball.shadowColor = {0, 0, 0, 0.3}   -- Semi-transparent black shadow
-    ball.shadowScale = {x = 1.2, y = 0.6}  -- Shadow is wider and flatter than ball
-    
-    return ball
-end
-
-function Ball:update(dt, audio)
-    -- Apply friction/damping
-    local friction = 0.98
-    if not self.isPlayer then
-        self.vx = self.vx * friction
-        self.vy = self.vy * friction
-        
-        -- Stop very small movements
-        if math.abs(self.vx) < 1 then self.vx = 0 end
-        if math.abs(self.vy) < 1 then self.vy = 0 end
+    for i, enemy in ipairs(self.enemies) do
+        enemy:draw()
     end
     
-    -- Update position based on velocity
-    self.x = self.x + self.vx * dt
-    self.y = self.y + self.vy * dt
-    
-    -- Update player-specific properties
-    if self.isPlayer then
-        -- Update timers
-        self.damageTimer = self.damageTimer + dt
-        self.fireResistanceTime = math.max(0, self.fireResistanceTime - dt)
-        self.timeSinceLastDamage = self.timeSinceLastDamage + dt
-        
-        -- Health regeneration
-        if self.timeSinceLastDamage >= self.regenDelay and self.health < self.maxHealth then
-            self.health = math.min(self.maxHealth, self.health + self.regenRate * dt)
-        end
+    for i, bullet in ipairs(self.bullets) do
+        bullet:draw()
     end
     
-    -- Handle boundary collisions with audio
-    local Physics = require("src/physics")
-    Physics.handleBoundaryCollision(self, audio)
+    -- Draw UI
+    love.graphics.print("Score: " .. self.score, 10, 10)
+    love.graphics.print("Level: " .. self.level, 10, 30)
 end
 
-function Ball:takeDamage(amount, audio)
-    if not self.isPlayer or self.fireResistanceTime > 0 then
-        return false  -- Not player or still resistant
-    end
-    
-    self.health = math.max(0, self.health - amount)
-    self.fireResistanceTime = self.fireResistanceDuration
-    self.timeSinceLastDamage = 0
-    
-    -- Play damage sound (placeholder - will use existing sound)
-    if audio then
-        audio:playBallCollision()  -- Temporary sound effect
-    end
-    
-    return true  -- Damage was applied
+function GameState:setState(newState)
+    self.currentState = newState
 end
 
-function Ball:getHealthPercentage()
-    if not self.isPlayer then
-        return 1
-    end
-    return self.health / self.maxHealth
+function GameState:getState()
+    return self.currentState
 end
 
-function Ball:isDead()
-    return self.isPlayer and self.health <= 0
+function GameState:pause()
+    self.paused = true
 end
 
-function Ball:drawShadow()
-    -- Draw shadow as an ellipse beneath the ball
-    love.graphics.setColor(self.shadowColor[1], self.shadowColor[2], self.shadowColor[3], self.shadowColor[4])
-    
-    local shadowX = self.x + self.shadowOffset.x
-    local shadowY = self.y + self.shadowOffset.y
-    local shadowRadiusX = self.radius * self.shadowScale.x
-    local shadowRadiusY = self.radius * self.shadowScale.y
-    
-    love.graphics.ellipse("fill", shadowX, shadowY, shadowRadiusX, shadowRadiusY)
+function GameState:resume()
+    self.paused = false
 end
 
-function Ball:draw()
-    -- For player ball, show health by changing color intensity when damaged
-    if self.isPlayer then
-        local healthPercent = self:getHealthPercentage()
-        local r = self.color[1]
-        local g = self.color[2] * healthPercent  -- Reduce green as health decreases
-        local b = self.color[3]
-        love.graphics.setColor(r, g, b)
-    else
-        love.graphics.setColor(self.color[1], self.color[2], self.color[3])
-    end
-    
-    love.graphics.circle("fill", self.x, self.y, self.radius)
-    
-    -- Draw damage indicator for player (red tint when taking damage)
-    if self.isPlayer and self.fireResistanceTime > 0 then
-        love.graphics.setColor(1, 0.3, 0.3, 0.5)
-        love.graphics.circle("fill", self.x, self.y, self.radius)
-    end
+function GameState:reset()
+    self:init()
 end
 
-return Ball
--- END: src/ball.lua --
-<<<MSG>>>
-<<<ROLE:assistant>>>
-Now I can see the complete picture. I need to replace the coin collection sound calls with the appropriate fire sounds in both files:
-
-1. In main.lua: Replace `audio:playCoinCollect()` with `audio:playFireExtinguish()` in the extinguish fire function
-2. In ball.lua: Replace `audio:playBallCollision()` with `audio:playFireDamage()` in the takeDamage function
+return GameState
+-- END: gamestate.lua --
 
 -- FILE: main.lua --
 local Ball = require('src.ball')
@@ -737,498 +348,426 @@ function love.keypressed(key)
     end
 end
 -- END: main.lua --
-
--- FILE: src/ball.lua --
-local Ball = {}
-Ball.__index = Ball
-
-function Ball:new(x, y, radius, color, isPlayer)
-    local ball = {}
-    setmetatable(ball, Ball)
-    
-    ball.x = x or 0
-    ball.y = y or 0
-    ball.radius = radius or 20
-    ball.color = color or {1, 1, 1}  -- white by default
-    ball.vx = 0  -- velocity x
-    ball.vy = 0  -- velocity y
-    ball.isPlayer = isPlayer or false
-    
-    -- Player-specific properties
-    if ball.isPlayer then
-        ball.maxHealth = 100
-        ball.health = ball.maxHealth
-        ball.damageTimer = 0
-        ball.damageInterval = 0.5  -- Take damage every 0.5 seconds when touching fire
-        ball.fireResistanceTime = 0  -- Brief immunity after taking damage
-        ball.fireResistanceDuration = 0.2  -- 0.2 seconds of immunity
-        ball.regenRate = 10  -- Health regeneration per second when not taking damage
-        ball.regenDelay = 2.0  -- Delay before regeneration starts after damage
-        ball.timeSinceLastDamage = 0
-    end
-    
-    -- Shadow properties
-    ball.shadowOffset = {x = 3, y = 5}  -- Shadow offset from ball position
-    ball.shadowColor = {0, 0, 0, 0.3}   -- Semi-transparent black shadow
-    ball.shadowScale = {x = 1.2, y = 0.6}  -- Shadow is wider and flatter than ball
-    
-    return ball
-end
-
-function Ball:update(dt, audio)
-    -- Apply friction/damping
-    local friction = 0.98
-    if not self.isPlayer then
-        self.vx = self.vx * friction
-        self.vy = self.vy * friction
-        
-        -- Stop very small movements
-        if math.abs(self.vx) < 1 then self.vx = 0 end
-        if math.abs(self.vy) < 1 then self.vy = 0 end
-    end
-    
-    -- Update position based on velocity
-    self.x = self.x + self.vx * dt
-    self.y = self.y + self.vy * dt
-    
-    -- Update player-specific properties
-    if self.isPlayer then
-        -- Update timers
-        self.damageTimer = self.damageTimer + dt
-        self.fireResistanceTime = math.max(0, self.fireResistanceTime - dt)
-        self.timeSinceLastDamage = self.timeSinceLastDamage + dt
-        
-        -- Health regeneration
-        if self.timeSinceLastDamage >= self.regenDelay and self.health < self.maxHealth then
-            self.health = math.min(self.maxHealth, self.health + self.regenRate * dt)
-        end
-    end
-    
-    -- Handle boundary collisions with audio
-    local Physics = require("src/physics")
-    Physics.handleBoundaryCollision(self, audio)
-end
-
-function Ball:takeDamage(amount, audio)
-    if not self.isPlayer or self.fireResistanceTime > 0 then
-        return false  -- Not player or still resistant
-    end
-    
-    self.health = math.max(0, self.health - amount)
-    self.fireResistanceTime = self.fireResistanceDuration
-    self.timeSinceLastDamage = 0
-    
-    -- Play fire damage sound
-    if audio then
-        audio:playFireDamage()  -- Using fire damage sound
-    end
-    
-    return true  -- Damage was applied
-end
-
-function Ball:getHealthPercentage()
-    if not self.isPlayer then
-        return 1
-    end
-    return self.health / self.maxHealth
-end
-
-function Ball:isDead()
-    return self.isPlayer and self.health <= 0
-end
-
-function Ball:drawShadow()
-    -- Draw shadow as an ellipse beneath the ball
-    love.graphics.setColor(self.shadowColor[1], self.shadowColor[2], self.shadowColor[3], self.shadowColor[4])
-    
-    local shadowX = self.x + self.shadowOffset.x
-    local shadowY = self.y + self.shadowOffset.y
-    local shadowRadiusX = self.radius * self.shadowScale.x
-    local shadowRadiusY = self.radius * self.shadowScale.y
-    
-    love.graphics.ellipse("fill", shadowX, shadowY, shadowRadiusX, shadowRadiusY)
-end
-
-function Ball:draw()
-    -- For player ball, show health by changing color intensity when damaged
-    if self.isPlayer then
-        local healthPercent = self:getHealthPercentage()
-        local r = self.color[1]
-        local g = self.color[2] * healthPercent  -- Reduce green as health decreases
-        local b = self.color[3]
-        love.graphics.setColor(r, g, b)
-    else
-        love.graphics.setColor(self.color[1], self.color[2], self.color[3])
-    end
-    
-    love.graphics.circle("fill", self.x, self.y, self.radius)
-    
-    -- Draw damage indicator for player (red tint when taking damage)
-    if self.isPlayer and self.fireResistanceTime > 0 then
-        love.graphics.setColor(1, 0.3, 0.3, 0.5)
-        love.graphics.circle("fill", self.x, self.y, self.radius)
-    end
-end
-
-return Ball
--- END: src/ball.lua --
-
-DECISION_LOG: Replaced coin collection sound calls with appropriate fire-themed sounds - playFireExtinguish() for fire extinguishing and playFireDamage() for player taking fire damage.
-<<<MSG>>>
-<<<ROLE:user>>>
-task 5: Add damage indicator visual feedback
 <<<MSG>>>
 <<<ROLE:assistant>>>
-I need to see the current visual feedback system to understand what's already implemented and what needs to be added for damage indicators.
+Looking at the current code structure, I can see that there's a basic gamestate system but it's not fully integrated with the main.lua logic. The main.lua is handling game states directly with string comparisons. I'll create a proper menu system that integrates with the existing structure.
 
-QUESTION: Can you provide the current UI file (src/ui.lua) so I can see what visual feedback already exists and determine what additional damage indicator visuals need to be implemented?
-<<<MSG>>>
-<<<ROLE:user>>>
-Here are the requested files:
+I'll create a dedicated menu system with multiple screens and proper navigation. Here are the changes:
 
--- FILE: src/ui.lua --
-local UI = {}
+-- FILE: src/menu.lua --
+local Menu = {}
+Menu.__index = Menu
 
-function UI.draw(gameState, audio)
-    -- Draw player health bar
-    if gameState.playerBall then
-        local healthPercent = gameState.playerBall.health / gameState.playerBall.maxHealth
-        local barWidth = 200
-        local barHeight = 20
-        local barX = 10
-        local barY = 10
-        
-        -- Health bar background
-        love.graphics.setColor(0.3, 0.3, 0.3, 0.8)
-        love.graphics.rectangle("fill", barX, barY, barWidth, barHeight)
-        
-        -- Health bar fill
-        local healthColor = {1 - healthPercent + 0.3, healthPercent, 0.2}  -- Red to green gradient
-        love.graphics.setColor(healthColor[1], healthColor[2], healthColor[3], 0.9)
-        love.graphics.rectangle("fill", barX, barY, barWidth * healthPercent, barHeight)
-        
-        -- Health bar border
-        love.graphics.setColor(1, 1, 1, 1)
-        love.graphics.rectangle("line", barX, barY, barWidth, barHeight)
-        
-        -- Health text
-        love.graphics.print(string.format("Health: %.0f/%.0f", gameState.playerBall.health, gameState.playerBall.maxHealth), barX, barY + 25)
+function Menu:new()
+    local instance = {}
+    setmetatable(instance, Menu)
+    
+    instance.currentMenu = "main"
+    instance.selectedOption = 1
+    instance.keyDelay = 0
+    instance.keyDelayTime = 0.2
+    
+    -- Menu definitions
+    instance.menus = {
+        main = {
+            title = "BALL FIRE GAME",
+            options = {
+                {text = "Start Game", action = "start_game"},
+                {text = "Settings", action = "settings"},
+                {text = "Help", action = "help"},
+                {text = "Quit", action = "quit"}
+            }
+        },
+        settings = {
+            title = "SETTINGS",
+            options = {
+                {text = "Audio: ON", action = "toggle_audio", dynamic = true},
+                {text = "Volume: 100%", action = "volume", dynamic = true},
+                {text = "Back", action = "main"}
+            }
+        },
+        help = {
+            title = "HOW TO PLAY",
+            options = {
+                {text = "Back", action = "main"}
+            },
+            content = {
+                "Use WASD or Arrow Keys to move the green ball",
+                "Push the red ball into fires to extinguish them",
+                "Avoid touching fires - they damage you!",
+                "Survive as long as possible",
+                "",
+                "Controls:",
+                "M - Toggle Audio",
+                "+/- - Volume Control",
+                "ESC - Quit Game"
+            }
+        },
+        pause = {
+            title = "PAUSED",
+            options = {
+                {text = "Resume", action = "resume"},
+                {text = "Restart", action = "restart"},
+                {text = "Main Menu", action = "main_menu"}
+            }
+        }
+    }
+    
+    return instance
+end
+
+function Menu:update(dt, audio)
+    self.keyDelay = math.max(0, self.keyDelay - dt)
+    
+    -- Update dynamic menu options
+    if self.currentMenu == "settings" then
+        local menu = self.menus.settings
+        if audio then
+            menu.options[1].text = "Audio: " .. (audio.enabled and "ON" or "OFF")
+            menu.options[2].text = "Volume: " .. math.floor(audio.volume * 100) .. "%"
+        end
     end
+end
+
+function Menu:draw()
+    local menu = self.menus[self.currentMenu]
+    if not menu then return end
     
-    -- Draw fire count and stain count
-    local fireCount = gameState.fires and #gameState.fires or 0
-    local stainCount = gameState.stains and #gameState.stains or 0
+    local screenWidth = love.graphics.getWidth()
+    local screenHeight = love.graphics.getHeight()
     
+    -- Draw background overlay
+    love.graphics.setColor(0, 0, 0, 0.7)
+    love.graphics.rectangle("fill", 0, 0, screenWidth, screenHeight)
+    
+    -- Draw title
     love.graphics.setColor(1, 1, 1, 1)
-    love.graphics.print("Active Fires: " .. fireCount, 10, 60)
-    love.graphics.print("Extinguished: " .. stainCount, 10, 80)
+    love.graphics.printf(menu.title, 0, screenHeight * 0.2, screenWidth, "center")
     
-    -- Draw instructions
-    love.graphics.print("Push red ball into fires to extinguish them!", 10, 110)
-    love.graphics.print("Avoid touching fires - they damage you!", 10, 130)
-    
-    -- Draw audio status
-    if audio then
-        local audioStatus = audio:isEnabled() and "ON" or "OFF"
-        love.graphics.print("Audio: " .. audioStatus .. " (M to toggle)", love.graphics.getWidth() - 200, 10)
-        love.graphics.print("Volume: " .. math.floor(audio.volume * 100) .. "% (+/- to adjust)", love.graphics.getWidth() - 200, 30)
-    end
-end
-
-return UI
--- END: src/ui.lua --
-<<<MSG>>>
-<<<ROLE:assistant>>>
-Looking at the current UI and Ball systems, I can see there's already some visual damage feedback (red tint when taking damage and health bar color changes), but I can enhance it with additional damage indicators. Let me add more comprehensive visual feedback:
-
--- FILE: src/ui.lua --
-local UI = {}
-
-function UI.draw(gameState, audio)
-    -- Draw player health bar
-    if gameState.playerBall then
-        local healthPercent = gameState.playerBall.health / gameState.playerBall.maxHealth
-        local barWidth = 200
-        local barHeight = 20
-        local barX = 10
-        local barY = 10
-        
-        -- Health bar background
-        love.graphics.setColor(0.3, 0.3, 0.3, 0.8)
-        love.graphics.rectangle("fill", barX, barY, barWidth, barHeight)
-        
-        -- Health bar fill with pulsing effect when low health
-        local healthColor = {1 - healthPercent + 0.3, healthPercent, 0.2}  -- Red to green gradient
-        
-        -- Add pulsing effect when health is low
-        if healthPercent < 0.25 then
-            local pulse = (math.sin(love.timer.getTime() * 8) + 1) * 0.5  -- 0 to 1 pulse
-            local pulseIntensity = 0.3
-            healthColor[1] = math.min(1, healthColor[1] + pulse * pulseIntensity)
+    -- Draw help content if it exists
+    if menu.content then
+        local startY = screenHeight * 0.35
+        for i, line in ipairs(menu.content) do
+            love.graphics.printf(line, 0, startY + (i - 1) * 25, screenWidth, "center")
         end
+    end
+    
+    -- Draw menu options
+    local startY = menu.content and screenHeight * 0.75 or screenHeight * 0.45
+    for i, option in ipairs(menu.options) do
+        local y = startY + (i - 1) * 40
         
-        love.graphics.setColor(healthColor[1], healthColor[2], healthColor[3], 0.9)
-        love.graphics.rectangle("fill", barX, barY, barWidth * healthPercent, barHeight)
-        
-        -- Health bar border with warning color when low
-        if healthPercent < 0.25 then
-            love.graphics.setColor(1, 0.2, 0.2, 1)  -- Red border for low health
+        -- Highlight selected option
+        if i == self.selectedOption then
+            love.graphics.setColor(1, 1, 0, 1)  -- Yellow for selected
+            love.graphics.printf("> " .. option.text .. " <", 0, y, screenWidth, "center")
         else
-            love.graphics.setColor(1, 1, 1, 1)
-        end
-        love.graphics.rectangle("line", barX, barY, barWidth, barHeight)
-        
-        -- Health text with color coding
-        if healthPercent < 0.25 then
-            love.graphics.setColor(1, 0.3, 0.3, 1)  -- Red text for critical health
-        elseif healthPercent < 0.5 then
-            love.graphics.setColor(1, 0.7, 0.3, 1)  -- Orange text for low health
-        else
-            love.graphics.setColor(1, 1, 1, 1)      -- White text for good health
-        end
-        love.graphics.print(string.format("Health: %.0f/%.0f", gameState.playerBall.health, gameState.playerBall.maxHealth), barX, barY + 25)
-        
-        -- Critical health warning
-        if healthPercent < 0.15 then
-            local warningAlpha = (math.sin(love.timer.getTime() * 10) + 1) * 0.5
-            love.graphics.setColor(1, 0.2, 0.2, warningAlpha)
-            love.graphics.printf("CRITICAL HEALTH!", 0, love.graphics.getHeight() * 0.3, love.graphics.getWidth(), "center")
-        end
-        
-        -- Damage resistance indicator
-        if gameState.playerBall.fireResistanceTime > 0 then
-            love.graphics.setColor(0.8, 0.8, 1, 0.7)
-            love.graphics.print("FIRE RESISTANCE", barX + barWidth + 10, barY + 5)
-        end
-        
-        -- Health regeneration indicator
-        if gameState.playerBall.timeSinceLastDamage >= gameState.playerBall.regenDelay and 
-           gameState.playerBall.health < gameState.playerBall.maxHealth then
-            love.graphics.setColor(0.3, 1, 0.3, 0.8)
-            love.graphics.print("REGENERATING", barX, barY - 15)
+            love.graphics.setColor(1, 1, 1, 1)  -- White for normal
+            love.graphics.printf(option.text, 0, y, screenWidth, "center")
         end
     end
     
-    -- Draw fire count and stain count
-    local fireCount = gameState.fires and #gameState.fires or 0
-    local stainCount = gameState.stains and #gameState.stains or 0
+    -- Draw navigation hint
+    love.graphics.setColor(0.7, 0.7, 0.7, 1)
+    love.graphics.printf("Use UP/DOWN to navigate, ENTER to select", 0, screenHeight - 50, screenWidth, "center")
+end
+
+function Menu:keypressed(key, audio)
+    if self.keyDelay > 0 then return false end
     
-    love.graphics.setColor(1, 1, 1, 1)
-    love.graphics.print("Active Fires: " .. fireCount, 10, 60)
-    love.graphics.print("Extinguished: " .. stainCount, 10, 80)
+    local menu = self.menus[self.currentMenu]
+    if not menu then return false end
     
-    -- Draw instructions
-    love.graphics.print("Push red ball into fires to extinguish them!", 10, 110)
-    love.graphics.print("Avoid touching fires - they damage you!", 10, 130)
-    
-    -- Draw audio status
-    if audio then
-        local audioStatus = audio:isEnabled() and "ON" or "OFF"
-        love.graphics.print("Audio: " .. audioStatus .. " (M to toggle)", love.graphics.getWidth() - 200, 10)
-        love.graphics.print("Volume: " .. math.floor(audio.volume * 100) .. "% (+/- to adjust)", love.graphics.getWidth() - 200, 30)
+    if key == "up" or key == "w" then
+        self.selectedOption = self.selectedOption - 1
+        if self.selectedOption < 1 then
+            self.selectedOption = #menu.options
+        end
+        self.keyDelay = self.keyDelayTime
+        if audio then audio:playMenuMove() end
+        return true
+        
+    elseif key == "down" or key == "s" then
+        self.selectedOption = self.selectedOption + 1
+        if self.selectedOption > #menu.options then
+            self.selectedOption = 1
+        end
+        self.keyDelay = self.keyDelayTime
+        if audio then audio:playMenuMove() end
+        return true
+        
+    elseif key == "return" or key == "space" then
+        local action = menu.options[self.selectedOption].action
+        self.keyDelay = self.keyDelayTime
+        if audio then audio:playMenuSelect() end
+        return self:handleAction(action, audio)
     end
     
-    -- Draw screen-edge damage indicators when player is taking damage
-    if gameState.playerBall and gameState.playerBall.fireResistanceTime > 0 then
-        local damageAlpha = gameState.playerBall.fireResistanceTime / gameState.playerBall.fireResistanceDuration * 0.3
-        love.graphics.setColor(1, 0.1, 0.1, damageAlpha)
-        
-        -- Draw damage overlay around screen edges
-        local edgeThickness = 20
-        love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), edgeThickness)  -- Top
-        love.graphics.rectangle("fill", 0, love.graphics.getHeight() - edgeThickness, love.graphics.getWidth(), edgeThickness)  -- Bottom
-        love.graphics.rectangle("fill", 0, 0, edgeThickness, love.graphics.getHeight())  -- Left
-        love.graphics.rectangle("fill", love.graphics.getWidth() - edgeThickness, 0, edgeThickness, love.graphics.getHeight())  -- Right
+    return false
+end
+
+function Menu:handleAction(action, audio)
+    if action == "start_game" then
+        return "start_game"
+    elseif action == "settings" then
+        self:setMenu("settings")
+    elseif action == "help" then
+        self:setMenu("help")
+    elseif action == "main" then
+        self:setMenu("main")
+    elseif action == "quit" then
+        love.event.quit()
+    elseif action == "resume" then
+        return "resume"
+    elseif action == "restart" then
+        return "restart"
+    elseif action == "main_menu" then
+        return "main_menu"
+    elseif action == "toggle_audio" then
+        if audio then
+            audio:toggle()
+        end
+    elseif action == "volume" then
+        -- Cycle through volume levels
+        if audio then
+            local volumes = {0.0, 0.25, 0.5, 0.75, 1.0}
+            local currentIndex = 1
+            for i, vol in ipairs(volumes) do
+                if math.abs(audio.volume - vol) < 0.1 then
+                    currentIndex = i
+                    break
+                end
+            end
+            local nextIndex = (currentIndex % #volumes) + 1
+            audio:setVolume(volumes[nextIndex])
+        end
+    end
+    
+    return false
+end
+
+function Menu:setMenu(menuName)
+    if self.menus[menuName] then
+        self.currentMenu = menuName
+        self.selectedOption = 1
     end
 end
 
-return UI
--- END: src/ui.lua --
-
--- FILE: src/ball.lua --
-local Ball = {}
-Ball.__index = Ball
-
-function Ball:new(x, y, radius, color, isPlayer)
-    local ball = {}
-    setmetatable(ball, Ball)
-    
-    ball.x = x or 0
-    ball.y = y or 0
-    ball.radius = radius or 20
-    ball.color = color or {1, 1, 1}  -- white by default
-    ball.vx = 0  -- velocity x
-    ball.vy = 0  -- velocity y
-    ball.isPlayer = isPlayer or false
-    
-    -- Player-specific properties
-    if ball.isPlayer then
-        ball.maxHealth = 100
-        ball.health = ball.maxHealth
-        ball.damageTimer = 0
-        ball.damageInterval = 0.5  -- Take damage every 0.5 seconds when touching fire
-        ball.fireResistanceTime = 0  -- Brief immunity after taking damage
-        ball.fireResistanceDuration = 0.2  -- 0.2 seconds of immunity
-        ball.regenRate = 10  -- Health regeneration per second when not taking damage
-        ball.regenDelay = 2.0  -- Delay before regeneration starts after damage
-        ball.timeSinceLastDamage = 0
-        
-        -- Damage indicator properties
-        ball.damageNumbers = {}  -- Array to store floating damage numbers
-    end
-    
-    -- Shadow properties
-    ball.shadowOffset = {x = 3, y = 5}  -- Shadow offset from ball position
-    ball.shadowColor = {0, 0, 0, 0.3}   -- Semi-transparent black shadow
-    ball.shadowScale = {x = 1.2, y = 0.6}  -- Shadow is wider and flatter than ball
-    
-    return ball
+function Menu:getCurrentMenu()
+    return self.currentMenu
 end
 
-function Ball:update(dt, audio)
-    -- Apply friction/damping
-    local friction = 0.98
-    if not self.isPlayer then
-        self.vx = self.vx * friction
-        self.vy = self.vy * friction
-        
-        -- Stop very small movements
-        if math.abs(self.vx) < 1 then self.vx = 0 end
-        if math.abs(self.vy) < 1 then self.vy = 0 end
+return Menu
+-- END: src/menu.lua --
+
+-- FILE: main.lua --
+local Ball = require('src.ball')
+local Fire = require('src.fire')
+local Stain = require('src.stain')
+local Physics = require('src.physics')
+local Audio = require('src.audio')
+local UI = require('src.ui')
+local Menu = require('src.menu')
+
+-- Global game state
+local gameState = {}
+local audio
+local menu
+
+function love.load()
+    -- Initialize audio system
+    audio = Audio
+    audio:init()
+    
+    -- Initialize menu system
+    menu = Menu:new()
+    
+    -- Initialize game state
+    gameState.state = "menu"  -- Start in menu
+    gameState.gameOverTime = 0
+    gameState.gameOverDelay = 2.0
+    gameState.nextFireSpawn = 2.0  -- First fire spawns after 2 seconds
+    gameState.fireSpawnInterval = 1.95  -- Base spawn interval
+    gameState.maxFires = 5  -- Maximum fires on screen
+    
+    -- Create balls
+    gameState.playerBall = Ball:new(100, 300, 25, {0.2, 0.8, 0.2}, true)  -- Green player ball
+    gameState.pushableBall = Ball:new(400, 300, 25, {0.8, 0.2, 0.2}, false)  -- Red pushable ball
+    
+    -- Initialize arrays
+    gameState.fires = {}
+    gameState.stains = {}
+    
+    -- Set window properties
+    love.graphics.setBackgroundColor(0.6, 0.8, 0.4)  -- Light green grass-like background
+end
+
+function gameState:update(dt)
+    -- Update fire spawn timer
+    self.nextFireSpawn = self.nextFireSpawn - dt
+    
+    if self.nextFireSpawn <= 0 and #self.fires < self.maxFires then
+        self:spawnFire()
+        self.nextFireSpawn = self.fireSpawnInterval
     end
     
-    -- Update position based on velocity
-    self.x = self.x + self.vx * dt
-    self.y = self.y + self.vy * dt
+    -- Update fires
+    for i, fire in ipairs(self.fires) do
+        fire:update(dt, self.playerBall)
+    end
     
-    -- Update player-specific properties
-    if self.isPlayer then
-        -- Update timers
-        self.damageTimer = self.damageTimer + dt
-        self.fireResistanceTime = math.max(0, self.fireResistanceTime - dt)
-        self.timeSinceLastDamage = self.timeSinceLastDamage + dt
+    -- Update and remove dissolved stains
+    for i = #self.stains, 1, -1 do
+        if self.stains[i]:update(dt) then
+            table.remove(self.stains, i)
+        end
+    end
+end
+
+function gameState:spawnFire()
+    -- Predict player position
+    local predictionTime = 0.28
+    local predictedX = self.playerBall.x + self.playerBall.vx * predictionTime
+    local predictedY = self.playerBall.y + self.playerBall.vy * predictionTime
+    
+    -- Keep predicted position within bounds
+    predictedX = math.max(50, math.min(love.graphics.getWidth() - 50, predictedX))
+    predictedY = math.max(50, math.min(love.graphics.getHeight() - 50, predictedY))
+    
+    -- Calculate spawn position around predicted location
+    local spawnDistance = 65
+    local angle = math.random() * 2 * math.pi
+    local spawnX = predictedX + math.cos(angle) * spawnDistance
+    local spawnY = predictedY + math.sin(angle) * spawnDistance
+    
+    -- Keep spawn position within screen bounds
+    spawnX = math.max(30, math.min(love.graphics.getWidth() - 30, spawnX))
+    spawnY = math.max(30, math.min(love.graphics.getHeight() - 30, spawnY))
+    
+    -- Create new fire
+    local newFire = Fire:new(spawnX, spawnY, 15, {1, 0.3, 0})
+    table.insert(self.fires, newFire)
+end
+
+function gameState:extinguishFire(fireIndex, audio)
+    if self.fires[fireIndex] then
+        local fire = self.fires[fireIndex]
         
-        -- Health regeneration
-        if self.timeSinceLastDamage >= self.regenDelay and self.health < self.maxHealth then
-            self.health = math.min(self.maxHealth, self.health + self.regenRate * dt)
+        -- Create stain at fire position
+        local stain = Stain:new(fire.x, fire.y, fire.radius + 5)
+        table.insert(self.stains, stain)
+        
+        -- Remove fire
+        table.remove(self.fires, fireIndex)
+        
+        -- Play extinguish sound
+        if audio then
+            audio:playFireExtinguish()  -- Using fire extinguish sound
+        end
+    end
+end
+
+function gameState:restart()
+    -- Reset player ball
+    self.playerBall.x = 100
+    self.playerBall.y = 300
+    self.playerBall.vx = 0
+    self.playerBall.vy = 0
+    self.playerBall.health = self.playerBall.maxHealth
+    self.playerBall.damageTimer = 0
+    self.playerBall.fireResistanceTime = 0
+    self.playerBall.timeSinceLastDamage = 0
+    
+    -- Reset pushable ball
+    self.pushableBall.x = 400
+    self.pushableBall.y = 300
+    self.pushableBall.vx = 0
+    self.pushableBall.vy = 0
+    
+    -- Clear fires and stains
+    self.fires = {}
+    self.stains = {}
+    
+    -- Reset state
+    self.state = "playing"
+    self.gameOverTime = 0
+    self.nextFireSpawn = 2.0
+end
+
+function love.update(dt)
+    if gameState.state == "menu" then
+        menu:update(dt, audio)
+        
+    elseif gameState.state == "playing" then
+        -- Check for game over
+        if gameState.playerBall:isDead() then
+            gameState.state = "game_over"
+            return
         end
         
-        -- Update floating damage numbers
-        for i = #self.damageNumbers, 1, -1 do
-            local damage = self.damageNumbers[i]
-            damage.y = damage.y - 50 * dt  -- Float upward
-            damage.life = damage.life - dt
-            damage.alpha = math.max(0, damage.life / damage.maxLife)
-            
-            if damage.life <= 0 then
-                table.remove(self.damageNumbers, i)
+        -- Update game state (handles fire respawning and stain dissolving)
+        gameState:update(dt)
+        
+        -- Player ball movement
+        local speed = 300
+        gameState.playerBall.vx = 0
+        gameState.playerBall.vy = 0
+        
+        if love.keyboard.isDown("left", "a") then
+            gameState.playerBall.vx = -speed
+        end
+        if love.keyboard.isDown("right", "d") then
+            gameState.playerBall.vx = speed
+        end
+        if love.keyboard.isDown("up", "w") then
+            gameState.playerBall.vy = -speed
+        end
+        if love.keyboard.isDown("down", "s") then
+            gameState.playerBall.vy = speed
+        end
+        
+        -- Update balls with audio support
+        gameState.playerBall:update(dt, audio)
+        gameState.pushableBall:update(dt, audio)
+        
+        -- Handle collision between balls with audio
+        Physics.handleCollision(gameState.playerBall, gameState.pushableBall, audio)
+        
+        -- Check collision between red ball and fires (extinguishing)
+        for i = #gameState.fires, 1, -1 do
+            if Physics.checkCoinCollision(gameState.pushableBall, gameState.fires[i]) then
+                gameState:extinguishFire(i, audio)
             end
         end
-    end
-    
-    -- Handle boundary collisions with audio
-    local Physics = require("src/physics")
-    Physics.handleBoundaryCollision(self, audio)
-end
-
-function Ball:takeDamage(amount, audio)
-    if not self.isPlayer or self.fireResistanceTime > 0 then
-        return false  -- Not player or still resistant
-    end
-    
-    self.health = math.max(0, self.health - amount)
-    self.fireResistanceTime = self.fireResistanceDuration
-    self.timeSinceLastDamage = 0
-    
-    -- Create floating damage number
-    local damageNumber = {
-        x = self.x + (math.random() - 0.5) * 20,
-        y = self.y - 20,
-        amount = amount,
-        life = 1.5,
-        maxLife = 1.5,
-        alpha = 1
-    }
-    table.insert(self.damageNumbers, damageNumber)
-    
-    -- Play fire damage sound
-    if audio then
-        audio:playFireDamage()  -- Using fire damage sound
-    end
-    
-    return true  -- Damage was applied
-end
-
-function Ball:getHealthPercentage()
-    if not self.isPlayer then
-        return 1
-    end
-    return self.health / self.maxHealth
-end
-
-function Ball:isDead()
-    return self.isPlayer and self.health <= 0
-end
-
-function Ball:drawShadow()
-    -- Draw shadow as an ellipse beneath the ball
-    love.graphics.setColor(self.shadowColor[1], self.shadowColor[2], self.shadowColor[3], self.shadowColor[4])
-    
-    local shadowX = self.x + self.shadowOffset.x
-    local shadowY = self.y + self.shadowOffset.y
-    local shadowRadiusX = self.radius * self.shadowScale.x
-    local shadowRadiusY = self.radius * self.shadowScale.y
-    
-    love.graphics.ellipse("fill", shadowX, shadowY, shadowRadiusX, shadowRadiusY)
-end
-
-function Ball:draw()
-    -- For player ball, show health by changing color intensity when damaged
-    if self.isPlayer then
-        local healthPercent = self:getHealthPercentage()
-        local r = self.color[1]
-        local g = self.color[2] * healthPercent  -- Reduce green as health decreases
-        local b = self.color[3]
-        love.graphics.setColor(r, g, b)
-    else
-        love.graphics.setColor(self.color[1], self.color[2], self.color[3])
-    end
-    
-    love.graphics.circle("fill", self.x, self.y, self.radius)
-    
-    -- Draw damage indicator for player (red tint when taking damage)
-    if self.isPlayer and self.fireResistanceTime > 0 then
-        -- Enhanced damage tint with pulsing effect
-        local pulseIntensity = self.fireResistanceTime / self.fireResistanceDuration
-        local pulse = (math.sin(love.timer.getTime() * 20) + 1) * 0.5
-        local alpha = 0.3 + pulse * 0.3 * pulseIntensity
-        love.graphics.setColor(1, 0.1, 0.1, alpha)
-        love.graphics.circle("fill", self.x, self.y, self.radius * 1.2)
         
-        -- Draw damage ring effect
-        love.graphics.setColor(1, 0.3, 0.3, pulseIntensity * 0.8)
-        love.graphics.circle("line", self.x, self.y, self.radius + 8)
-    end
-    
-    -- Draw floating damage numbers for player
-    if self.isPlayer then
-        for i, damage in ipairs(self.damageNumbers) do
-            love.graphics.setColor(1, 0.3, 0.3, damage.alpha)
-            love.graphics.print("-" .. damage.amount, damage.x - 10, damage.y)
+        -- Check collision between player ball and fires (damage)
+        for i, fire in ipairs(gameState.fires) do
+            if Physics.checkCoinCollision(gameState.playerBall, fire) then
+                if gameState.playerBall.damageTimer >= gameState.playerBall.damageInterval then
+                    gameState.playerBall:takeDamage(20, audio)  -- 20 damage per hit
+                    gameState.playerBall.damageTimer = 0
+                end
+            end
+        end
+        
+    elseif gameState.state == "paused" then
+        menu:update(dt, audio)
+        
+    elseif gameState.state == "game_over" then
+        -- Handle restart input
+        if love.keyboard.isDown("r", "space", "return") then
+            gameState:restart()
         end
     end
-    
-    -- Draw health regeneration effect
-    if self.isPlayer and self.timeSinceLastDamage >= self.regenDelay and 
-       self.health < self.maxHealth then
-        local regenPulse = (math.sin(love.timer.getTime() * 6) + 1) * 0.5
-        love.graphics.setColor(0.3, 1, 0.3, 0.2 + regenPulse * 0.3)
-        love.graphics.circle("line", self.x, self.y, self.radius + 5)
-    end
 end
 
-return Ball
--- END: src/ball.lua --
-
-DECISION_LOG: Enhanced damage indicators with floating damage numbers, pulsing health bar for low health, screen-edge damage overlay, critical health warnings, and improved visual feedback for damage resistance and regeneration states.
+function love.draw()
+    if gameState.state == "menu" then
+        -- Draw a simple background for menu
+        love.graphics.setColor(0.3, 0.5, 0.3, 1)
+        love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
+        menu:draw()
+        
+    elseif gameState.state == "playing" then
+        -- Draw shadows first (behind all objects) - skip fire
 <<<MSG>>>
