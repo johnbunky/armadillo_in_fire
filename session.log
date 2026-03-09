@@ -2793,3 +2793,5 @@ Traceback
 [2026-03-09 13:14:17] [CODE_END] done
 [2026-03-09 13:16:53] [REVIEW] stain´s shape should be elips not circle
 [2026-03-09 13:17:41] [CODE_START] [short [auto]] task 4.2: Replace coin collection sounds with fire damage/extinguish sounds
+[2026-03-09 13:18:49] [CODE_END] done
+[2026-03-09 13:25:37] [CODE_START] [short [auto]] task 5: Add damage indicator visual feedback

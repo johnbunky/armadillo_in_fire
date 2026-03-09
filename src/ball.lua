@@ -24,6 +24,9 @@ function Ball:new(x, y, radius, color, isPlayer)
         ball.regenRate = 10  -- Health regeneration per second when not taking damage
         ball.regenDelay = 2.0  -- Delay before regeneration starts after damage
         ball.timeSinceLastDamage = 0
+        
+        -- Damage indicator properties
+        ball.damageNumbers = {}  -- Array to store floating damage numbers
     end
     
     -- Shadow properties
@@ -61,6 +64,18 @@ function Ball:update(dt, audio)
         if self.timeSinceLastDamage >= self.regenDelay and self.health < self.maxHealth then
             self.health = math.min(self.maxHealth, self.health + self.regenRate * dt)
         end
+        
+        -- Update floating damage numbers
+        for i = #self.damageNumbers, 1, -1 do
+            local damage = self.damageNumbers[i]
+            damage.y = damage.y - 50 * dt  -- Float upward
+            damage.life = damage.life - dt
+            damage.alpha = math.max(0, damage.life / damage.maxLife)
+            
+            if damage.life <= 0 then
+                table.remove(self.damageNumbers, i)
+            end
+        end
     end
     
     -- Handle boundary collisions with audio
@@ -76,6 +91,17 @@ function Ball:takeDamage(amount, audio)
     self.health = math.max(0, self.health - amount)
     self.fireResistanceTime = self.fireResistanceDuration
     self.timeSinceLastDamage = 0
+    
+    -- Create floating damage number
+    local damageNumber = {
+        x = self.x + (math.random() - 0.5) * 20,
+        y = self.y - 20,
+        amount = amount,
+        life = 1.5,
+        maxLife = 1.5,
+        alpha = 1
+    }
+    table.insert(self.damageNumbers, damageNumber)
     
     -- Play fire damage sound
     if audio then
@@ -124,8 +150,32 @@ function Ball:draw()
     
     -- Draw damage indicator for player (red tint when taking damage)
     if self.isPlayer and self.fireResistanceTime > 0 then
-        love.graphics.setColor(1, 0.3, 0.3, 0.5)
-        love.graphics.circle("fill", self.x, self.y, self.radius)
+        -- Enhanced damage tint with pulsing effect
+        local pulseIntensity = self.fireResistanceTime / self.fireResistanceDuration
+        local pulse = (math.sin(love.timer.getTime() * 20) + 1) * 0.5
+        local alpha = 0.3 + pulse * 0.3 * pulseIntensity
+        love.graphics.setColor(1, 0.1, 0.1, alpha)
+        love.graphics.circle("fill", self.x, self.y, self.radius * 1.2)
+        
+        -- Draw damage ring effect
+        love.graphics.setColor(1, 0.3, 0.3, pulseIntensity * 0.8)
+        love.graphics.circle("line", self.x, self.y, self.radius + 8)
+    end
+    
+    -- Draw floating damage numbers for player
+    if self.isPlayer then
+        for i, damage in ipairs(self.damageNumbers) do
+            love.graphics.setColor(1, 0.3, 0.3, damage.alpha)
+            love.graphics.print("-" .. damage.amount, damage.x - 10, damage.y)
+        end
+    end
+    
+    -- Draw health regeneration effect
+    if self.isPlayer and self.timeSinceLastDamage >= self.regenDelay and 
+       self.health < self.maxHealth then
+        local regenPulse = (math.sin(love.timer.getTime() * 6) + 1) * 0.5
+        love.graphics.setColor(0.3, 1, 0.3, 0.2 + regenPulse * 0.3)
+        love.graphics.circle("line", self.x, self.y, self.radius + 5)
     end
 end
 

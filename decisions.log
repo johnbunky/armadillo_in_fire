@@ -8,3 +8,6 @@ Removed dependency on separate GameState class and integrated game state logic d
 
 === 2026-03-09 13:18:41 -- task 4.2: Replace coin collection sounds with fire damage/extinguish sounds ===
 Replaced coin collection sound calls with appropriate fire-themed sounds - playFireExtinguish() for fire extinguishing and playFireDamage() for player taking fire damage.
+
+=== 2026-03-09 13:26:22 -- task 5: Add damage indicator visual feedback ===
+Enhanced damage indicators with floating damage numbers, pulsing health bar for low health, screen-edge damage overlay, critical health warnings, and improved visual feedback for damage resistance and regeneration states.

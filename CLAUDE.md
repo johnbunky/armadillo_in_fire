@@ -10,6 +10,7 @@ Love2D + Lua
 Complete core game with modular structure, physics, shadows, audio, and fire damage system. Features fire spawning using predictive player movement (0.28s ahead, 65px distance), red ball fire extinguishing with stain creation, player health system with damage/regeneration, and game over mechanics.
 
 ## Open Tasks
+- [x] task 5: Add damage indicator visual feedback
 - [x] task 4.2: Replace coin collection sounds with fire damage/extinguish sounds
 - [x] task 4.1:  Add fire-related sound effects (crackling, damage, extinguish)
 - [x] could you take a look whats wrong with the ui.lua
