@@ -4,12 +4,18 @@ local Stain = require('src.stain')
 local Physics = require('src.physics')
 local Audio = require('src.audio')
 local UI = require('src.ui')
+local Menu = require('src.menu')
 
 -- Global game state
 local gameState = {}
 local audio
+local menu
+local currentState = "menu"  -- Can be: "menu", "playing", "paused", "game_over"
 
 function love.load()
+    -- Initialize menu system
+    menu = Menu:new()
+    
     -- Initialize audio system
     audio = Audio
     audio:init()
@@ -32,6 +38,13 @@ function love.load()
     
     -- Set window properties
     love.graphics.setBackgroundColor(0.6, 0.8, 0.4)  -- Light green grass-like background
+    
+    -- Apply initial settings
+    local settings = menu:getSettings()
+    love.audio.setVolume(settings.masterVolume)
+    if settings.fullscreen then
+        love.window.setFullscreen(true)
+    end
 end
 
 function gameState:update(dt)
@@ -127,10 +140,13 @@ function gameState:restart()
 end
 
 function love.update(dt)
-    if gameState.state == "playing" then
+    if currentState == "menu" then
+        menu:update(dt)
+    elseif currentState == "playing" then
         -- Check for game over
         if gameState.playerBall:isDead() then
-            gameState.state = "game_over"
+            currentState = "game_over"
+            menu:showGameOver()
             return
         end
         
@@ -178,16 +194,16 @@ function love.update(dt)
                 end
             end
         end
-    elseif gameState.state == "game_over" then
-        -- Handle restart input
-        if love.keyboard.isDown("r", "space", "return") then
-            gameState:restart()
-        end
+    elseif currentState == "paused" then
+        menu:update(dt)
+    elseif currentState == "game_over" then
+        menu:update(dt)
     end
 end
 
 function love.draw()
-    if gameState.state == "playing" then
+    if currentState == "playing" or currentState == "paused" then
+        -- Draw game world
         -- Draw shadows first (behind all objects) - skip fire shadows
         gameState.playerBall:drawShadow()
         gameState.pushableBall:drawShadow()
@@ -208,25 +224,45 @@ function love.draw()
         
         -- Draw UI with audio reference
         UI.draw(gameState, audio)
-    elseif gameState.state == "game_over" then
-        -- Draw game over screen
-        love.graphics.setColor(1, 1, 1, 1)
-        love.graphics.printf("GAME OVER", 0, love.graphics.getHeight() / 2 - 50, love.graphics.getWidth(), "center")
-        love.graphics.printf("Press R, SPACE, or ENTER to restart", 0, love.graphics.getHeight() / 2, love.graphics.getWidth(), "center")
+        
+        -- Draw menu overlay if paused
+        if currentState == "paused" then
+            menu:draw()
+        end
+    elseif currentState == "menu" or currentState == "game_over" then
+        -- Draw menu
+        menu:draw()
     end
 end
 
 function love.keypressed(key)
-    -- Audio controls
-    if key == "m" then
-        audio:toggle()
-    elseif key == "=" or key == "+" then
-        audio:setVolume(audio.volume + 0.1)
-    elseif key == "-" or key == "_" then
-        audio:setVolume(audio.volume - 0.1)
-    elseif key == "escape" then
-        love.event.quit()
-    elseif gameState.state == "game_over" and (key == "r" or key == "space" or key == "return") then
-        gameState:restart()
+    if currentState == "menu" or currentState == "paused" or currentState == "game_over" then
+        local menuAction = menu:keypressed(key)
+        
+        if menuAction == "start_game" then
+            currentState = "playing"
+            gameState:restart()
+        elseif menuAction == "resume" then
+            currentState = "playing"
+        elseif menuAction == "restart" then
+            currentState = "playing"
+            gameState:restart()
+        end
+        
+    elseif currentState == "playing" then
+        -- Game controls
+        if key == "p" or key == "pause" then
+            currentState = "paused"
+            menu:showPause()
+        elseif key == "escape" then
+            currentState = "menu"
+            menu:setMenu("main")
+        elseif key == "m" then
+            audio:toggle()
+        elseif key == "=" or key == "+" then
+            audio:setVolume(audio.volume + 0.1)
+        elseif key == "-" or key == "_" then
+            audio:setVolume(audio.volume - 0.1)
+        end
     end
 end
