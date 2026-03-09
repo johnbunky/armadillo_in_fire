@@ -94,7 +94,7 @@ function gameState:extinguishFire(fireIndex, audio)
         
         -- Play extinguish sound
         if audio then
-            audio:playCoinCollect()  -- Using coin collect sound for extinguish
+            audio:playFireExtinguish()  -- Using fire extinguish sound
         end
     end
 end

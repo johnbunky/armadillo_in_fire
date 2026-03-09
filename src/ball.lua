@@ -77,9 +77,9 @@ function Ball:takeDamage(amount, audio)
     self.fireResistanceTime = self.fireResistanceDuration
     self.timeSinceLastDamage = 0
     
-    -- Play damage sound (placeholder - will use existing sound)
+    -- Play fire damage sound
     if audio then
-        audio:playBallCollision()  -- Temporary sound effect
+        audio:playFireDamage()  -- Using fire damage sound
     end
     
     return true  -- Damage was applied

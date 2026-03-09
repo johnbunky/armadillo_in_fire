@@ -5,3 +5,6 @@ Fixed UI module by adding proper module structure with UI.draw function and retu
 
 === 2026-03-08 20:57:40 -- could you take a look whats wrong with the main.lua ===
 Removed dependency on separate GameState class and integrated game state logic directly into main.lua with proper ball creation, fire spawning system, and restart functionality
+
+=== 2026-03-09 13:18:41 -- task 4.2: Replace coin collection sounds with fire damage/extinguish sounds ===
+Replaced coin collection sound calls with appropriate fire-themed sounds - playFireExtinguish() for fire extinguishing and playFireDamage() for player taking fire damage.
