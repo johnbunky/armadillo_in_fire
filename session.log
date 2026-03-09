@@ -2831,3 +2831,7 @@ stack traceback:
         [love "boot.lua"]:352: in 
 [2026-03-09 14:52:22] [ERROR_END] done
 [2026-03-09 14:54:30] [CODE_START] [short [auto]] could you fix it Error: main.lua:57: attempt to call method 'playMusic' (a nil value)
+[2026-03-09 14:55:15] [CODE_END] done
+[2026-03-09 14:56:19] [ERROR_INPUT] Error: main.lua:88: attempt to call method 'checkCollisions' (a nil value)
+stack traceback:
+        [love "boot.lua"]:35

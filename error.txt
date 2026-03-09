@@ -1,7 +1,6 @@
-Error: main.lua:57: attempt to call method 'playMusic' (a nil value)
+Error: main.lua:88: attempt to call method 'checkCollisions' (a nil value)
 stack traceback:
-        [love "boot.lua"]:352: in function 'playMusic'
-        main.lua:57: in function 'startNewGame'
-        main.lua:190: in function <main.lua:165>
-        [love "callbacks.lua"]:154: in function <[love "callbacks.lua"]:144>
+        [love "boot.lua"]:352: in function 'checkCollisions'
+        main.lua:88: in function 'update'
+        [love "callbacks.lua"]:162: in function <[love "callbacks.lua"]:144>
         [C]: in function 'xpcall'
