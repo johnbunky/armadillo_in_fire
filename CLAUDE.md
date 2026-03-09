@@ -10,6 +10,7 @@ Love2D + Lua
 Complete core game with modular structure, physics, shadows, audio, and fire damage system. Features fire spawning using predictive player movement (0.28s ahead, 65px distance), red ball fire extinguishing with stain creation, player health system with damage/regeneration, game over mechanics, fire-themed audio system, comprehensive damage visual feedback including floating damage numbers and health bar indicators, and fully functional menu system with main menu, settings, help, pause, and game over screens with keyboard navigation and state management.
 
 ## Open Tasks
+- [x] could you fix this error
 - [x] could you fix it Error: main.lua:57: attempt to call method 'playMusic' (a nil value)
 
 ### Plan: create and add unit and integrations tests in the tests folder [2026-03-09 14:03:58]

@@ -25,14 +25,14 @@ function Physics.checkFireCollision(ball, fire)
 end
 
 -- Main collision checking function called by main.lua
-function Physics:checkCollisions(ball, fires, stains, audio)
+function Physics:checkCollisions(ball, fires, stains, audio, gameState)
     -- Check collisions between ball and fires
     for i = #fires, 1, -1 do
         local fire = fires[i]
         
         if self.checkFireCollision(ball, fire) then
             -- Fire hit the ball - take damage
-            ball.lives = ball.lives - 1
+            gameState.lives = gameState.lives - 1
             
             -- Create stain at fire position
             local Stain = require('src.stain')

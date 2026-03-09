@@ -2835,3 +2835,17 @@ stack traceback:
 [2026-03-09 14:56:19] [ERROR_INPUT] Error: main.lua:88: attempt to call method 'checkCollisions' (a nil value)
 stack traceback:
         [love "boot.lua"]:35
+[2026-03-09 14:56:43] [ERROR_END] done
+[2026-03-09 14:58:08] [ERROR_INPUT] Error: main.lua:103: attempt to compare nil with number
+stack traceback:
+        [love "boot.lua"]:352: in function '__l
+[2026-03-09 14:58:21] [ERROR_END] done
+[2026-03-09 15:02:05] [ERROR_INPUT] Error: main.lua:103: attempt to compare nil with number
+stack traceback:
+        [love "boot.lua"]:352: in function '__l
+[2026-03-09 15:02:11] [ERROR_END] done
+[2026-03-09 15:04:39] [CODE_START] [short [auto]] could you fix this error
+[2026-03-09 15:05:16] [CODE_END] done
+[2026-03-09 15:06:52] [ERROR_INPUT] Error: main.lua:156: attempt to call method 'drawScore' (a nil value)
+stack traceback:
+        [love "boot.lua"]:352: in

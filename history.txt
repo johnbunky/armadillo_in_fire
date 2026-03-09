@@ -1,1104 +1,251 @@
 <<<MSG>>>
 <<<ROLE:user>>>
-This error occurred at runtime:
-
-Error: main.lua:57: attempt to call method 'playMusic' (a nil value)
-stack traceback:
-        [love "boot.lua"]:352: in function 'playMusic'
-        main.lua:57: in function 'startNewGame'
-        main.lua:190: in function <main.lua:165>
-        [love "callbacks.lua"]:154: in function <[love "callbacks.lua"]:144>
-        [C]: in function 'xpcall'
-<<<MSG>>>
-<<<ROLE:assistant>>>
-ROOT_CAUSE: The 'playMusic' method is not defined in the audio system or module being called
-
-FIX: Define the playMusic method in the audio module or use the correct method name (likely love.audio.play)
-
+[SUMMARY OF PREVIOUS CONVERSATION]
+ROOT_CAUSE: The UI module is missing the 'drawScore' method that main.lua is calling at line 156
+FIX: Need to see the UI module to add the missing drawScore method
 CONFIDENCE: high
 
-Without seeing the full code, the most likely fix is to either:
+QUESTION: Can you provide the `src/ui.lua` file so I can see what methods are available and add the missing `drawScore` method?
 
-1. Define the missing `playMusic` method in your audio module
-2. Replace the call with the correct LÖVE2D audio function
-
-If you're using LÖVE2D's built-in audio system, the correct call would be:
+The error is occurring at line 156 in main.lua where you're calling:
 ```lua
--- Instead of playMusic(source)
-love.audio.play(musicSource)
+UI:drawScore(gameState.score, gameState.lives)
 ```
 
-Or if you have a custom audio module, ensure it has the `playMusic` method defined:
-```lua
--- In your audio module
-function audio:playMusic(source)
-    love.audio.play(source)
-end
-```
-
-Please share the relevant code around line 57 in main.lua and your audio module for a more specific fix.
+But the UI module doesn't have this method defined.
 <<<MSG>>>
 <<<ROLE:user>>>
 This error occurred at runtime:
 
-Error: main.lua:57: attempt to call method 'playMusic' (a nil value)
+Error: main.lua:156: attempt to call method 'drawScore' (a nil value)
 stack traceback:
-        [love "boot.lua"]:352: in function 'playMusic'
-        main.lua:57: in function 'startNewGame'
-        main.lua:190: in function <main.lua:165>
-        [love "callbacks.lua"]:154: in function <[love "callbacks.lua"]:144>
+        [love "boot.lua"]:352: in function 'drawScore'
+        main.lua:156: in function 'draw'
+        [love "callbacks.lua"]:168: in function <[love "callbacks.lua"]:144>
         [C]: in function 'xpcall'
 <<<MSG>>>
 <<<ROLE:assistant>>>
-ROOT_CAUSE: The 'playMusic' method is not defined or the object calling it is nil
-FIX: Need to see the code around line 57 to provide exact fix - likely missing method definition or incorrect object reference
-CONFIDENCE: medium
-
-To provide an exact fix, I need to see:
-1. Line 57 in main.lua where the error occurs
-2. How the audio object/module is defined and initialized
-
-The error suggests you're calling something like:
-```lua
-audioObject:playMusic(...)  -- Line 57
-```
-
-But either `audioObject` is nil or it doesn't have a `playMusic` method.
-
-Common fixes:
-- If using a custom audio module, ensure it's properly required and initialized
-- If the method should exist, check the method name spelling
-- If using LÖVE2D directly, use `love.audio.play()` instead
-
-Please share the relevant code sections for a precise solution.
-<<<MSG>>>
-<<<ROLE:user>>>
-could you fix it Error: main.lua:57: attempt to call method 'playMusic' (a nil value)
-<<<MSG>>>
-<<<ROLE:assistant>>>
-I need to see the actual code to fix the error. The error occurs at line 57 in main.lua where you're trying to call a `playMusic` method that doesn't exist.
-
-QUESTION: Can you provide the main.lua file (or at least the code around line 57) and any audio-related files so I can see exactly what's calling `playMusic` and fix the missing method?
+QUESTION: src/ui.lua
 <<<MSG>>>
 <<<ROLE:user>>>
 Here are the requested files:
 
--- FILE: main.lua --
-local Ball = require('src.ball')
-local Fire = require('src.fire')
-local Stain = require('src.stain')
-local Physics = require('src.physics')
-local Audio = require('src.audio')
-local UI = require('src.ui')
-local Menu = require('src.menu')
+-- FILE: src/ui.lua --
+local UI = {}
 
--- Global game state
-local gameState = {}
-local audio
-local menu
-local currentState = "menu"  -- Can be: "menu", "playing", "paused", "game_over"
-
-function love.load()
-    -- Initialize menu system
-    menu = Menu:new()
-    
-    -- Initialize audio system
-    audio = Audio
-    audio:init()
-    
-    -- Initialize game state
-    gameState.state = "playing"
-    gameState.gameOverTime = 0
-    gameState.gameOverDelay = 2.0
-    gameState.nextFireSpawn = 2.0
-    gameState.fireSpawnInterval = 3.0
-    gameState.minFireSpawnInterval = 0.8
-    gameState.fireSpawnReduction = 0.1
-    gameState.score = 0
-    gameState.lives = 3
-    
-    -- Initialize game objects
-    gameState.ball = Ball:new(400, 550)
-    gameState.fires = {}
-    gameState.stains = {}
-    
-    -- Set window title
-    love.window.setTitle("Fire Ball Game")
-end
-
-function startNewGame()
-    currentState = "playing"
-    gameState.state = "playing"
-    gameState.gameOverTime = 0
-    gameState.nextFireSpawn = 2.0
-    gameState.fireSpawnInterval = 3.0
-    gameState.score = 0
-    gameState.lives = 3
-    
-    -- Reset game objects
-    gameState.ball = Ball:new(400, 550)
-    gameState.fires = {}
-    gameState.stains = {}
-    
-    audio:playMusic('game')
-end
-
-function love.update(dt)
-    if currentState == "menu" then
-        menu:update(dt)
-    elseif currentState == "playing" then
-        if gameState.state == "playing" then
-            -- Update game objects
-            gameState.ball:update(dt)
-            
-            for i = #gameState.fires, 1, -1 do
-                local fire = gameState.fires[i]
-                fire:update(dt)
-                
-                if fire.position.y > love.graphics.getHeight() + 50 then
-                    table.remove(gameState.fires, i)
-                    gameState.score = gameState.score + 10
-                end
-            end
-            
-            for i = #gameState.stains, 1, -1 do
-                local stain = gameState.stains[i]
-                stain:update(dt)
-                
-                if stain.alpha <= 0 then
-                    table.remove(gameState.stains, i)
-                end
-            end
-            
-            -- Check collisions
-            Physics:checkCollisions(gameState.ball, gameState.fires, gameState.stains, audio)
-            
-            -- Spawn fires
-            gameState.nextFireSpawn = gameState.nextFireSpawn - dt
-            if gameState.nextFireSpawn <= 0 then
-                local fire = Fire:new(math.random(50, love.graphics.getWidth() - 50), -30)
-                table.insert(gameState.fires, fire)
-                gameState.nextFireSpawn = gameState.fireSpawnInterval
-                
-                if gameState.fireSpawnInterval > gameState.minFireSpawnInterval then
-                    gameState.fireSpawnInterval = gameState.fireSpawnInterval - gameState.fireSpawnReduction
-                end
-            end
-            
-            -- Check game over
-            if gameState.ball.lives <= 0 then
-                gameState.state = "game_over"
-                gameState.gameOverTime = 0
-                audio:stopMusic()
-                audio:playSound('game_over')
-            end
-        elseif gameState.state == "game_over" then
-            gameState.gameOverTime = gameState.gameOverTime + dt
-            if gameState.gameOverTime >= gameState.gameOverDelay then
-                currentState = "menu"
-                menu:showGameOver(gameState.score)
-            end
-        end
-    elseif currentState == "paused" then
-        menu:update(dt)
-    end
-end
-
-function love.draw()
-    if currentState == "menu" or currentState == "paused" then
-        -- Draw game in background if paused
-        if currentState == "paused" then
-            -- Draw game objects
-            gameState.ball:draw()
-            
-            for _, fire in ipairs(gameState.fires) do
-                fire:draw()
-            end
-            
-            for _, stain in ipairs(gameState.stains) do
-                stain:draw()
-            end
-            
-            -- Draw UI
-            UI:drawScore(gameState.score)
-            UI:drawLives(gameState.ball.lives)
+function UI.draw(gameState, audio)
+    -- Draw player health bar
+    if gameState.playerBall then
+        local healthPercent = gameState.playerBall.health / gameState.playerBall.maxHealth
+        local barWidth = 200
+        local barHeight = 20
+        local barX = 10
+        local barY = 10
+        
+        -- Health bar background
+        love.graphics.setColor(0.3, 0.3, 0.3, 0.8)
+        love.graphics.rectangle("fill", barX, barY, barWidth, barHeight)
+        
+        -- Health bar fill with pulsing effect when low health
+        local healthColor = {1 - healthPercent + 0.3, healthPercent, 0.2}  -- Red to green gradient
+        
+        -- Add pulsing effect when health is low
+        if healthPercent < 0.25 then
+            local pulse = (math.sin(love.timer.getTime() * 8) + 1) * 0.5  -- 0 to 1 pulse
+            local pulseIntensity = 0.3
+            healthColor[1] = math.min(1, healthColor[1] + pulse * pulseIntensity)
         end
         
-        -- Draw menu on top
-        menu:draw()
-    elseif currentState == "playing" then
-        -- Draw game objects
-        gameState.ball:draw()
+        love.graphics.setColor(healthColor[1], healthColor[2], healthColor[3], 0.9)
+        love.graphics.rectangle("fill", barX, barY, barWidth * healthPercent, barHeight)
         
-        for _, fire in ipairs(gameState.fires) do
-            fire:draw()
-        end
-        
-        for _, stain in ipairs(gameState.stains) do
-            stain:draw()
-        end
-        
-        -- Draw UI
-        UI:drawScore(gameState.score)
-        UI:drawLives(gameState.ball.lives)
-        
-        if gameState.state == "game_over" then
-            UI:drawGameOver(gameState.score)
-        end
-    end
-end
-
-function love.keypressed(key)
-    if currentState == "menu" or currentState == "paused" then
-        -- Handle menu input and check for actions
-        local action = nil
-        
-        -- Store the original selectOption function temporarily
-        local originalSelectOption = menu.selectOption
-        
-        -- Override selectOption to capture the return value
-        menu.selectOption = function(self)
-            return originalSelectOption(self)
-        end
-        
-        -- Process the key press
-        if key == "return" or key == "space" then
-            action = menu:selectOption()
+        -- Health bar border with warning color when low
+        if healthPercent < 0.25 then
+            love.graphics.setColor(1, 0.2, 0.2, 1)  -- Red border for low health
         else
-            menu:keypressed(key)
+            love.graphics.setColor(1, 1, 1, 1)
         end
+        love.graphics.rectangle("line", barX, barY, barWidth, barHeight)
         
-        -- Restore original function
-        menu.selectOption = originalSelectOption
-        
-        -- Handle menu actions
-        if action == "start_game" then
-            startNewGame()
-        elseif action == "resume" then
-            if currentState == "paused" then
-                currentState = "playing"
-                audio:resumeMusic()
-            end
-        elseif action == "restart" then
-            startNewGame()
-        end
-        
-    elseif currentState == "playing" then
-        if key == "escape" then
-            currentState = "paused"
-            menu:showPause()
-            audio:pauseMusic()
-        elseif key == "p" then
-            currentState = "paused"
-            menu:showPause()
-            audio:pauseMusic()
+        -- Health text with color coding
+        if healthPercent < 0.25 then
+            love.graphics.setColor(1, 0.3, 0.3, 1)  -- Red text for critical health
+        elseif healthPercent < 0.5 then
+            love.graphics.setColor(1, 0.7, 0.3, 1)  -- Orange text for low health
         else
-            -- Handle game input
-            gameState.ball:keypressed(key)
+            love.graphics.setColor(1, 1, 1, 1)      -- White text for good health
         end
+        love.graphics.print(string.format("Health: %.0f/%.0f", gameState.playerBall.health, gameState.playerBall.maxHealth), barX, barY + 25)
+        
+        -- Critical health warning
+        if healthPercent < 0.15 then
+            local warningAlpha = (math.sin(love.timer.getTime() * 10) + 1) * 0.5
+            love.graphics.setColor(1, 0.2, 0.2, warningAlpha)
+            love.graphics.printf("CRITICAL HEALTH!", 0, love.graphics.getHeight() * 0.3, love.graphics.getWidth(), "center")
+        end
+        
+        -- Damage resistance indicator
+        if gameState.playerBall.fireResistanceTime > 0 then
+            love.graphics.setColor(0.8, 0.8, 1, 0.7)
+            love.graphics.print("FIRE RESISTANCE", barX + barWidth + 10, barY + 5)
+        end
+        
+        -- Health regeneration indicator
+        if gameState.playerBall.timeSinceLastDamage >= gameState.playerBall.regenDelay and 
+           gameState.playerBall.health < gameState.playerBall.maxHealth then
+            love.graphics.setColor(0.3, 1, 0.3, 0.8)
+            love.graphics.print("REGENERATING", barX, barY - 15)
+        end
+    end
+    
+    -- Draw fire count and stain count
+    local fireCount = gameState.fires and #gameState.fires or 0
+    local stainCount = gameState.stains and #gameState.stains or 0
+    
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.print("Active Fires: " .. fireCount, 10, 60)
+    love.graphics.print("Extinguished: " .. stainCount, 10, 80)
+    
+    -- Draw instructions
+    love.graphics.print("Push red ball into fires to extinguish them!", 10, 110)
+    love.graphics.print("Avoid touching fires - they damage you!", 10, 130)
+    
+    -- Draw audio status
+    if audio then
+        local audioStatus = audio:isEnabled() and "ON" or "OFF"
+        love.graphics.print("Audio: " .. audioStatus .. " (M to toggle)", love.graphics.getWidth() - 200, 10)
+        love.graphics.print("Volume: " .. math.floor(audio.volume * 100) .. "% (+/- to adjust)", love.graphics.getWidth() - 200, 30)
+    end
+    
+    -- Draw screen-edge damage indicators when player is taking damage
+    if gameState.playerBall and gameState.playerBall.fireResistanceTime > 0 then
+        local damageAlpha = gameState.playerBall.fireResistanceTime / gameState.playerBall.fireResistanceDuration * 0.3
+        love.graphics.setColor(1, 0.1, 0.1, damageAlpha)
+        
+        -- Draw damage overlay around screen edges
+        local edgeThickness = 20
+        love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), edgeThickness)  -- Top
+        love.graphics.rectangle("fill", 0, love.graphics.getHeight() - edgeThickness, love.graphics.getWidth(), edgeThickness)  -- Bottom
+        love.graphics.rectangle("fill", 0, 0, edgeThickness, love.graphics.getHeight())  -- Left
+        love.graphics.rectangle("fill", love.graphics.getWidth() - edgeThickness, 0, edgeThickness, love.graphics.getHeight())  -- Right
     end
 end
 
-function love.keyreleased(key)
-    if currentState == "playing" then
-        gameState.ball:keyreleased(key)
-    end
-end
--- END: main.lua --
+return UI
+-- END: src/ui.lua --
 <<<MSG>>>
 <<<ROLE:assistant>>>
-I can see the issue. On line 57, you're calling `audio:playMusic('game')` but looking at how the Audio module is being used, it seems like it might not have a `playMusic` method defined. 
-
-QUESTION: Can you provide the `src/audio.lua` file so I can see what methods are actually available and fix the missing `playMusic` method?
-<<<MSG>>>
-<<<ROLE:user>>>
-Here are the requested files:
-
--- FILE: src/audio.lua --
-local Audio = {}
-
--- Audio state
-Audio.sounds = {}
-Audio.enabled = true
-Audio.volume = 0.7
-
--- Generate a simple tone sound programmatically
-function Audio:generateTone(frequency, duration, volume)
-    local sampleRate = 44100
-    local samples = sampleRate * duration
-    local soundData = love.sound.newSoundData(samples, sampleRate, 16, 1)
-    
-    for i = 0, samples - 1 do
-        local t = i / sampleRate
-        local wave = math.sin(2 * math.pi * frequency * t) * volume
-        -- Add fade out to prevent clicks
-        local fadeOut = math.max(0, 1 - (t / duration) * 2)
-        wave = wave * fadeOut
-        soundData:setSample(i, wave)
-    end
-    
-    return love.audio.newSource(soundData)
-end
-
--- Generate crackling fire sound with noise
-function Audio:generateFireCrackle()
-    local sampleRate = 44100
-    local duration = 0.4
-    local samples = sampleRate * duration
-    local soundData = love.sound.newSoundData(samples, sampleRate, 16, 1)
-    
-    for i = 0, samples - 1 do
-        local t = i / sampleRate
-        -- Create crackling effect with multiple frequencies and noise
-        local crackle = (math.random() - 0.5) * 0.3  -- Random noise
-        crackle = crackle + math.sin(2 * math.pi * 80 * t) * 0.2  -- Low rumble
-        crackle = crackle + math.sin(2 * math.pi * 150 * t) * 0.15  -- Mid crackle
-        crackle = crackle + math.sin(2 * math.pi * 300 * t) * 0.1   -- High crackle
-        
-        -- Add envelope for natural sound
-        local envelope = math.exp(-t * 2) * (1 + math.sin(20 * t) * 0.3)
-        crackle = crackle * envelope * 0.4
-        
-        soundData:setSample(i, crackle)
-    end
-    
-    return love.audio.newSource(soundData)
-end
-
--- Generate hissing extinguish sound
-function Audio:generateExtinguish()
-    local sampleRate = 44100
-    local duration = 0.6
-    local samples = sampleRate * duration
-    local soundData = love.sound.newSoundData(samples, sampleRate, 16, 1)
-    
-    for i = 0, samples - 1 do
-        local t = i / sampleRate
-        -- Create hissing sound with filtered noise
-        local hiss = (math.random() - 0.5) * 0.8
-        -- Low-pass filter effect
-        local filteredHiss = hiss * (1 - t / duration)
-        -- Add some steam-like modulation
-        local steam = math.sin(2 * math.pi * 40 * t) * 0.2
-        local sound = (filteredHiss + steam) * 0.3
-        
-        soundData:setSample(i, sound)
-    end
-    
-    return love.audio.newSource(soundData)
-end
-
--- Generate damage sound with harsh tone
-function Audio:generateDamage()
-    local sampleRate = 44100
-    local duration = 0.25
-    local samples = sampleRate * duration
-    local soundData = love.sound.newSoundData(samples, sampleRate, 16, 1)
-    
-    for i = 0, samples - 1 do
-        local t = i / sampleRate
-        -- Harsh, distorted sound for damage
-        local wave = math.sin(2 * math.pi * 220 * t) * 0.6
-        wave = wave + math.sin(2 * math.pi * 440 * t) * 0.3
-        -- Add distortion
-        wave = math.max(-0.7, math.min(0.7, wave * 1.5))
-        -- Quick fade out
-        local fadeOut = math.max(0, 1 - (t / duration) * 4)
-        wave = wave * fadeOut
-        soundData:setSample(i, wave)
-    end
-    
-    return love.audio.newSource(soundData)
-end
-
--- Initialize audio system and load sounds
-function Audio:init()
-    -- Create sounds directory path
-    local soundsPath = "assets/sounds/"
-    
-    -- Try to load sound files, generate fallback sounds if files don't exist
-    self.sounds = {
-        ballCollision = self:loadSound(soundsPath .. "bounce.wav", "static") or self:generateTone(200, 0.1, 0.5),
-        coinCollect = self:loadSound(soundsPath .. "pickup.wav", "static") or self:generateTone(800, 0.2, 0.3),
-        ballPush = self:loadSound(soundsPath .. "push.wav", "static") or self:generateTone(150, 0.15, 0.4),
-        
-        -- Fire-related sounds
-        fireCrackle = self:loadSound(soundsPath .. "fire_crackle.wav", "static") or self:generateFireCrackle(),
-        fireExtinguish = self:loadSound(soundsPath .. "fire_extinguish.wav", "static") or self:generateExtinguish(),
-        fireDamage = self:loadSound(soundsPath .. "fire_damage.wav", "static") or self:generateDamage()
-    }
-    
-    -- Set default volume for all sounds
-    for name, sound in pairs(self.sounds) do
-        if sound then
-            sound:setVolume(self.volume)
-        end
-    end
-    
-    print("Audio system initialized with " .. (self.sounds.ballCollision and "loaded" or "generated") .. " sounds")
-    print("Fire sound effects: crackle, extinguish, damage")
-end
-
--- Load a sound file with error handling
-function Audio:loadSound(filepath, sourceType)
-    local success, sound = pcall(love.audio.newSource, filepath, sourceType or "static")
-    if success then
-        print("Loaded sound: " .. filepath)
-        return sound
-    else
-        print("Could not load sound: " .. filepath .. " (will use generated sound)")
-        return nil
-    end
-end
-
--- Play a sound effect
-function Audio:playSound(soundName)
-    if not self.enabled then
-        return
-    end
-    
-    local sound = self.sounds[soundName]
-    if sound then
-        -- Stop the sound if it's already playing to allow overlapping
-        sound:stop()
-        sound:play()
-    end
-end
-
--- Set master volume for all sounds
-function Audio:setVolume(volume)
-    self.volume = math.max(0, math.min(1, volume))  -- Clamp between 0 and 1
-    
-    for name, sound in pairs(self.sounds) do
-        if sound then
-            sound:setVolume(self.volume)
-        end
-    end
-end
-
--- Toggle audio on/off
-function Audio:toggle()
-    self.enabled = not self.enabled
-    print("Audio " .. (self.enabled and "enabled" or "disabled"))
-end
-
--- Check if audio is enabled
-function Audio:isEnabled()
-    return self.enabled
-end
-
--- Existing sound effect functions
-function Audio:playBallCollision()
-    self:playSound("ballCollision")
-end
-
-function Audio:playCoinCollect()
-    self:playSound("coinCollect")
-end
-
-function Audio:playBallPush()
-    self:playSound("ballPush")
-end
-
--- New fire-related sound effect functions
-function Audio:playFireCrackle()
-    self:playSound("fireCrackle")
-end
-
-function Audio:playFireExtinguish()
-    self:playSound("fireExtinguish")
-end
-
-function Audio:playFireDamage()
-    self:playSound("fireDamage")
-end
-
-return Audio
--- END: src/audio.lua --
-<<<MSG>>>
-<<<ROLE:assistant>>>
-I can see the issue. The Audio module doesn't have the `playMusic`, `stopMusic`, `pauseMusic`, or `resumeMusic` methods that are being called in main.lua. The Audio module only has sound effect functionality.
-
--- FILE: src/audio.lua --
-local Audio = {}
-
--- Audio state
-Audio.sounds = {}
-Audio.music = {}
-Audio.currentMusic = nil
-Audio.enabled = true
-Audio.volume = 0.7
-Audio.musicVolume = 0.5
-
--- Generate a simple tone sound programmatically
-function Audio:generateTone(frequency, duration, volume)
-    local sampleRate = 44100
-    local samples = sampleRate * duration
-    local soundData = love.sound.newSoundData(samples, sampleRate, 16, 1)
-    
-    for i = 0, samples - 1 do
-        local t = i / sampleRate
-        local wave = math.sin(2 * math.pi * frequency * t) * volume
-        -- Add fade out to prevent clicks
-        local fadeOut = math.max(0, 1 - (t / duration) * 2)
-        wave = wave * fadeOut
-        soundData:setSample(i, wave)
-    end
-    
-    return love.audio.newSource(soundData)
-end
-
--- Generate crackling fire sound with noise
-function Audio:generateFireCrackle()
-    local sampleRate = 44100
-    local duration = 0.4
-    local samples = sampleRate * duration
-    local soundData = love.sound.newSoundData(samples, sampleRate, 16, 1)
-    
-    for i = 0, samples - 1 do
-        local t = i / sampleRate
-        -- Create crackling effect with multiple frequencies and noise
-        local crackle = (math.random() - 0.5) * 0.3  -- Random noise
-        crackle = crackle + math.sin(2 * math.pi * 80 * t) * 0.2  -- Low rumble
-        crackle = crackle + math.sin(2 * math.pi * 150 * t) * 0.15  -- Mid crackle
-        crackle = crackle + math.sin(2 * math.pi * 300 * t) * 0.1   -- High crackle
-        
-        -- Add envelope for natural sound
-        local envelope = math.exp(-t * 2) * (1 + math.sin(20 * t) * 0.3)
-        crackle = crackle * envelope * 0.4
-        
-        soundData:setSample(i, crackle)
-    end
-    
-    return love.audio.newSource(soundData)
-end
-
--- Generate hissing extinguish sound
-function Audio:generateExtinguish()
-    local sampleRate = 44100
-    local duration = 0.6
-    local samples = sampleRate * duration
-    local soundData = love.sound.newSoundData(samples, sampleRate, 16, 1)
-    
-    for i = 0, samples - 1 do
-        local t = i / sampleRate
-        -- Create hissing sound with filtered noise
-        local hiss = (math.random() - 0.5) * 0.8
-        -- Low-pass filter effect
-        local filteredHiss = hiss * (1 - t / duration)
-        -- Add some steam-like modulation
-        local steam = math.sin(2 * math.pi * 40 * t) * 0.2
-        local sound = (filteredHiss + steam) * 0.3
-        
-        soundData:setSample(i, sound)
-    end
-    
-    return love.audio.newSource(soundData)
-end
-
--- Generate damage sound with harsh tone
-function Audio:generateDamage()
-    local sampleRate = 44100
-    local duration = 0.25
-    local samples = sampleRate * duration
-    local soundData = love.sound.newSoundData(samples, sampleRate, 16, 1)
-    
-    for i = 0, samples - 1 do
-        local t = i / sampleRate
-        -- Harsh, distorted sound for damage
-        local wave = math.sin(2 * math.pi * 220 * t) * 0.6
-        wave = wave + math.sin(2 * math.pi * 440 * t) * 0.3
-        -- Add distortion
-        wave = math.max(-0.7, math.min(0.7, wave * 1.5))
-        -- Quick fade out
-        local fadeOut = math.max(0, 1 - (t / duration) * 4)
-        wave = wave * fadeOut
-        soundData:setSample(i, wave)
-    end
-    
-    return love.audio.newSource(soundData)
-end
-
--- Generate simple game over sound
-function Audio:generateGameOver()
-    local sampleRate = 44100
-    local duration = 1.0
-    local samples = sampleRate * duration
-    local soundData = love.sound.newSoundData(samples, sampleRate, 16, 1)
-    
-    for i = 0, samples - 1 do
-        local t = i / sampleRate
-        -- Descending tone for game over
-        local frequency = 220 * (1 - t * 0.8)  -- Descending from 220Hz
-        local wave = math.sin(2 * math.pi * frequency * t) * 0.4
-        -- Fade out
-        local fadeOut = math.max(0, 1 - (t / duration) * 0.8)
-        wave = wave * fadeOut
-        soundData:setSample(i, wave)
-    end
-    
-    return love.audio.newSource(soundData)
-end
-
--- Generate simple background music loop
-function Audio:generateGameMusic()
-    local sampleRate = 44100
-    local duration = 4.0  -- 4 second loop
-    local samples = sampleRate * duration
-    local soundData = love.sound.newSoundData(samples, sampleRate, 16, 1)
-    
-    for i = 0, samples - 1 do
-        local t = i / sampleRate
-        -- Simple chord progression with sine waves
-        local bass = math.sin(2 * math.pi * 55 * t) * 0.15  -- Bass note
-        local mid = math.sin(2 * math.pi * 110 * t) * 0.1   -- Mid note
-        local high = math.sin(2 * math.pi * 165 * t) * 0.05 -- High note
-        
-        -- Add some variation over time
-        local variation = math.sin(2 * math.pi * t / 2) * 0.02
-        local wave = bass + mid + high + variation
-        
-        soundData:setSample(i, wave)
-    end
-    
-    local source = love.audio.newSource(soundData)
-    source:setLooping(true)
-    return source
-end
-
--- Initialize audio system and load sounds
-function Audio:init()
-    -- Create sounds directory path
-    local soundsPath = "assets/sounds/"
-    local musicPath = "assets/music/"
-    
-    -- Try to load sound files, generate fallback sounds if files don't exist
-    self.sounds = {
-        ballCollision = self:loadSound(soundsPath .. "bounce.wav", "static") or self:generateTone(200, 0.1, 0.5),
-        coinCollect = self:loadSound(soundsPath .. "pickup.wav", "static") or self:generateTone(800, 0.2, 0.3),
-        ballPush = self:loadSound(soundsPath .. "push.wav", "static") or self:generateTone(150, 0.15, 0.4),
-        
-        -- Fire-related sounds
-        fireCrackle = self:loadSound(soundsPath .. "fire_crackle.wav", "static") or self:generateFireCrackle(),
-        fireExtinguish = self:loadSound(soundsPath .. "fire_extinguish.wav", "static") or self:generateExtinguish(),
-        fireDamage = self:loadSound(soundsPath .. "fire_damage.wav", "static") or self:generateDamage(),
-        
-        -- Game sounds
-        game_over = self:loadSound(soundsPath .. "game_over.wav", "static") or self:generateGameOver()
-    }
-    
-    -- Try to load music files, generate fallback music if files don't exist
-    self.music = {
-        game = self:loadSound(musicPath .. "game_music.ogg", "stream") or self:generateGameMusic()
-    }
-    
-    -- Set default volume for all sounds
-    for name, sound in pairs(self.sounds) do
-        if sound then
-            sound:setVolume(self.volume)
-        end
-    end
-    
-    -- Set default volume for music
-    for name, music in pairs(self.music) do
-        if music then
-            music:setVolume(self.musicVolume)
-        end
-    end
-    
-    print("Audio system initialized with " .. (self.sounds.ballCollision and "loaded" or "generated") .. " sounds")
-    print("Fire sound effects: crackle, extinguish, damage")
-end
-
--- Load a sound file with error handling
-function Audio:loadSound(filepath, sourceType)
-    local success, sound = pcall(love.audio.newSource, filepath, sourceType or "static")
-    if success then
-        print("Loaded sound: " .. filepath)
-        return sound
-    else
-        print("Could not load sound: " .. filepath .. " (will use generated sound)")
-        return nil
-    end
-end
-
--- Play a sound effect
-function Audio:playSound(soundName)
-    if not self.enabled then
-        return
-    end
-    
-    local sound = self.sounds[soundName]
-    if sound then
-        -- Stop the sound if it's already playing to allow overlapping
-        sound:stop()
-        sound:play()
-    end
-end
-
--- Music control functions
-function Audio:playMusic(musicName)
-    if not self.enabled then
-        return
-    end
-    
-    -- Stop current music if playing
-    if self.currentMusic then
-        self.currentMusic:stop()
-    end
-    
-    local music = self.music[musicName]
-    if music then
-        self.currentMusic = music
-        music:play()
-        print("Playing music: " .. musicName)
-    end
-end
-
-function Audio:stopMusic()
-    if self.currentMusic then
-        self.currentMusic:stop()
-        self.currentMusic = nil
-    end
-end
-
-function Audio:pauseMusic()
-    if self.currentMusic then
-        self.currentMusic:pause()
-    end
-end
-
-function Audio:resumeMusic()
-    if self.currentMusic then
-        self.currentMusic:resume()
-    end
-end
-
--- Set master volume for all sounds
-function Audio:setVolume(volume)
-    self.volume = math.max(0, math.min(1, volume))  -- Clamp between 0 and 1
-    
-    for name, sound in pairs(self.sounds) do
-        if sound then
-            sound:setVolume(self.volume)
-        end
-    end
-end
-
--- Set music volume
-function Audio:setMusicVolume(volume)
-    self.musicVolume = math.max(0, math.min(1, volume))  -- Clamp between 0 and 1
-    
-    for name, music in pairs(self.music) do
-        if music then
-            music:setVolume(self.musicVolume)
-        end
-    end
-end
-
--- Toggle audio on/off
-function Audio:toggle()
-    self.enabled = not self.enabled
-    print("Audio " .. (self.enabled and "enabled" or "disabled"))
-end
-
--- Check if audio is enabled
-function Audio:isEnabled()
-    return self.enabled
-end
-
--- Existing sound effect functions
-function Audio:playBallCollision()
-    self:playSound("ballCollision")
-end
-
-function Audio:playCoinCollect()
-    self:playSound("coinCollect")
-end
-
-function Audio:playBallPush()
-    self:playSound("ballPush")
-end
-
--- New fire-related sound effect functions
-function Audio:playFireCrackle()
-    self:playSound("fireCrackle")
-end
-
-function Audio:playFireExtinguish()
-    self:playSound("fireExtinguish")
-end
-
-function Audio:playFireDamage()
-    self:playSound("fireDamage")
-end
-
-return Audio
--- END: src/audio.lua --
-
-DECISION_LOG: Added missing music control methods (playMusic, stopMusic, pauseMusic, resumeMusic) to Audio module with generated fallback music and game_over sound effect
-<<<MSG>>>
-<<<ROLE:user>>>
-This error occurred at runtime:
-
-Error: main.lua:88: attempt to call method 'checkCollisions' (a nil value)
-stack traceback:
-        [love "boot.lua"]:352: in function 'checkCollisions'
-        main.lua:88: in function 'update'
-        [love "callbacks.lua"]:162: in function <[love "callbacks.lua"]:144>
-        [C]: in function 'xpcall'
-<<<MSG>>>
-<<<ROLE:assistant>>>
-ROOT_CAUSE: The 'checkCollisions' method is not defined in the Physics module
-FIX: Need to see the Physics module to add the missing checkCollisions method
+ROOT_CAUSE: The UI module is missing the 'drawScore' method that main.lua is calling at line 156
+FIX: Add the missing drawScore method to the UI module
 CONFIDENCE: high
 
-QUESTION: Can you provide the `src/physics.lua` file so I can see what methods are available and add the missing `checkCollisions` method?
+-- FILE: src/ui.lua --
+local UI = {}
 
-The error is occurring at line 88 in main.lua where you're calling:
-```lua
-Physics:checkCollisions(gameState.ball, gameState.fires, gameState.stains, audio)
-```
-
-But the Physics module doesn't have this method defined.
-<<<MSG>>>
-<<<ROLE:user>>>
-Here are the requested files:
-
--- FILE: src/physics.lua --
-local Physics = {}
-
--- Collision detection function
-function Physics.checkCollision(ball1, ball2)
-    local dx = ball1.x - ball2.x
-    local dy = ball1.y - ball2.y
-    local distance = math.sqrt(dx * dx + dy * dy)
-    return distance < (ball1.radius + ball2.radius)
-end
-
--- Check collision between ball and coin
-function Physics.checkCoinCollision(ball, coin)
-    local dx = ball.x - coin.x
-    local dy = ball.y - coin.y
-    local distance = math.sqrt(dx * dx + dy * dy)
-    return distance < (ball.radius + coin.radius)
-end
-
--- Handle collision physics with audio support
-function Physics.handleCollision(playerBall, pushBall, audio)
-    if not Physics.checkCollision(playerBall, pushBall) then
-        return
-    end
-    
-    -- Calculate collision direction
-    local dx = pushBall.x - playerBall.x
-    local dy = pushBall.y - playerBall.y
-    local distance = math.sqrt(dx * dx + dy * dy)
-    
-    -- Avoid division by zero
-    if distance == 0 then
-        dx, dy = 1, 0
-        distance = 1
-    end
-    
-    -- Normalize direction
-    dx = dx / distance
-    dy = dy / distance
-    
-    -- Separate balls to prevent overlap
-    local overlap = (playerBall.radius + pushBall.radius) - distance
-    pushBall.x = pushBall.x + dx * overlap * 0.6
-    pushBall.y = pushBall.y + dy * overlap * 0.4
-    playerBall.x = playerBall.x - dx * overlap * 0.4
-    playerBall.y = playerBall.y - dy * overlap * 0.4
-    
-    -- Transfer momentum (player ball pushes the other)
-    local pushForce = 200
-    pushBall.vx = pushBall.vx + dx * pushForce
-    pushBall.vy = pushBall.vy + dy * pushForce
-    
-    -- Play collision sound effect
-    if audio then
-        audio:playBallPush()
-    end
-end
-
--- Handle ball boundary collision with audio support
-function Physics.handleBoundaryCollision(ball, audio)
-    local bounced = false
-    local bounceReduction = 0.7
-    
-    -- Check and handle boundary collisions
-    if ball.x - ball.radius < 0 then
-        ball.x = ball.radius
-        ball.vx = -ball.vx * bounceReduction
-        bounced = true
-    elseif ball.x + ball.radius > love.graphics.getWidth() then
-        ball.x = love.graphics.getWidth() - ball.radius
-        ball.vx = -ball.vx * bounceReduction
-        bounced = true
-    end
-    
-    if ball.y - ball.radius < 0 then
-        ball.y = ball.radius
-        ball.vy = -ball.vy * bounceReduction
-        bounced = true
-    elseif ball.y + ball.radius > love.graphics.getHeight() then
-        ball.y = love.graphics.getHeight() - ball.radius
-        ball.vy = -ball.vy * bounceReduction
-        bounced = true
-    end
-    
-    -- Play bounce sound if ball hit a wall
-    if bounced and audio then
-        -- Only play bounce sound for fast-moving balls to avoid spam
-        local speed = math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy)
-        if speed > 50 then
-            audio:playBallCollision()
-        end
-    end
-    
-    return bounced
-end
-
-return Physics
--- END: src/physics.lua --
-<<<MSG>>>
-<<<ROLE:assistant>>>
-ROOT_CAUSE: The Physics module is missing the 'checkCollisions' method that main.lua is calling
-FIX: Add the missing checkCollisions method to handle ball-fire collisions and game logic
-CONFIDENCE: high
-
--- FILE: src/physics.lua --
-local Physics = {}
-
--- Collision detection function
-function Physics.checkCollision(ball1, ball2)
-    local dx = ball1.x - ball2.x
-    local dy = ball1.y - ball2.y
-    local distance = math.sqrt(dx * dx + dy * dy)
-    return distance < (ball1.radius + ball2.radius)
-end
-
--- Check collision between ball and coin
-function Physics.checkCoinCollision(ball, coin)
-    local dx = ball.x - coin.x
-    local dy = ball.y - coin.y
-    local distance = math.sqrt(dx * dx + dy * dy)
-    return distance < (ball.radius + coin.radius)
-end
-
--- Check collision between ball and fire
-function Physics.checkFireCollision(ball, fire)
-    local dx = ball.position.x - fire.position.x
-    local dy = ball.position.y - fire.position.y
-    local distance = math.sqrt(dx * dx + dy * dy)
-    return distance < (ball.radius + fire.radius)
-end
-
--- Main collision checking function called by main.lua
-function Physics:checkCollisions(ball, fires, stains, audio)
-    -- Check collisions between ball and fires
-    for i = #fires, 1, -1 do
-        local fire = fires[i]
+function UI.draw(gameState, audio)
+    -- Draw player health bar
+    if gameState.playerBall then
+        local healthPercent = gameState.playerBall.health / gameState.playerBall.maxHealth
+        local barWidth = 200
+        local barHeight = 20
+        local barX = 10
+        local barY = 10
         
-        if self.checkFireCollision(ball, fire) then
-            -- Fire hit the ball - take damage
-            ball.lives = ball.lives - 1
-            
-            -- Create stain at fire position
-            local Stain = require('src.stain')
-            local stain = Stain:new(fire.position.x, fire.position.y)
-            table.insert(stains, stain)
-            
-            -- Remove the fire
-            table.remove(fires, i)
-            
-            -- Play damage sound
-            if audio then
-                audio:playFireDamage()
-            end
+        -- Health bar background
+        love.graphics.setColor(0.3, 0.3, 0.3, 0.8)
+        love.graphics.rectangle("fill", barX, barY, barWidth, barHeight)
+        
+        -- Health bar fill with pulsing effect when low health
+        local healthColor = {1 - healthPercent + 0.3, healthPercent, 0.2}  -- Red to green gradient
+        
+        -- Add pulsing effect when health is low
+        if healthPercent < 0.25 then
+            local pulse = (math.sin(love.timer.getTime() * 8) + 1) * 0.5  -- 0 to 1 pulse
+            local pulseIntensity = 0.3
+            healthColor[1] = math.min(1, healthColor[1] + pulse * pulseIntensity)
+        end
+        
+        love.graphics.setColor(healthColor[1], healthColor[2], healthColor[3], 0.9)
+        love.graphics.rectangle("fill", barX, barY, barWidth * healthPercent, barHeight)
+        
+        -- Health bar border with warning color when low
+        if healthPercent < 0.25 then
+            love.graphics.setColor(1, 0.2, 0.2, 1)  -- Red border for low health
+        else
+            love.graphics.setColor(1, 1, 1, 1)
+        end
+        love.graphics.rectangle("line", barX, barY, barWidth, barHeight)
+        
+        -- Health text with color coding
+        if healthPercent < 0.25 then
+            love.graphics.setColor(1, 0.3, 0.3, 1)  -- Red text for critical health
+        elseif healthPercent < 0.5 then
+            love.graphics.setColor(1, 0.7, 0.3, 1)  -- Orange text for low health
+        else
+            love.graphics.setColor(1, 1, 1, 1)      -- White text for good health
+        end
+        love.graphics.print(string.format("Health: %.0f/%.0f", gameState.playerBall.health, gameState.playerBall.maxHealth), barX, barY + 25)
+        
+        -- Critical health warning
+        if healthPercent < 0.15 then
+            local warningAlpha = (math.sin(love.timer.getTime() * 10) + 1) * 0.5
+            love.graphics.setColor(1, 0.2, 0.2, warningAlpha)
+            love.graphics.printf("CRITICAL HEALTH!", 0, love.graphics.getHeight() * 0.3, love.graphics.getWidth(), "center")
+        end
+        
+        -- Damage resistance indicator
+        if gameState.playerBall.fireResistanceTime > 0 then
+            love.graphics.setColor(0.8, 0.8, 1, 0.7)
+            love.graphics.print("FIRE RESISTANCE", barX + barWidth + 10, barY + 5)
+        end
+        
+        -- Health regeneration indicator
+        if gameState.playerBall.timeSinceLastDamage >= gameState.playerBall.regenDelay and 
+           gameState.playerBall.health < gameState.playerBall.maxHealth then
+            love.graphics.setColor(0.3, 1, 0.3, 0.8)
+            love.graphics.print("REGENERATING", barX, barY - 15)
         end
     end
-end
-
--- Handle collision physics with audio support
-function Physics.handleCollision(playerBall, pushBall, audio)
-    if not Physics.checkCollision(playerBall, pushBall) then
-        return
-    end
     
-    -- Calculate collision direction
-    local dx = pushBall.x - playerBall.x
-    local dy = pushBall.y - playerBall.y
-    local distance = math.sqrt(dx * dx + dy * dy)
+    -- Draw fire count and stain count
+    local fireCount = gameState.fires and #gameState.fires or 0
+    local stainCount = gameState.stains and #gameState.stains or 0
     
-    -- Avoid division by zero
-    if distance == 0 then
-        dx, dy = 1, 0
-        distance = 1
-    end
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.print("Active Fires: " .. fireCount, 10, 60)
+    love.graphics.print("Extinguished: " .. stainCount, 10, 80)
     
-    -- Normalize direction
-    dx = dx / distance
-    dy = dy / distance
+    -- Draw instructions
+    love.graphics.print("Push red ball into fires to extinguish them!", 10, 110)
+    love.graphics.print("Avoid touching fires - they damage you!", 10, 130)
     
-    -- Separate balls to prevent overlap
-    local overlap = (playerBall.radius + pushBall.radius) - distance
-    pushBall.x = pushBall.x + dx * overlap * 0.6
-    pushBall.y = pushBall.y + dy * overlap * 0.4
-    playerBall.x = playerBall.x - dx * overlap * 0.4
-    playerBall.y = playerBall.y - dy * overlap * 0.4
-    
-    -- Transfer momentum (player ball pushes the other)
-    local pushForce = 200
-    pushBall.vx = pushBall.vx + dx * pushForce
-    pushBall.vy = pushBall.vy + dy * pushForce
-    
-    -- Play collision sound effect
+    -- Draw audio status
     if audio then
-        audio:playBallPush()
+        local audioStatus = audio:isEnabled() and "ON" or "OFF"
+        love.graphics.print("Audio: " .. audioStatus .. " (M to toggle)", love.graphics.getWidth() - 200, 10)
+        love.graphics.print("Volume: " .. math.floor(audio.volume * 100) .. "% (+/- to adjust)", love.graphics.getWidth() - 200, 30)
+    end
+    
+    -- Draw screen-edge damage indicators when player is taking damage
+    if gameState.playerBall and gameState.playerBall.fireResistanceTime > 0 then
+        local damageAlpha = gameState.playerBall.fireResistanceTime / gameState.playerBall.fireResistanceDuration * 0.3
+        love.graphics.setColor(1, 0.1, 0.1, damageAlpha)
+        
+        -- Draw damage overlay around screen edges
+        local edgeThickness = 20
+        love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), edgeThickness)  -- Top
+        love.graphics.rectangle("fill", 0, love.graphics.getHeight() - edgeThickness, love.graphics.getWidth(), edgeThickness)  -- Bottom
+        love.graphics.rectangle("fill", 0, 0, edgeThickness, love.graphics.getHeight())  -- Left
+        love.graphics.rectangle("fill", love.graphics.getWidth() - edgeThickness, 0, edgeThickness, love.graphics.getHeight())  -- Right
     end
 end
 
--- Handle ball boundary collision with audio support
-function Physics.handleBoundaryCollision(ball, audio)
-    local bounced = false
-    local bounceReduction = 0.7
-    
-    -- Check and handle boundary collisions
-    if ball.x - ball.radius < 0 then
-        ball.x = ball.radius
-        ball.vx = -ball.vx * bounceReduction
-        bounced = true
-    elseif ball.x + ball.radius > love.graphics.getWidth() then
-        ball.x = love.graphics.getWidth() - ball.radius
-        ball.vx = -ball.vx * bounceReduction
-        bounced = true
-    end
-    
-    if ball.y - ball.radius < 0 then
-        ball.y = ball.radius
-        ball.vy = -ball.vy * bounceReduction
-        bounced = true
-    elseif ball.y + ball.radius > love.graphics.getHeight() then
-        ball.y = love.graphics.getHeight() - ball.radius
-        ball.vy = -ball.vy * bounceReduction
-        bounced = true
-    end
-    
-    -- Play bounce sound if ball hit a wall
-    if bounced and audio then
-        -- Only play bounce sound for fast-moving balls to avoid spam
-        local speed = math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy)
-        if speed > 50 then
-            audio:playBallCollision()
-        end
-    end
-    
-    return bounced
+function UI.drawScore(score, lives)
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.print("Score: " .. (score or 0), 10, love.graphics.getHeight() - 40)
+    love.graphics.print("Lives: " .. (lives or 0), 10, love.graphics.getHeight() - 20)
 end
 
-return Physics
--- END: src/physics.lua --
+return UI
+-- END: src/ui.lua --
 <<<MSG>>>

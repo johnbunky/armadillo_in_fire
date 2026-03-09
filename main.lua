@@ -85,7 +85,7 @@ function love.update(dt)
             end
             
             -- Check collisions
-            Physics:checkCollisions(gameState.ball, gameState.fires, gameState.stains, audio)
+            Physics:checkCollisions(gameState.ball, gameState.fires, gameState.stains, audio, gameState)
             
             -- Spawn fires
             gameState.nextFireSpawn = gameState.nextFireSpawn - dt
@@ -100,7 +100,7 @@ function love.update(dt)
             end
             
             -- Check game over
-            if gameState.ball.lives <= 0 then
+            if gameState.lives <= 0 then
                 gameState.state = "game_over"
                 gameState.gameOverTime = 0
                 audio:stopMusic()
@@ -135,7 +135,7 @@ function love.draw()
             
             -- Draw UI
             UI:drawScore(gameState.score)
-            UI:drawLives(gameState.ball.lives)
+            UI:drawLives(gameState.lives)
         end
         
         -- Draw menu on top
@@ -154,7 +154,7 @@ function love.draw()
         
         -- Draw UI
         UI:drawScore(gameState.score)
-        UI:drawLives(gameState.ball.lives)
+        UI:drawLives(gameState.lives)
         
         if gameState.state == "game_over" then
             UI:drawGameOver(gameState.score)

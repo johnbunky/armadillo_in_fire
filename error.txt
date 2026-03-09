@@ -1,6 +1,6 @@
-Error: main.lua:88: attempt to call method 'checkCollisions' (a nil value)
+Error: main.lua:156: attempt to call method 'drawScore' (a nil value)
 stack traceback:
-        [love "boot.lua"]:352: in function 'checkCollisions'
-        main.lua:88: in function 'update'
-        [love "callbacks.lua"]:162: in function <[love "callbacks.lua"]:144>
+        [love "boot.lua"]:352: in function 'drawScore'
+        main.lua:156: in function 'draw'
+        [love "callbacks.lua"]:168: in function <[love "callbacks.lua"]:144>
         [C]: in function 'xpcall'

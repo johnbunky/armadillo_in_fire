@@ -98,4 +98,10 @@ function UI.draw(gameState, audio)
     end
 end
 
+function UI.drawScore(score, lives)
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.print("Score: " .. (score or 0), 10, love.graphics.getHeight() - 40)
+    love.graphics.print("Lives: " .. (lives or 0), 10, love.graphics.getHeight() - 20)
+end
+
 return UI
