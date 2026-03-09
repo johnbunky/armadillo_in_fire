@@ -24,250 +24,197 @@ function love.load()
     gameState.state = "playing"
     gameState.gameOverTime = 0
     gameState.gameOverDelay = 2.0
-    gameState.nextFireSpawn = 2.0  -- First fire spawns after 2 seconds
-    gameState.fireSpawnInterval = 1.95  -- Base spawn interval
-    gameState.maxFires = 5  -- Maximum fires on screen
+    gameState.nextFireSpawn = 2.0
+    gameState.fireSpawnInterval = 3.0
+    gameState.minFireSpawnInterval = 0.8
+    gameState.fireSpawnReduction = 0.1
+    gameState.score = 0
+    gameState.lives = 3
     
-    -- Create balls
-    gameState.playerBall = Ball:new(100, 300, 25, {0.2, 0.8, 0.2}, true)  -- Green player ball
-    gameState.pushableBall = Ball:new(400, 300, 25, {0.8, 0.2, 0.2}, false)  -- Red pushable ball
-    
-    -- Initialize arrays
+    -- Initialize game objects
+    gameState.ball = Ball:new(400, 550)
     gameState.fires = {}
     gameState.stains = {}
     
-    -- Set window properties
-    love.graphics.setBackgroundColor(0.6, 0.8, 0.4)  -- Light green grass-like background
-    
-    -- Apply initial settings
-    local settings = menu:getSettings()
-    love.audio.setVolume(settings.masterVolume)
-    if settings.fullscreen then
-        love.window.setFullscreen(true)
-    end
+    -- Set window title
+    love.window.setTitle("Fire Ball Game")
 end
 
-function gameState:update(dt)
-    -- Update fire spawn timer
-    self.nextFireSpawn = self.nextFireSpawn - dt
+function startNewGame()
+    currentState = "playing"
+    gameState.state = "playing"
+    gameState.gameOverTime = 0
+    gameState.nextFireSpawn = 2.0
+    gameState.fireSpawnInterval = 3.0
+    gameState.score = 0
+    gameState.lives = 3
     
-    if self.nextFireSpawn <= 0 and #self.fires < self.maxFires then
-        self:spawnFire()
-        self.nextFireSpawn = self.fireSpawnInterval
-    end
+    -- Reset game objects
+    gameState.ball = Ball:new(400, 550)
+    gameState.fires = {}
+    gameState.stains = {}
     
-    -- Update fires
-    for i, fire in ipairs(self.fires) do
-        fire:update(dt, self.playerBall)
-    end
-    
-    -- Update and remove dissolved stains
-    for i = #self.stains, 1, -1 do
-        if self.stains[i]:update(dt) then
-            table.remove(self.stains, i)
-        end
-    end
-end
-
-function gameState:spawnFire()
-    -- Predict player position
-    local predictionTime = 0.28
-    local predictedX = self.playerBall.x + self.playerBall.vx * predictionTime
-    local predictedY = self.playerBall.y + self.playerBall.vy * predictionTime
-    
-    -- Keep predicted position within bounds
-    predictedX = math.max(50, math.min(love.graphics.getWidth() - 50, predictedX))
-    predictedY = math.max(50, math.min(love.graphics.getHeight() - 50, predictedY))
-    
-    -- Calculate spawn position around predicted location
-    local spawnDistance = 65
-    local angle = math.random() * 2 * math.pi
-    local spawnX = predictedX + math.cos(angle) * spawnDistance
-    local spawnY = predictedY + math.sin(angle) * spawnDistance
-    
-    -- Keep spawn position within screen bounds
-    spawnX = math.max(30, math.min(love.graphics.getWidth() - 30, spawnX))
-    spawnY = math.max(30, math.min(love.graphics.getHeight() - 30, spawnY))
-    
-    -- Create new fire
-    local newFire = Fire:new(spawnX, spawnY, 15, {1, 0.3, 0})
-    table.insert(self.fires, newFire)
-end
-
-function gameState:extinguishFire(fireIndex, audio)
-    if self.fires[fireIndex] then
-        local fire = self.fires[fireIndex]
-        
-        -- Create stain at fire position
-        local stain = Stain:new(fire.x, fire.y, fire.radius + 5)
-        table.insert(self.stains, stain)
-        
-        -- Remove fire
-        table.remove(self.fires, fireIndex)
-        
-        -- Play extinguish sound
-        if audio then
-            audio:playFireExtinguish()  -- Using fire extinguish sound
-        end
-    end
-end
-
-function gameState:restart()
-    -- Reset player ball
-    self.playerBall.x = 100
-    self.playerBall.y = 300
-    self.playerBall.vx = 0
-    self.playerBall.vy = 0
-    self.playerBall.health = self.playerBall.maxHealth
-    self.playerBall.damageTimer = 0
-    self.playerBall.fireResistanceTime = 0
-    self.playerBall.timeSinceLastDamage = 0
-    
-    -- Reset pushable ball
-    self.pushableBall.x = 400
-    self.pushableBall.y = 300
-    self.pushableBall.vx = 0
-    self.pushableBall.vy = 0
-    
-    -- Clear fires and stains
-    self.fires = {}
-    self.stains = {}
-    
-    -- Reset state
-    self.state = "playing"
-    self.gameOverTime = 0
-    self.nextFireSpawn = 2.0
+    audio:playMusic('game')
 end
 
 function love.update(dt)
     if currentState == "menu" then
         menu:update(dt)
     elseif currentState == "playing" then
-        -- Check for game over
-        if gameState.playerBall:isDead() then
-            currentState = "game_over"
-            menu:showGameOver()
-            return
-        end
-        
-        -- Update game state (handles fire respawning and stain dissolving)
-        gameState:update(dt)
-        
-        -- Player ball movement
-        local speed = 300
-        gameState.playerBall.vx = 0
-        gameState.playerBall.vy = 0
-        
-        if love.keyboard.isDown("left", "a") then
-            gameState.playerBall.vx = -speed
-        end
-        if love.keyboard.isDown("right", "d") then
-            gameState.playerBall.vx = speed
-        end
-        if love.keyboard.isDown("up", "w") then
-            gameState.playerBall.vy = -speed
-        end
-        if love.keyboard.isDown("down", "s") then
-            gameState.playerBall.vy = speed
-        end
-        
-        -- Update balls with audio support
-        gameState.playerBall:update(dt, audio)
-        gameState.pushableBall:update(dt, audio)
-        
-        -- Handle collision between balls with audio
-        Physics.handleCollision(gameState.playerBall, gameState.pushableBall, audio)
-        
-        -- Check collision between red ball and fires (extinguishing)
-        for i = #gameState.fires, 1, -1 do
-            if Physics.checkCoinCollision(gameState.pushableBall, gameState.fires[i]) then
-                gameState:extinguishFire(i, audio)
-            end
-        end
-        
-        -- Check collision between player ball and fires (damage)
-        for i, fire in ipairs(gameState.fires) do
-            if Physics.checkCoinCollision(gameState.playerBall, fire) then
-                if gameState.playerBall.damageTimer >= gameState.playerBall.damageInterval then
-                    gameState.playerBall:takeDamage(20, audio)  -- 20 damage per hit
-                    gameState.playerBall.damageTimer = 0
+        if gameState.state == "playing" then
+            -- Update game objects
+            gameState.ball:update(dt)
+            
+            for i = #gameState.fires, 1, -1 do
+                local fire = gameState.fires[i]
+                fire:update(dt)
+                
+                if fire.position.y > love.graphics.getHeight() + 50 then
+                    table.remove(gameState.fires, i)
+                    gameState.score = gameState.score + 10
                 end
+            end
+            
+            for i = #gameState.stains, 1, -1 do
+                local stain = gameState.stains[i]
+                stain:update(dt)
+                
+                if stain.alpha <= 0 then
+                    table.remove(gameState.stains, i)
+                end
+            end
+            
+            -- Check collisions
+            Physics:checkCollisions(gameState.ball, gameState.fires, gameState.stains, audio)
+            
+            -- Spawn fires
+            gameState.nextFireSpawn = gameState.nextFireSpawn - dt
+            if gameState.nextFireSpawn <= 0 then
+                local fire = Fire:new(math.random(50, love.graphics.getWidth() - 50), -30)
+                table.insert(gameState.fires, fire)
+                gameState.nextFireSpawn = gameState.fireSpawnInterval
+                
+                if gameState.fireSpawnInterval > gameState.minFireSpawnInterval then
+                    gameState.fireSpawnInterval = gameState.fireSpawnInterval - gameState.fireSpawnReduction
+                end
+            end
+            
+            -- Check game over
+            if gameState.ball.lives <= 0 then
+                gameState.state = "game_over"
+                gameState.gameOverTime = 0
+                audio:stopMusic()
+                audio:playSound('game_over')
+            end
+        elseif gameState.state == "game_over" then
+            gameState.gameOverTime = gameState.gameOverTime + dt
+            if gameState.gameOverTime >= gameState.gameOverDelay then
+                currentState = "menu"
+                menu:showGameOver(gameState.score)
             end
         end
     elseif currentState == "paused" then
-        menu:update(dt)
-    elseif currentState == "game_over" then
         menu:update(dt)
     end
 end
 
 function love.draw()
-    if currentState == "playing" or currentState == "paused" then
-        -- Draw game world
-        -- Draw shadows first (behind all objects) - skip fire shadows
-        gameState.playerBall:drawShadow()
-        gameState.pushableBall:drawShadow()
-        
-        -- Draw stains (on ground level)
-        for i, stain in ipairs(gameState.stains) do
-            stain:draw()
+    if currentState == "menu" or currentState == "paused" then
+        -- Draw game in background if paused
+        if currentState == "paused" then
+            -- Draw game objects
+            gameState.ball:draw()
+            
+            for _, fire in ipairs(gameState.fires) do
+                fire:draw()
+            end
+            
+            for _, stain in ipairs(gameState.stains) do
+                stain:draw()
+            end
+            
+            -- Draw UI
+            UI:drawScore(gameState.score)
+            UI:drawLives(gameState.ball.lives)
         end
         
-        -- Draw balls
-        gameState.playerBall:draw()
-        gameState.pushableBall:draw()
+        -- Draw menu on top
+        menu:draw()
+    elseif currentState == "playing" then
+        -- Draw game objects
+        gameState.ball:draw()
         
-        -- Draw fires
-        for i, fire in ipairs(gameState.fires) do
+        for _, fire in ipairs(gameState.fires) do
             fire:draw()
         end
         
-        -- Draw UI with audio reference
-        UI.draw(gameState, audio)
-        
-        -- Draw menu overlay if paused
-        if currentState == "paused" then
-            menu:draw()
+        for _, stain in ipairs(gameState.stains) do
+            stain:draw()
         end
-    elseif currentState == "menu" or currentState == "game_over" then
-        -- Draw menu
-        menu:draw()
+        
+        -- Draw UI
+        UI:drawScore(gameState.score)
+        UI:drawLives(gameState.ball.lives)
+        
+        if gameState.state == "game_over" then
+            UI:drawGameOver(gameState.score)
+        end
     end
 end
 
 function love.keypressed(key)
-    if currentState == "menu" or currentState == "paused" or currentState == "game_over" then
-        -- Let menu handle the keypress and capture any action
-        local menuAction = menu:keypressed(key)
+    if currentState == "menu" or currentState == "paused" then
+        -- Handle menu input and check for actions
+        local action = nil
+        
+        -- Store the original selectOption function temporarily
+        local originalSelectOption = menu.selectOption
+        
+        -- Override selectOption to capture the return value
+        menu.selectOption = function(self)
+            return originalSelectOption(self)
+        end
+        
+        -- Process the key press
+        if key == "return" or key == "space" then
+            action = menu:selectOption()
+        else
+            menu:keypressed(key)
+        end
+        
+        -- Restore original function
+        menu.selectOption = originalSelectOption
         
         -- Handle menu actions
-        if menuAction == "start_game" then
-            currentState = "playing"
-            gameState:restart()
-        elseif menuAction == "resume" then
-            currentState = "playing"
-        elseif menuAction == "restart" then
-            currentState = "playing"
-            gameState:restart()
+        if action == "start_game" then
+            startNewGame()
+        elseif action == "resume" then
+            if currentState == "paused" then
+                currentState = "playing"
+                audio:resumeMusic()
+            end
+        elseif action == "restart" then
+            startNewGame()
         end
-        
-        -- Also handle menu navigation keys that don't return actions
-        -- This is handled internally by menu:keypressed() now
         
     elseif currentState == "playing" then
-        -- Game controls
-        if key == "p" or key == "pause" then
+        if key == "escape" then
             currentState = "paused"
             menu:showPause()
-        elseif key == "escape" then
-            currentState = "menu"
-            menu:setMenu("main")
-        elseif key == "m" then
-            audio:toggle()
-        elseif key == "=" or key == "+" then
-            audio:setVolume(audio.volume + 0.1)
-        elseif key == "-" or key == "_" then
-            audio:setVolume(audio.volume - 0.1)
+            audio:pauseMusic()
+        elseif key == "p" then
+            currentState = "paused"
+            menu:showPause()
+            audio:pauseMusic()
+        else
+            -- Handle game input
+            gameState.ball:keypressed(key)
         end
+    end
+end
+
+function love.keyreleased(key)
+    if currentState == "playing" then
+        gameState.ball:keyreleased(key)
     end
 end

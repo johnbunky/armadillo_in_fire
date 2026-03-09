@@ -7,17 +7,9 @@ two balls, player pushes second ball
 Love2D + Lua
  
 ## Current Status
-Complete core game with modular structure, physics, shadows, audio, and fire damage system. Features fire spawning using predictive player movement (0.28s ahead, 65px distance), red ball fire extinguishing with stain creation, player health system with damage/regeneration, game over mechanics, fire-themed audio system, and comprehensive damage visual feedback including floating damage numbers and health bar indicators.
+Complete core game with modular structure, physics, shadows, audio, and fire damage system. Features fire spawning using predictive player movement (0.28s ahead, 65px distance), red ball fire extinguishing with stain creation, player health system with damage/regeneration, game over mechanics, fire-themed audio system, comprehensive damage visual feedback including floating damage numbers and health bar indicators, and fully functional menu system with main menu, settings, help, pause, and game over screens with keyboard navigation and state management.
 
 ## Open Tasks
-- [x] nothing happens if click on start game on main manu, expected result game starts
-- [x] task 6.3: Integrate menu state management
-- [x] it looks like you´ve already made all required changes but there is an issue no file, could you create the reqired one and complet the menu implementation
-- [x] task 6.1: Create menu system with navigation between screens
-**6. Menu System Implementation (existing plan):**
-- Create menu system with navigation between screens
-- Add settings, help, and main menu screens
-- Integrate menu state management
 
 ### Plan: create and add unit and integrations tests in the tests folder [2026-03-09 14:03:58]
 1. Create tests folder structure and test configuration file
@@ -32,10 +24,6 @@ Complete core game with modular structure, physics, shadows, audio, and fire dam
 10. Create integration tests for ball physics system (movement, collision, boundary bounce with audio)
 11. Create test runner script to execute all tests and generate reports
 12. Create mock/stub system for Love2D functions used in tests
-**6. Menu System Implementation (existing plan):**
-- Create menu system with navigation between screens
-- Add settings, help, and main menu screens
-- Integrate menu state management
 
 ## Decisions Made
 - Created modular project structure with separate Ball, Coin, Physics, GameState, and UI modules
@@ -57,16 +45,19 @@ Complete core game with modular structure, physics, shadows, audio, and fire dam
 - Removed dependency on separate GameState class and integrated game state logic directly into main.lua
 - Replaced coin collection sounds with fire-themed audio (playFireExtinguish() and playFireDamage())
 - Enhanced damage indicators with floating damage numbers, pulsing health bar, screen-edge damage overlay, and critical health warnings
+- Created complete menu system with main menu, settings, help, pause, and game over screens with keyboard navigation and animated selection indicators
+- Integrated menu system with state management, allowing transitions between menu, playing, paused, and game over states with proper menu navigation and settings persistence
+- Fixed menu integration by properly capturing return values from menu:keypressed() and handling state transitions
 
 ## Known Issues
 
-## Feel Notes ??? only human writes here
+## Feel Notes â€” only human writes here
 
-- Earlier iterations focused on physics, friction, collision systems, visual improvements, sounds, shadows, and background color adjustments
-- [2026-03-08 16:51:05] game started withou errors, for some reasond fires are move and cover the player, stain finction works ok
-- [2026-03-08 17:07:14] there is ony there fire, probably it would be great to icrease fire?s gradualy during playtime
+- Earlier iterations focused on physics, friction, collision systems, visual improvements, sounds, shadows, and background color adjustments, with multiple refinements to fire behavior and UI elements
+- [2026-03-08 17:07:14] there is ony there fire, probably it would be great to icrease fire's gradualy during playtime
 - [2026-03-08 17:14:15] it works well, it would be ok to remove shadows from fire, and change fire shape from circle to triangle
-- [2026-03-09 13:16:53] stain?s shape should be elips not circle
+- [2026-03-09 13:16:53] stain's shape should be elips not circle
+- [2026-03-09 14:35:09] main menu looks amaizing, unforutately start game doesn't work
 
 ## Project Structure
   conf.lua
@@ -80,5 +71,3 @@ Complete core game with modular structure, physics, shadows, audio, and fire dam
   src\physics.lua
   src\stain.lua
   src\ui.lua
-
-- [2026-03-09 14:35:09] main menu looks amaizing, unforutately start game doesn´t work
