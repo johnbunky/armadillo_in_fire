@@ -1,461 +1,87 @@
 <<<MSG>>>
 <<<ROLE:user>>>
-[SUMMARY OF PREVIOUS CONVERSATION]
-I need to fix the menu selection handling. The issue is that the menu's `selectOption()` function needs to properly communicate with the main game state. Let me update the main.lua file:
+This error occurred at runtime:
 
--- FILE: main.lua --
-```lua
-local Ball = require('src.ball')
-local Fire = require('src.fire')
-local Stain = require('src.stain')
-local Physics = require('src.physics')
-local Audio = require('src.audio')
-local UI = require('src.ui')
-local Menu = require('src.menu')
-
--- Global game state
-local gameState = {}
-local audio
-local menu
-local currentState = "menu"  -- Can be: "menu", "playing", "paused", "game_over"
-
-function love.load()
-    -- Initialize menu system
-    menu = Menu:new()
-    
-    -- Initialize audio system
-    audio = Audio
-    audio:init()
-    
-    -- Initialize game state
-    gameState.state = "playing"
-    gameState.gameOverTime = 0
-    gameState.gameOverDelay = 2.0
-    gameState.nextFireSpawn = 2.0
-    gameState.fireSpawnInterval = 3.0
-    gameState.minFireSpawnInterval = 0.8
-    gameState.fireSpawnReduction = 0.1
-    gameState.score = 0
-    gameState.lives = 3
-    
-    -- Initialize game objects
-    gameState.ball = Ball:new(400, 550)
-    gameState.fires = {}
-    gameState.stains = {}
-    
-    -- Set window title
-    love.window.setTitle("Fire Ball Game")
-end
-
-function startNewGame()
-    currentState = "playing"
-    gameState.state = "playing"
-    gameState.gameOverTime = 0
-    gameState.nextFireSpawn = 2.0
-    gameState.fireSpawnInterval = 3.0
-    gameState.score = 0
-    gameState.lives = 3
-    
-    -- Reset game objects
-    gameState.ball = Ball:new(400, 550)
-    gameState.fires = {}
-    gameState.stains = {}
-    
-    audio:playMusic('game')
-end
-
-function love.update(dt)
-    if currentState == "menu" then
-        menu:update(dt)
-    elseif currentState == "playing" then
-        if gameState.state == "playing" then
-            -- Update game objects
-            gameState.ball:update(dt)
-            
-            for i = #gameState.fires, 1, -1 do
-                local fire = gameState.fires[i]
-                fire:update(dt)
-                
-                if fire.position.y > love.graphics.getHeight() + 50 then
-                    table.remove(gameState.fires, i)
-                    gameState.score = gameState.score + 10
-                end
-            end
-            
-            for i = #gameState.stains, 1, -1 do
-                local stain = gameState.stains[i]
-                stain:update(dt)
-                
-                if stain.alpha <= 0 then
-                    table.remove(gameState.stains, i)
-                end
-            end
-            
-            -- Check collisions
-            Physics:checkCollisions(gameState.ball, gameState.fires, gameState.stains, audio)
-            
-            -- Spawn fires
-            gameState.nextFireSpawn = gameState.nextFireSpawn - dt
-            if gameState.nextFireSpawn <= 0 then
-                local fire = Fire:new(math.random(50, love.graphics.getWidth() - 50), -30)
-                table.insert(gameState.fires, fire)
-                gameState.nextFireSpawn = gameState.fireSpawnInterval
-                
-                if gameState.fireSpawnInterval > gameState.minFireSpawnInterval then
-                    gameState.fireSpawnInterval = gameState.fireSpawnInterval - gameState.fireSpawnReduction
-                end
-            end
-            
-            -- Check game over
-            if gameState.ball.lives <= 0 then
-                gameState.state = "game_over"
-                gameState.gameOverTime = 0
-                audio:stopMusic()
-                audio:playSound('game_over')
-<<<MSG>>>
-<<<ROLE:user>>>
-nothing happens if select the  start game option on the  main menu and push enter, expected result: game starts
+Error: main.lua:57: attempt to call method 'playMusic' (a nil value)
+stack traceback:
+        [love "boot.lua"]:352: in function 'playMusic'
+        main.lua:57: in function 'startNewGame'
+        main.lua:190: in function <main.lua:165>
+        [love "callbacks.lua"]:154: in function <[love "callbacks.lua"]:144>
+        [C]: in function 'xpcall'
 <<<MSG>>>
 <<<ROLE:assistant>>>
-I can see the issue. The menu system is not connected to the main game state properly. I need to see how the menu handles option selection to fix this.
+ROOT_CAUSE: The 'playMusic' method is not defined in the audio system or module being called
 
-QUESTION: Can you provide the src/menu.lua file so I can see how the selectOption() function is implemented and how it should communicate with the main game?
+FIX: Define the playMusic method in the audio module or use the correct method name (likely love.audio.play)
+
+CONFIDENCE: high
+
+Without seeing the full code, the most likely fix is to either:
+
+1. Define the missing `playMusic` method in your audio module
+2. Replace the call with the correct LÖVE2D audio function
+
+If you're using LÖVE2D's built-in audio system, the correct call would be:
+```lua
+-- Instead of playMusic(source)
+love.audio.play(musicSource)
+```
+
+Or if you have a custom audio module, ensure it has the `playMusic` method defined:
+```lua
+-- In your audio module
+function audio:playMusic(source)
+    love.audio.play(source)
+end
+```
+
+Please share the relevant code around line 57 in main.lua and your audio module for a more specific fix.
+<<<MSG>>>
+<<<ROLE:user>>>
+This error occurred at runtime:
+
+Error: main.lua:57: attempt to call method 'playMusic' (a nil value)
+stack traceback:
+        [love "boot.lua"]:352: in function 'playMusic'
+        main.lua:57: in function 'startNewGame'
+        main.lua:190: in function <main.lua:165>
+        [love "callbacks.lua"]:154: in function <[love "callbacks.lua"]:144>
+        [C]: in function 'xpcall'
+<<<MSG>>>
+<<<ROLE:assistant>>>
+ROOT_CAUSE: The 'playMusic' method is not defined or the object calling it is nil
+FIX: Need to see the code around line 57 to provide exact fix - likely missing method definition or incorrect object reference
+CONFIDENCE: medium
+
+To provide an exact fix, I need to see:
+1. Line 57 in main.lua where the error occurs
+2. How the audio object/module is defined and initialized
+
+The error suggests you're calling something like:
+```lua
+audioObject:playMusic(...)  -- Line 57
+```
+
+But either `audioObject` is nil or it doesn't have a `playMusic` method.
+
+Common fixes:
+- If using a custom audio module, ensure it's properly required and initialized
+- If the method should exist, check the method name spelling
+- If using LÖVE2D directly, use `love.audio.play()` instead
+
+Please share the relevant code sections for a precise solution.
+<<<MSG>>>
+<<<ROLE:user>>>
+could you fix it Error: main.lua:57: attempt to call method 'playMusic' (a nil value)
+<<<MSG>>>
+<<<ROLE:assistant>>>
+I need to see the actual code to fix the error. The error occurs at line 57 in main.lua where you're trying to call a `playMusic` method that doesn't exist.
+
+QUESTION: Can you provide the main.lua file (or at least the code around line 57) and any audio-related files so I can see exactly what's calling `playMusic` and fix the missing method?
 <<<MSG>>>
 <<<ROLE:user>>>
 Here are the requested files:
-
--- FILE: src/menu.lua --
-local Menu = {}
-Menu.__index = Menu
-
-function Menu:new()
-    local instance = {}
-    setmetatable(instance, Menu)
-    
-    instance.currentMenu = "main"
-    instance.selectedOption = 1
-    instance.keyDelay = 0
-    instance.keyDelayTime = 0.15
-    instance.animationTimer = 0
-    instance.fadeAlpha = 0
-    
-    -- Settings state
-    instance.settings = {
-        masterVolume = 0.7,
-        sfxVolume = 0.8,
-        musicVolume = 0.6,
-        difficulty = "Normal",
-        fullscreen = false,
-        vsync = true
-    }
-    
-    -- Menu definitions
-    instance.menus = {
-        main = {
-            title = "FIRE BALL GAME",
-            options = {
-                {text = "Start Game", action = "start_game"},
-                {text = "Settings", action = "settings"},
-                {text = "Help", action = "help"},
-                {text = "Quit", action = "quit"}
-            }
-        },
-        settings = {
-            title = "SETTINGS",
-            options = {
-                {text = "Master Volume: ", action = "master_volume", type = "slider"},
-                {text = "SFX Volume: ", action = "sfx_volume", type = "slider"},
-                {text = "Music Volume: ", action = "music_volume", type = "slider"},
-                {text = "Difficulty: ", action = "difficulty", type = "toggle"},
-                {text = "Fullscreen: ", action = "fullscreen", type = "toggle"},
-                {text = "VSync: ", action = "vsync", type = "toggle"},
-                {text = "Back to Main Menu", action = "main"}
-            }
-        },
-        help = {
-            title = "HOW TO PLAY",
-            content = {
-                "CONTROLS:",
-                "Arrow Keys - Move the ball",
-                "Spacebar - Activate fire",
-                "P - Pause game",
-                "Escape - Return to menu",
-                "",
-                "GAMEPLAY:",
-                "• Use fire to destroy obstacles",
-                "• Avoid taking damage",
-                "• Collect power-ups for bonuses",
-                "• Survive as long as possible",
-                "",
-                "DIFFICULTY LEVELS:",
-                "Easy - Slower enemies, more health",
-                "Normal - Balanced gameplay",
-                "Hard - Faster enemies, less health"
-            },
-            options = {
-                {text = "Back to Main Menu", action = "main"}
-            }
-        },
-        pause = {
-            title = "GAME PAUSED",
-            options = {
-                {text = "Resume", action = "resume"},
-                {text = "Settings", action = "settings"},
-                {text = "Main Menu", action = "main"},
-                {text = "Quit", action = "quit"}
-            }
-        },
-        gameover = {
-            title = "GAME OVER",
-            options = {
-                {text = "Try Again", action = "restart"},
-                {text = "Main Menu", action = "main"},
-                {text = "Quit", action = "quit"}
-            }
-        }
-    }
-    
-    return instance
-end
-
-function Menu:update(dt)
-    self.animationTimer = self.animationTimer + dt
-    
-    -- Handle key delay
-    if self.keyDelay > 0 then
-        self.keyDelay = self.keyDelay - dt
-    end
-    
-    -- Fade in effect
-    if self.fadeAlpha < 1 then
-        self.fadeAlpha = math.min(1, self.fadeAlpha + dt * 2)
-    end
-end
-
-function Menu:keypressed(key)
-    if self.keyDelay > 0 then return end
-    
-    local currentMenuData = self.menus[self.currentMenu]
-    if not currentMenuData then return end
-    
-    if key == "up" or key == "w" then
-        self.selectedOption = self.selectedOption - 1
-        if self.selectedOption < 1 then
-            self.selectedOption = #currentMenuData.options
-        end
-        self.keyDelay = self.keyDelayTime
-    elseif key == "down" or key == "s" then
-        self.selectedOption = self.selectedOption + 1
-        if self.selectedOption > #currentMenuData.options then
-            self.selectedOption = 1
-        end
-        self.keyDelay = self.keyDelayTime
-    elseif key == "return" or key == "space" then
-        self:selectOption()
-        self.keyDelay = self.keyDelayTime
-    elseif key == "escape" then
-        if self.currentMenu == "main" then
-            love.event.quit()
-        else
-            self:setMenu("main")
-        end
-        self.keyDelay = self.keyDelayTime
-    elseif key == "left" or key == "a" then
-        self:adjustSetting(-1)
-        self.keyDelay = self.keyDelayTime
-    elseif key == "right" or key == "d" then
-        self:adjustSetting(1)
-        self.keyDelay = self.keyDelayTime
-    end
-end
-
-function Menu:adjustSetting(direction)
-    if self.currentMenu ~= "settings" then return end
-    
-    local option = self.menus.settings.options[self.selectedOption]
-    if not option or not option.type then return end
-    
-    if option.action == "master_volume" then
-        self.settings.masterVolume = math.max(0, math.min(1, self.settings.masterVolume + direction * 0.1))
-        love.audio.setVolume(self.settings.masterVolume)
-    elseif option.action == "sfx_volume" then
-        self.settings.sfxVolume = math.max(0, math.min(1, self.settings.sfxVolume + direction * 0.1))
-    elseif option.action == "music_volume" then
-        self.settings.musicVolume = math.max(0, math.min(1, self.settings.musicVolume + direction * 0.1))
-    elseif option.action == "difficulty" then
-        local difficulties = {"Easy", "Normal", "Hard"}
-        local currentIndex = 1
-        for i, diff in ipairs(difficulties) do
-            if diff == self.settings.difficulty then
-                currentIndex = i
-                break
-            end
-        end
-        currentIndex = currentIndex + direction
-        if currentIndex < 1 then currentIndex = #difficulties end
-        if currentIndex > #difficulties then currentIndex = 1 end
-        self.settings.difficulty = difficulties[currentIndex]
-    elseif option.action == "fullscreen" then
-        self.settings.fullscreen = not self.settings.fullscreen
-        love.window.setFullscreen(self.settings.fullscreen)
-    elseif option.action == "vsync" then
-        self.settings.vsync = not self.settings.vsync
-    end
-end
-
-function Menu:selectOption()
-    local currentMenuData = self.menus[self.currentMenu]
-    if not currentMenuData then return end
-    
-    local option = currentMenuData.options[self.selectedOption]
-    if not option then return end
-    
-    if option.action == "start_game" then
-        return "start_game"
-    elseif option.action == "settings" then
-        self:setMenu("settings")
-    elseif option.action == "help" then
-        self:setMenu("help")
-    elseif option.action == "main" then
-        self:setMenu("main")
-    elseif option.action == "pause" then
-        self:setMenu("pause")
-    elseif option.action == "gameover" then
-        self:setMenu("gameover")
-    elseif option.action == "resume" then
-        return "resume"
-    elseif option.action == "restart" then
-        return "restart"
-    elseif option.action == "quit" then
-        love.event.quit()
-    elseif option.type == "slider" or option.type == "toggle" then
-        self:adjustSetting(1)
-    end
-    
-    return nil
-end
-
-function Menu:setMenu(menuName)
-    self.currentMenu = menuName
-    self.selectedOption = 1
-    self.fadeAlpha = 0
-end
-
-function Menu:draw()
-    local width, height = love.graphics.getDimensions()
-    
-    -- Background
-    love.graphics.setColor(0, 0, 0, 0.8)
-    love.graphics.rectangle("fill", 0, 0, width, height)
-    
-    -- Apply fade alpha
-    love.graphics.setColor(1, 1, 1, self.fadeAlpha)
-    
-    local currentMenuData = self.menus[self.currentMenu]
-    if not currentMenuData then return end
-    
-    -- Title
-    love.graphics.setFont(love.graphics.newFont(32))
-    local titleWidth = love.graphics.getFont():getWidth(currentMenuData.title)
-    love.graphics.print(currentMenuData.title, width/2 - titleWidth/2, height/4)
-    
-    -- Help content (special case)
-    if self.currentMenu == "help" and currentMenuData.content then
-        love.graphics.setFont(love.graphics.newFont(16))
-        local startY = height/3
-        for i, line in ipairs(currentMenuData.content) do
-            local lineWidth = love.graphics.getFont():getWidth(line)
-            love.graphics.print(line, width/2 - lineWidth/2, startY + (i-1) * 25)
-        end
-        startY = startY + #currentMenuData.content * 25 + 50
-        
-        -- Help menu options
-        love.graphics.setFont(love.graphics.newFont(20))
-        for i, option in ipairs(currentMenuData.options) do
-            local color = {1, 1, 1, self.fadeAlpha}
-            if i == self.selectedOption then
-                color = {1, 0.8, 0, self.fadeAlpha}
-                -- Selection indicator
-                local pulse = 0.5 + 0.5 * math.sin(self.animationTimer * 4)
-                love.graphics.setColor(1, 0.8, 0, pulse * self.fadeAlpha)
-                love.graphics.print("> ", width/2 - 120, startY + (i-1) * 40)
-            end
-            
-            love.graphics.setColor(color)
-            local optionWidth = love.graphics.getFont():getWidth(option.text)
-            love.graphics.print(option.text, width/2 - optionWidth/2, startY + (i-1) * 40)
-        end
-    else
-        -- Regular menu options
-        love.graphics.setFont(love.graphics.newFont(20))
-        local startY = height/2
-        
-        for i, option in ipairs(currentMenuData.options) do
-            local displayText = option.text
-            
-            -- Add setting values for settings menu
-            if self.currentMenu == "settings" and option.type then
-                if option.action == "master_volume" then
-                    displayText = displayText .. math.floor(self.settings.masterVolume * 100) .. "%"
-                elseif option.action == "sfx_volume" then
-                    displayText = displayText .. math.floor(self.settings.sfxVolume * 100) .. "%"
-                elseif option.action == "music_volume" then
-                    displayText = displayText .. math.floor(self.settings.musicVolume * 100) .. "%"
-                elseif option.action == "difficulty" then
-                    displayText = displayText .. self.settings.difficulty
-                elseif option.action == "fullscreen" then
-                    displayText = displayText .. (self.settings.fullscreen and "On" or "Off")
-                elseif option.action == "vsync" then
-                    displayText = displayText .. (self.settings.vsync and "On" or "Off")
-                end
-            end
-            
-            local color = {1, 1, 1, self.fadeAlpha}
-            if i == self.selectedOption then
-                color = {1, 0.8, 0, self.fadeAlpha}
-                -- Selection indicator with pulse animation
-                local pulse = 0.5 + 0.5 * math.sin(self.animationTimer * 4)
-                love.graphics.setColor(1, 0.8, 0, pulse * self.fadeAlpha)
-                love.graphics.print("> ", width/2 - 150, startY + (i-1) * 50)
-            end
-            
-            love.graphics.setColor(color)
-            local textWidth = love.graphics.getFont():getWidth(displayText)
-            love.graphics.print(displayText, width/2 - textWidth/2, startY + (i-1) * 50)
-        end
-    end
-    
-    -- Instructions
-    if self.currentMenu == "settings" then
-        love.graphics.setColor(0.7, 0.7, 0.7, self.fadeAlpha)
-        love.graphics.setFont(love.graphics.newFont(14))
-        local instructions = "Use Left/Right arrows to adjust settings"
-        local instWidth = love.graphics.getFont():getWidth(instructions)
-        love.graphics.print(instructions, width/2 - instWidth/2, height - 50)
-    end
-    
-    -- Reset color
-    love.graphics.setColor(1, 1, 1, 1)
-end
-
-function Menu:getSettings()
-    return self.settings
-end
-
-function Menu:showGameOver(score)
-    self:setMenu("gameover")
-    -- Could add score display here if needed
-end
-
-function Menu:showPause()
-    self:setMenu("pause")
-end
-
-return Menu
--- END: src/menu.lua --
-<<<MSG>>>
-<<<ROLE:assistant>>>
-I can see the issue now. The menu's `selectOption()` function returns a string like "start_game", but the main game loop isn't checking for or handling these return values. The menu system needs to be integrated with the main game state properly.
 
 -- FILE: main.lua --
 local Ball = require('src.ball')
@@ -679,6 +305,536 @@ function love.keyreleased(key)
     end
 end
 -- END: main.lua --
+<<<MSG>>>
+<<<ROLE:assistant>>>
+I can see the issue. On line 57, you're calling `audio:playMusic('game')` but looking at how the Audio module is being used, it seems like it might not have a `playMusic` method defined. 
 
-DECISION_LOG: Modified main.lua to capture and handle menu action return values by temporarily overriding the selectOption method during keypressed events, enabling proper menu-to-game state transitions.
+QUESTION: Can you provide the `src/audio.lua` file so I can see what methods are actually available and fix the missing `playMusic` method?
+<<<MSG>>>
+<<<ROLE:user>>>
+Here are the requested files:
+
+-- FILE: src/audio.lua --
+local Audio = {}
+
+-- Audio state
+Audio.sounds = {}
+Audio.enabled = true
+Audio.volume = 0.7
+
+-- Generate a simple tone sound programmatically
+function Audio:generateTone(frequency, duration, volume)
+    local sampleRate = 44100
+    local samples = sampleRate * duration
+    local soundData = love.sound.newSoundData(samples, sampleRate, 16, 1)
+    
+    for i = 0, samples - 1 do
+        local t = i / sampleRate
+        local wave = math.sin(2 * math.pi * frequency * t) * volume
+        -- Add fade out to prevent clicks
+        local fadeOut = math.max(0, 1 - (t / duration) * 2)
+        wave = wave * fadeOut
+        soundData:setSample(i, wave)
+    end
+    
+    return love.audio.newSource(soundData)
+end
+
+-- Generate crackling fire sound with noise
+function Audio:generateFireCrackle()
+    local sampleRate = 44100
+    local duration = 0.4
+    local samples = sampleRate * duration
+    local soundData = love.sound.newSoundData(samples, sampleRate, 16, 1)
+    
+    for i = 0, samples - 1 do
+        local t = i / sampleRate
+        -- Create crackling effect with multiple frequencies and noise
+        local crackle = (math.random() - 0.5) * 0.3  -- Random noise
+        crackle = crackle + math.sin(2 * math.pi * 80 * t) * 0.2  -- Low rumble
+        crackle = crackle + math.sin(2 * math.pi * 150 * t) * 0.15  -- Mid crackle
+        crackle = crackle + math.sin(2 * math.pi * 300 * t) * 0.1   -- High crackle
+        
+        -- Add envelope for natural sound
+        local envelope = math.exp(-t * 2) * (1 + math.sin(20 * t) * 0.3)
+        crackle = crackle * envelope * 0.4
+        
+        soundData:setSample(i, crackle)
+    end
+    
+    return love.audio.newSource(soundData)
+end
+
+-- Generate hissing extinguish sound
+function Audio:generateExtinguish()
+    local sampleRate = 44100
+    local duration = 0.6
+    local samples = sampleRate * duration
+    local soundData = love.sound.newSoundData(samples, sampleRate, 16, 1)
+    
+    for i = 0, samples - 1 do
+        local t = i / sampleRate
+        -- Create hissing sound with filtered noise
+        local hiss = (math.random() - 0.5) * 0.8
+        -- Low-pass filter effect
+        local filteredHiss = hiss * (1 - t / duration)
+        -- Add some steam-like modulation
+        local steam = math.sin(2 * math.pi * 40 * t) * 0.2
+        local sound = (filteredHiss + steam) * 0.3
+        
+        soundData:setSample(i, sound)
+    end
+    
+    return love.audio.newSource(soundData)
+end
+
+-- Generate damage sound with harsh tone
+function Audio:generateDamage()
+    local sampleRate = 44100
+    local duration = 0.25
+    local samples = sampleRate * duration
+    local soundData = love.sound.newSoundData(samples, sampleRate, 16, 1)
+    
+    for i = 0, samples - 1 do
+        local t = i / sampleRate
+        -- Harsh, distorted sound for damage
+        local wave = math.sin(2 * math.pi * 220 * t) * 0.6
+        wave = wave + math.sin(2 * math.pi * 440 * t) * 0.3
+        -- Add distortion
+        wave = math.max(-0.7, math.min(0.7, wave * 1.5))
+        -- Quick fade out
+        local fadeOut = math.max(0, 1 - (t / duration) * 4)
+        wave = wave * fadeOut
+        soundData:setSample(i, wave)
+    end
+    
+    return love.audio.newSource(soundData)
+end
+
+-- Initialize audio system and load sounds
+function Audio:init()
+    -- Create sounds directory path
+    local soundsPath = "assets/sounds/"
+    
+    -- Try to load sound files, generate fallback sounds if files don't exist
+    self.sounds = {
+        ballCollision = self:loadSound(soundsPath .. "bounce.wav", "static") or self:generateTone(200, 0.1, 0.5),
+        coinCollect = self:loadSound(soundsPath .. "pickup.wav", "static") or self:generateTone(800, 0.2, 0.3),
+        ballPush = self:loadSound(soundsPath .. "push.wav", "static") or self:generateTone(150, 0.15, 0.4),
+        
+        -- Fire-related sounds
+        fireCrackle = self:loadSound(soundsPath .. "fire_crackle.wav", "static") or self:generateFireCrackle(),
+        fireExtinguish = self:loadSound(soundsPath .. "fire_extinguish.wav", "static") or self:generateExtinguish(),
+        fireDamage = self:loadSound(soundsPath .. "fire_damage.wav", "static") or self:generateDamage()
+    }
+    
+    -- Set default volume for all sounds
+    for name, sound in pairs(self.sounds) do
+        if sound then
+            sound:setVolume(self.volume)
+        end
+    end
+    
+    print("Audio system initialized with " .. (self.sounds.ballCollision and "loaded" or "generated") .. " sounds")
+    print("Fire sound effects: crackle, extinguish, damage")
+end
+
+-- Load a sound file with error handling
+function Audio:loadSound(filepath, sourceType)
+    local success, sound = pcall(love.audio.newSource, filepath, sourceType or "static")
+    if success then
+        print("Loaded sound: " .. filepath)
+        return sound
+    else
+        print("Could not load sound: " .. filepath .. " (will use generated sound)")
+        return nil
+    end
+end
+
+-- Play a sound effect
+function Audio:playSound(soundName)
+    if not self.enabled then
+        return
+    end
+    
+    local sound = self.sounds[soundName]
+    if sound then
+        -- Stop the sound if it's already playing to allow overlapping
+        sound:stop()
+        sound:play()
+    end
+end
+
+-- Set master volume for all sounds
+function Audio:setVolume(volume)
+    self.volume = math.max(0, math.min(1, volume))  -- Clamp between 0 and 1
+    
+    for name, sound in pairs(self.sounds) do
+        if sound then
+            sound:setVolume(self.volume)
+        end
+    end
+end
+
+-- Toggle audio on/off
+function Audio:toggle()
+    self.enabled = not self.enabled
+    print("Audio " .. (self.enabled and "enabled" or "disabled"))
+end
+
+-- Check if audio is enabled
+function Audio:isEnabled()
+    return self.enabled
+end
+
+-- Existing sound effect functions
+function Audio:playBallCollision()
+    self:playSound("ballCollision")
+end
+
+function Audio:playCoinCollect()
+    self:playSound("coinCollect")
+end
+
+function Audio:playBallPush()
+    self:playSound("ballPush")
+end
+
+-- New fire-related sound effect functions
+function Audio:playFireCrackle()
+    self:playSound("fireCrackle")
+end
+
+function Audio:playFireExtinguish()
+    self:playSound("fireExtinguish")
+end
+
+function Audio:playFireDamage()
+    self:playSound("fireDamage")
+end
+
+return Audio
+-- END: src/audio.lua --
+<<<MSG>>>
+<<<ROLE:assistant>>>
+I can see the issue. The Audio module doesn't have the `playMusic`, `stopMusic`, `pauseMusic`, or `resumeMusic` methods that are being called in main.lua. The Audio module only has sound effect functionality.
+
+-- FILE: src/audio.lua --
+local Audio = {}
+
+-- Audio state
+Audio.sounds = {}
+Audio.music = {}
+Audio.currentMusic = nil
+Audio.enabled = true
+Audio.volume = 0.7
+Audio.musicVolume = 0.5
+
+-- Generate a simple tone sound programmatically
+function Audio:generateTone(frequency, duration, volume)
+    local sampleRate = 44100
+    local samples = sampleRate * duration
+    local soundData = love.sound.newSoundData(samples, sampleRate, 16, 1)
+    
+    for i = 0, samples - 1 do
+        local t = i / sampleRate
+        local wave = math.sin(2 * math.pi * frequency * t) * volume
+        -- Add fade out to prevent clicks
+        local fadeOut = math.max(0, 1 - (t / duration) * 2)
+        wave = wave * fadeOut
+        soundData:setSample(i, wave)
+    end
+    
+    return love.audio.newSource(soundData)
+end
+
+-- Generate crackling fire sound with noise
+function Audio:generateFireCrackle()
+    local sampleRate = 44100
+    local duration = 0.4
+    local samples = sampleRate * duration
+    local soundData = love.sound.newSoundData(samples, sampleRate, 16, 1)
+    
+    for i = 0, samples - 1 do
+        local t = i / sampleRate
+        -- Create crackling effect with multiple frequencies and noise
+        local crackle = (math.random() - 0.5) * 0.3  -- Random noise
+        crackle = crackle + math.sin(2 * math.pi * 80 * t) * 0.2  -- Low rumble
+        crackle = crackle + math.sin(2 * math.pi * 150 * t) * 0.15  -- Mid crackle
+        crackle = crackle + math.sin(2 * math.pi * 300 * t) * 0.1   -- High crackle
+        
+        -- Add envelope for natural sound
+        local envelope = math.exp(-t * 2) * (1 + math.sin(20 * t) * 0.3)
+        crackle = crackle * envelope * 0.4
+        
+        soundData:setSample(i, crackle)
+    end
+    
+    return love.audio.newSource(soundData)
+end
+
+-- Generate hissing extinguish sound
+function Audio:generateExtinguish()
+    local sampleRate = 44100
+    local duration = 0.6
+    local samples = sampleRate * duration
+    local soundData = love.sound.newSoundData(samples, sampleRate, 16, 1)
+    
+    for i = 0, samples - 1 do
+        local t = i / sampleRate
+        -- Create hissing sound with filtered noise
+        local hiss = (math.random() - 0.5) * 0.8
+        -- Low-pass filter effect
+        local filteredHiss = hiss * (1 - t / duration)
+        -- Add some steam-like modulation
+        local steam = math.sin(2 * math.pi * 40 * t) * 0.2
+        local sound = (filteredHiss + steam) * 0.3
+        
+        soundData:setSample(i, sound)
+    end
+    
+    return love.audio.newSource(soundData)
+end
+
+-- Generate damage sound with harsh tone
+function Audio:generateDamage()
+    local sampleRate = 44100
+    local duration = 0.25
+    local samples = sampleRate * duration
+    local soundData = love.sound.newSoundData(samples, sampleRate, 16, 1)
+    
+    for i = 0, samples - 1 do
+        local t = i / sampleRate
+        -- Harsh, distorted sound for damage
+        local wave = math.sin(2 * math.pi * 220 * t) * 0.6
+        wave = wave + math.sin(2 * math.pi * 440 * t) * 0.3
+        -- Add distortion
+        wave = math.max(-0.7, math.min(0.7, wave * 1.5))
+        -- Quick fade out
+        local fadeOut = math.max(0, 1 - (t / duration) * 4)
+        wave = wave * fadeOut
+        soundData:setSample(i, wave)
+    end
+    
+    return love.audio.newSource(soundData)
+end
+
+-- Generate simple game over sound
+function Audio:generateGameOver()
+    local sampleRate = 44100
+    local duration = 1.0
+    local samples = sampleRate * duration
+    local soundData = love.sound.newSoundData(samples, sampleRate, 16, 1)
+    
+    for i = 0, samples - 1 do
+        local t = i / sampleRate
+        -- Descending tone for game over
+        local frequency = 220 * (1 - t * 0.8)  -- Descending from 220Hz
+        local wave = math.sin(2 * math.pi * frequency * t) * 0.4
+        -- Fade out
+        local fadeOut = math.max(0, 1 - (t / duration) * 0.8)
+        wave = wave * fadeOut
+        soundData:setSample(i, wave)
+    end
+    
+    return love.audio.newSource(soundData)
+end
+
+-- Generate simple background music loop
+function Audio:generateGameMusic()
+    local sampleRate = 44100
+    local duration = 4.0  -- 4 second loop
+    local samples = sampleRate * duration
+    local soundData = love.sound.newSoundData(samples, sampleRate, 16, 1)
+    
+    for i = 0, samples - 1 do
+        local t = i / sampleRate
+        -- Simple chord progression with sine waves
+        local bass = math.sin(2 * math.pi * 55 * t) * 0.15  -- Bass note
+        local mid = math.sin(2 * math.pi * 110 * t) * 0.1   -- Mid note
+        local high = math.sin(2 * math.pi * 165 * t) * 0.05 -- High note
+        
+        -- Add some variation over time
+        local variation = math.sin(2 * math.pi * t / 2) * 0.02
+        local wave = bass + mid + high + variation
+        
+        soundData:setSample(i, wave)
+    end
+    
+    local source = love.audio.newSource(soundData)
+    source:setLooping(true)
+    return source
+end
+
+-- Initialize audio system and load sounds
+function Audio:init()
+    -- Create sounds directory path
+    local soundsPath = "assets/sounds/"
+    local musicPath = "assets/music/"
+    
+    -- Try to load sound files, generate fallback sounds if files don't exist
+    self.sounds = {
+        ballCollision = self:loadSound(soundsPath .. "bounce.wav", "static") or self:generateTone(200, 0.1, 0.5),
+        coinCollect = self:loadSound(soundsPath .. "pickup.wav", "static") or self:generateTone(800, 0.2, 0.3),
+        ballPush = self:loadSound(soundsPath .. "push.wav", "static") or self:generateTone(150, 0.15, 0.4),
+        
+        -- Fire-related sounds
+        fireCrackle = self:loadSound(soundsPath .. "fire_crackle.wav", "static") or self:generateFireCrackle(),
+        fireExtinguish = self:loadSound(soundsPath .. "fire_extinguish.wav", "static") or self:generateExtinguish(),
+        fireDamage = self:loadSound(soundsPath .. "fire_damage.wav", "static") or self:generateDamage(),
+        
+        -- Game sounds
+        game_over = self:loadSound(soundsPath .. "game_over.wav", "static") or self:generateGameOver()
+    }
+    
+    -- Try to load music files, generate fallback music if files don't exist
+    self.music = {
+        game = self:loadSound(musicPath .. "game_music.ogg", "stream") or self:generateGameMusic()
+    }
+    
+    -- Set default volume for all sounds
+    for name, sound in pairs(self.sounds) do
+        if sound then
+            sound:setVolume(self.volume)
+        end
+    end
+    
+    -- Set default volume for music
+    for name, music in pairs(self.music) do
+        if music then
+            music:setVolume(self.musicVolume)
+        end
+    end
+    
+    print("Audio system initialized with " .. (self.sounds.ballCollision and "loaded" or "generated") .. " sounds")
+    print("Fire sound effects: crackle, extinguish, damage")
+end
+
+-- Load a sound file with error handling
+function Audio:loadSound(filepath, sourceType)
+    local success, sound = pcall(love.audio.newSource, filepath, sourceType or "static")
+    if success then
+        print("Loaded sound: " .. filepath)
+        return sound
+    else
+        print("Could not load sound: " .. filepath .. " (will use generated sound)")
+        return nil
+    end
+end
+
+-- Play a sound effect
+function Audio:playSound(soundName)
+    if not self.enabled then
+        return
+    end
+    
+    local sound = self.sounds[soundName]
+    if sound then
+        -- Stop the sound if it's already playing to allow overlapping
+        sound:stop()
+        sound:play()
+    end
+end
+
+-- Music control functions
+function Audio:playMusic(musicName)
+    if not self.enabled then
+        return
+    end
+    
+    -- Stop current music if playing
+    if self.currentMusic then
+        self.currentMusic:stop()
+    end
+    
+    local music = self.music[musicName]
+    if music then
+        self.currentMusic = music
+        music:play()
+        print("Playing music: " .. musicName)
+    end
+end
+
+function Audio:stopMusic()
+    if self.currentMusic then
+        self.currentMusic:stop()
+        self.currentMusic = nil
+    end
+end
+
+function Audio:pauseMusic()
+    if self.currentMusic then
+        self.currentMusic:pause()
+    end
+end
+
+function Audio:resumeMusic()
+    if self.currentMusic then
+        self.currentMusic:resume()
+    end
+end
+
+-- Set master volume for all sounds
+function Audio:setVolume(volume)
+    self.volume = math.max(0, math.min(1, volume))  -- Clamp between 0 and 1
+    
+    for name, sound in pairs(self.sounds) do
+        if sound then
+            sound:setVolume(self.volume)
+        end
+    end
+end
+
+-- Set music volume
+function Audio:setMusicVolume(volume)
+    self.musicVolume = math.max(0, math.min(1, volume))  -- Clamp between 0 and 1
+    
+    for name, music in pairs(self.music) do
+        if music then
+            music:setVolume(self.musicVolume)
+        end
+    end
+end
+
+-- Toggle audio on/off
+function Audio:toggle()
+    self.enabled = not self.enabled
+    print("Audio " .. (self.enabled and "enabled" or "disabled"))
+end
+
+-- Check if audio is enabled
+function Audio:isEnabled()
+    return self.enabled
+end
+
+-- Existing sound effect functions
+function Audio:playBallCollision()
+    self:playSound("ballCollision")
+end
+
+function Audio:playCoinCollect()
+    self:playSound("coinCollect")
+end
+
+function Audio:playBallPush()
+    self:playSound("ballPush")
+end
+
+-- New fire-related sound effect functions
+function Audio:playFireCrackle()
+    self:playSound("fireCrackle")
+end
+
+function Audio:playFireExtinguish()
+    self:playSound("fireExtinguish")
+end
+
+function Audio:playFireDamage()
+    self:playSound("fireDamage")
+end
+
+return Audio
+-- END: src/audio.lua --
+
+DECISION_LOG: Added missing music control methods (playMusic, stopMusic, pauseMusic, resumeMusic) to Audio module with generated fallback music and game_over sound effect
 <<<MSG>>>

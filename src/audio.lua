@@ -2,8 +2,11 @@ local Audio = {}
 
 -- Audio state
 Audio.sounds = {}
+Audio.music = {}
+Audio.currentMusic = nil
 Audio.enabled = true
 Audio.volume = 0.7
+Audio.musicVolume = 0.5
 
 -- Generate a simple tone sound programmatically
 function Audio:generateTone(frequency, duration, volume)
@@ -94,10 +97,58 @@ function Audio:generateDamage()
     return love.audio.newSource(soundData)
 end
 
+-- Generate simple game over sound
+function Audio:generateGameOver()
+    local sampleRate = 44100
+    local duration = 1.0
+    local samples = sampleRate * duration
+    local soundData = love.sound.newSoundData(samples, sampleRate, 16, 1)
+    
+    for i = 0, samples - 1 do
+        local t = i / sampleRate
+        -- Descending tone for game over
+        local frequency = 220 * (1 - t * 0.8)  -- Descending from 220Hz
+        local wave = math.sin(2 * math.pi * frequency * t) * 0.4
+        -- Fade out
+        local fadeOut = math.max(0, 1 - (t / duration) * 0.8)
+        wave = wave * fadeOut
+        soundData:setSample(i, wave)
+    end
+    
+    return love.audio.newSource(soundData)
+end
+
+-- Generate simple background music loop
+function Audio:generateGameMusic()
+    local sampleRate = 44100
+    local duration = 4.0  -- 4 second loop
+    local samples = sampleRate * duration
+    local soundData = love.sound.newSoundData(samples, sampleRate, 16, 1)
+    
+    for i = 0, samples - 1 do
+        local t = i / sampleRate
+        -- Simple chord progression with sine waves
+        local bass = math.sin(2 * math.pi * 55 * t) * 0.15  -- Bass note
+        local mid = math.sin(2 * math.pi * 110 * t) * 0.1   -- Mid note
+        local high = math.sin(2 * math.pi * 165 * t) * 0.05 -- High note
+        
+        -- Add some variation over time
+        local variation = math.sin(2 * math.pi * t / 2) * 0.02
+        local wave = bass + mid + high + variation
+        
+        soundData:setSample(i, wave)
+    end
+    
+    local source = love.audio.newSource(soundData)
+    source:setLooping(true)
+    return source
+end
+
 -- Initialize audio system and load sounds
 function Audio:init()
     -- Create sounds directory path
     local soundsPath = "assets/sounds/"
+    local musicPath = "assets/music/"
     
     -- Try to load sound files, generate fallback sounds if files don't exist
     self.sounds = {
@@ -108,13 +159,28 @@ function Audio:init()
         -- Fire-related sounds
         fireCrackle = self:loadSound(soundsPath .. "fire_crackle.wav", "static") or self:generateFireCrackle(),
         fireExtinguish = self:loadSound(soundsPath .. "fire_extinguish.wav", "static") or self:generateExtinguish(),
-        fireDamage = self:loadSound(soundsPath .. "fire_damage.wav", "static") or self:generateDamage()
+        fireDamage = self:loadSound(soundsPath .. "fire_damage.wav", "static") or self:generateDamage(),
+        
+        -- Game sounds
+        game_over = self:loadSound(soundsPath .. "game_over.wav", "static") or self:generateGameOver()
+    }
+    
+    -- Try to load music files, generate fallback music if files don't exist
+    self.music = {
+        game = self:loadSound(musicPath .. "game_music.ogg", "stream") or self:generateGameMusic()
     }
     
     -- Set default volume for all sounds
     for name, sound in pairs(self.sounds) do
         if sound then
             sound:setVolume(self.volume)
+        end
+    end
+    
+    -- Set default volume for music
+    for name, music in pairs(self.music) do
+        if music then
+            music:setVolume(self.musicVolume)
         end
     end
     
@@ -148,6 +214,44 @@ function Audio:playSound(soundName)
     end
 end
 
+-- Music control functions
+function Audio:playMusic(musicName)
+    if not self.enabled then
+        return
+    end
+    
+    -- Stop current music if playing
+    if self.currentMusic then
+        self.currentMusic:stop()
+    end
+    
+    local music = self.music[musicName]
+    if music then
+        self.currentMusic = music
+        music:play()
+        print("Playing music: " .. musicName)
+    end
+end
+
+function Audio:stopMusic()
+    if self.currentMusic then
+        self.currentMusic:stop()
+        self.currentMusic = nil
+    end
+end
+
+function Audio:pauseMusic()
+    if self.currentMusic then
+        self.currentMusic:pause()
+    end
+end
+
+function Audio:resumeMusic()
+    if self.currentMusic then
+        self.currentMusic:resume()
+    end
+end
+
 -- Set master volume for all sounds
 function Audio:setVolume(volume)
     self.volume = math.max(0, math.min(1, volume))  -- Clamp between 0 and 1
@@ -155,6 +259,17 @@ function Audio:setVolume(volume)
     for name, sound in pairs(self.sounds) do
         if sound then
             sound:setVolume(self.volume)
+        end
+    end
+end
+
+-- Set music volume
+function Audio:setMusicVolume(volume)
+    self.musicVolume = math.max(0, math.min(1, volume))  -- Clamp between 0 and 1
+    
+    for name, music in pairs(self.music) do
+        if music then
+            music:setVolume(self.musicVolume)
         end
     end
 end

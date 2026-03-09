@@ -1,12 +1,7 @@
-Error
-
-main.lua:20: attempt to call method 'init' (a nil value)
-
-
-Traceback
-
-[love "callbacks.lua"]:228: in function 'handler'
-main.lua:20: in function 'load'
-[love "callbacks.lua"]:136: in function <[love "callbacks.lua"]:135>
-[C]: in function 'xpcall'
-[C]: in function 'xpcall'
+Error: main.lua:57: attempt to call method 'playMusic' (a nil value)
+stack traceback:
+        [love "boot.lua"]:352: in function 'playMusic'
+        main.lua:57: in function 'startNewGame'
+        main.lua:190: in function <main.lua:165>
+        [love "callbacks.lua"]:154: in function <[love "callbacks.lua"]:144>
+        [C]: in function 'xpcall'
