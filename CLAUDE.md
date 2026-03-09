@@ -10,6 +10,7 @@ Love2D + Lua
 Complete core game with modular structure, physics, shadows, audio, and fire damage system. Features fire spawning using predictive player movement (0.28s ahead, 65px distance), red ball fire extinguishing with stain creation, player health system with damage/regeneration, game over mechanics, fire-themed audio system, and comprehensive damage visual feedback including floating damage numbers and health bar indicators.
 
 ## Open Tasks
+- [x] it looks like you´ve already made all required changes but there is an issue no file, could you create the reqired one and complet the menu implementation
 - [x] task 6.1: Create menu system with navigation between screens
 **6. Menu System Implementation (existing plan):**
 - Create menu system with navigation between screens
