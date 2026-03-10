@@ -2855,3 +2855,19 @@ stack traceback:
         [love "boot.lua"]:352: in function 
 [2026-03-09 15:14:33] [ERROR_END] done
 [2026-03-09 15:19:21] [CODE_START] [short [auto]] main menu was added and there are errors one by one like this Error: main.lua:157: attempt to call method 'drawLives' (a nil value), could you pass throuw whole code and fix the menu and game integration
+[2026-03-09 15:20:27] [CODE_END] done
+[2026-03-09 16:26:09] [ERROR_INPUT] Error: main.lua:218: attempt to call method 'keyreleased' (a nil value)
+stack traceback:
+        [love "boot.lua"]:352: 
+[2026-03-09 16:59:39] [ERROR_INPUT] Error: main.lua:218: attempt to call method 'keyreleased' (a nil value)
+stack traceback:
+        [love "boot.lua"]:352: 
+[2026-03-09 17:18:09] [ERROR_INPUT] Error: main.lua:218: attempt to call method 'keyreleased' (a nil value)
+stack traceback:
+        [love "boot.lua"]:352: 
+[2026-03-10 11:27:35] [ERROR_INPUT] Error: main.lua:72: attempt to index field 'position' (a nil value)
+stack traceback:
+        [love "boot.lua"]:352: in f
+[2026-03-10 17:10:17] [ERROR_INPUT] Error: main.lua:72: attempt to index field 'position' (a nil value)
+stack traceback:
+        [love "boot.lua"]:352: in f

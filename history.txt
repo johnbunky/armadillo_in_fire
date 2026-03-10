@@ -905,3 +905,331 @@ return UI
 
 DECISION_LOG: Split the UI drawScore method into separate drawScore and drawLives methods, and added missing drawGameOver method to match the interface expected by main.lua
 <<<MSG>>>
+<<<ROLE:user>>>
+This error occurred at runtime:
+
+Error: main.lua:72: attempt to index field 'position' (a nil value)
+stack traceback:
+        [love "boot.lua"]:352: in function '__index'
+        main.lua:72: in function 'update'
+        [love "callbacks.lua"]:162: in function <[love "callbacks.lua"]:144>
+        [C]: in function 'xpcall'
+<<<MSG>>>
+<<<ROLE:assistant>>>
+ROOT_CAUSE: Fire object doesn't have a 'position' field - likely has different field name like 'x', 'y' or different structure
+
+FIX: Need to see Fire class structure to understand correct field names
+
+CONFIDENCE: high
+
+QUESTION: src/fire.lua
+<<<MSG>>>
+<<<ROLE:user>>>
+Here are the requested files:
+
+-- FILE: src/fire.lua --
+local Fire = {}
+Fire.__index = Fire
+
+function Fire:new(x, y, radius, color)
+    local fire = {}
+    setmetatable(fire, Fire)
+    
+    fire.x = x or 0
+    fire.y = y or 0
+    fire.radius = radius or 15
+    fire.baseColor = color or {1, 0.3, 0}  -- orange-red by default
+    fire.color = {fire.baseColor[1], fire.baseColor[2], fire.baseColor[3]}
+    
+    -- Fire animation properties
+    fire.flickerTime = 0
+    fire.flickerSpeed = 8
+    fire.flickerIntensity = 0.3
+    
+    -- Shadow properties - fires don't need shadows based on user feedback
+    fire.shadowOffset = {x = 2, y = 3}
+    fire.shadowColor = {0, 0, 0, 0.4}  -- Darker shadow for fire
+    fire.shadowScale = {x = 1.2, y = 0.6}
+    
+    return fire
+end
+
+function Fire:update(dt, playerBall)
+    -- Update flicker animation only
+    self.flickerTime = self.flickerTime + dt * self.flickerSpeed
+    
+    -- Create flickering effect by modifying color intensity
+    local flicker = math.sin(self.flickerTime) * self.flickerIntensity + 0.7
+    self.color[1] = math.min(1, self.baseColor[1] * flicker + 0.3)
+    self.color[2] = math.min(1, self.baseColor[2] * flicker)
+    self.color[3] = self.baseColor[3] * 0.1  -- Keep blue component low
+    
+    -- Fire remains static - no movement code
+end
+
+function Fire:drawShadow()
+    -- Skip drawing shadow for fires per user feedback
+    return
+end
+
+function Fire:draw()
+    -- Draw as triangle shape per user feedback
+    local height = self.radius * 1.5
+    local baseWidth = self.radius * 1.2
+    
+    -- Main fire triangle
+    love.graphics.setColor(self.color[1], self.color[2], self.color[3])
+    local vertices = {
+        self.x, self.y - height,  -- top point
+        self.x - baseWidth/2, self.y + height/2,  -- bottom left
+        self.x + baseWidth/2, self.y + height/2   -- bottom right
+    }
+    love.graphics.polygon("fill", vertices)
+    
+    -- Inner core triangle (brighter)
+    love.graphics.setColor(1, 0.8, 0.2)
+    local coreVertices = {
+        self.x, self.y - height * 0.6,
+        self.x - baseWidth/3, self.y + height/3,
+        self.x + baseWidth/3, self.y + height/3
+    }
+    love.graphics.polygon("fill", coreVertices)
+    
+    -- Center hot spot
+    love.graphics.setColor(1, 1, 0.8)
+    love.graphics.circle("fill", self.x, self.y, self.radius * 0.2)
+end
+
+return Fire
+-- END: src/fire.lua --
+<<<MSG>>>
+<<<ROLE:assistant>>>
+ROOT_CAUSE: Fire object uses 'x', 'y' fields but main.lua tries to access 'fire.position.y' at line 72
+
+FIX: Change fire.position.y to fire.y in main.lua
+
+CONFIDENCE: high
+
+-- FILE: main.lua --
+local Ball = require('src.ball')
+local Fire = require('src.fire')
+local Stain = require('src.stain')
+local Physics = require('src.physics')
+local Audio = require('src.audio')
+local UI = require('src.ui')
+local Menu = require('src.menu')
+
+-- Global game state
+local gameState = {}
+local audio
+local menu
+local currentState = "menu"  -- Can be: "menu", "playing", "paused", "game_over"
+
+function love.load()
+    -- Initialize menu system
+    menu = Menu:new()
+    
+    -- Initialize audio system
+    audio = Audio
+    audio:init()
+    
+    -- Initialize game state
+    gameState.state = "playing"
+    gameState.gameOverTime = 0
+    gameState.gameOverDelay = 2.0
+    gameState.nextFireSpawn = 2.0
+    gameState.fireSpawnInterval = 3.0
+    gameState.minFireSpawnInterval = 0.8
+    gameState.fireSpawnReduction = 0.1
+    gameState.score = 0
+    gameState.lives = 3
+    
+    -- Initialize game objects
+    gameState.ball = Ball:new(400, 550)
+    gameState.fires = {}
+    gameState.stains = {}
+    
+    -- Set window title
+    love.window.setTitle("Fire Ball Game")
+end
+
+function startNewGame()
+    currentState = "playing"
+    gameState.state = "playing"
+    gameState.gameOverTime = 0
+    gameState.nextFireSpawn = 2.0
+    gameState.fireSpawnInterval = 3.0
+    gameState.score = 0
+    gameState.lives = 3
+    
+    -- Reset game objects
+    gameState.ball = Ball:new(400, 550)
+    gameState.fires = {}
+    gameState.stains = {}
+    
+    audio:playMusic('game')
+end
+
+function love.update(dt)
+    if currentState == "menu" then
+        menu:update(dt)
+    elseif currentState == "playing" then
+        if gameState.state == "playing" then
+            -- Update game objects
+            gameState.ball:update(dt)
+            
+            for i = #gameState.fires, 1, -1 do
+                local fire = gameState.fires[i]
+                fire:update(dt)
+                
+                if fire.y > love.graphics.getHeight() + 50 then
+                    table.remove(gameState.fires, i)
+                    gameState.score = gameState.score + 10
+                end
+            end
+            
+            for i = #gameState.stains, 1, -1 do
+                local stain = gameState.stains[i]
+                stain:update(dt)
+                
+                if stain.alpha <= 0 then
+                    table.remove(gameState.stains, i)
+                end
+            end
+            
+            -- Check collisions
+            Physics:checkCollisions(gameState.ball, gameState.fires, gameState.stains, audio, gameState)
+            
+            -- Spawn fires
+            gameState.nextFireSpawn = gameState.nextFireSpawn - dt
+            if gameState.nextFireSpawn <= 0 then
+                local fire = Fire:new(math.random(50, love.graphics.getWidth() - 50), -30)
+                table.insert(gameState.fires, fire)
+                gameState.nextFireSpawn = gameState.fireSpawnInterval
+                
+                if gameState.fireSpawnInterval > gameState.minFireSpawnInterval then
+                    gameState.fireSpawnInterval = gameState.fireSpawnInterval - gameState.fireSpawnReduction
+                end
+            end
+            
+            -- Check game over
+            if gameState.lives <= 0 then
+                gameState.state = "game_over"
+                gameState.gameOverTime = 0
+                audio:stopMusic()
+                audio:playSound('game_over')
+            end
+        elseif gameState.state == "game_over" then
+            gameState.gameOverTime = gameState.gameOverTime + dt
+            if gameState.gameOverTime >= gameState.gameOverDelay then
+                currentState = "menu"
+                menu:showGameOver(gameState.score)
+            end
+        end
+    elseif currentState == "paused" then
+        menu:update(dt)
+    end
+end
+
+function love.draw()
+    if currentState == "menu" or currentState == "paused" then
+        -- Draw game in background if paused
+        if currentState == "paused" then
+            -- Draw game objects
+            gameState.ball:draw()
+            
+            for _, fire in ipairs(gameState.fires) do
+                fire:draw()
+            end
+            
+            for _, stain in ipairs(gameState.stains) do
+                stain:draw()
+            end
+            
+            -- Draw UI
+            UI:drawScore(gameState.score)
+            UI:drawLives(gameState.lives)
+        end
+        
+        -- Draw menu on top
+        menu:draw()
+    elseif currentState == "playing" then
+        -- Draw game objects
+        gameState.ball:draw()
+        
+        for _, fire in ipairs(gameState.fires) do
+            fire:draw()
+        end
+        
+        for _, stain in ipairs(gameState.stains) do
+            stain:draw()
+        end
+        
+        -- Draw UI
+        UI:drawScore(gameState.score)
+        UI:drawLives(gameState.lives)
+        
+        if gameState.state == "game_over" then
+            UI:drawGameOver(gameState.score)
+        end
+    end
+end
+
+function love.keypressed(key)
+    if currentState == "menu" or currentState == "paused" then
+        -- Handle menu input and check for actions
+        local action = nil
+        
+        -- Store the original selectOption function temporarily
+        local originalSelectOption = menu.selectOption
+        
+        -- Override selectOption to capture the return value
+        menu.selectOption = function(self)
+            return originalSelectOption(self)
+        end
+        
+        -- Process the key press
+        if key == "return" or key == "space" then
+            action = menu:selectOption()
+        else
+            menu:keypressed(key)
+        end
+        
+        -- Restore original function
+        menu.selectOption = originalSelectOption
+        
+        -- Handle menu actions
+        if action == "start_game" then
+            startNewGame()
+        elseif action == "resume" then
+            if currentState == "paused" then
+                currentState = "playing"
+                audio:resumeMusic()
+            end
+        elseif action == "restart" then
+            startNewGame()
+        end
+        
+    elseif currentState == "playing" then
+        if key == "escape" then
+            currentState = "paused"
+            menu:showPause()
+            audio:pauseMusic()
+        elseif key == "p" then
+            currentState = "paused"
+            menu:showPause()
+            audio:pauseMusic()
+        else
+            -- Handle game input
+            gameState.ball:keypressed(key)
+        end
+    end
+end
+
+function love.keyreleased(key)
+    if currentState == "playing" then
+        gameState.ball:keyreleased(key)
+    end
+end
+-- END: main.lua --
+<<<MSG>>>

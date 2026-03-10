@@ -38,6 +38,7 @@ crash.log
 temp/
 
 # History and Cache Files
+_world.lua
 history.txt
 .history
 *.history

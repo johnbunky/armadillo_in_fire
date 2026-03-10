@@ -69,7 +69,7 @@ function love.update(dt)
                 local fire = gameState.fires[i]
                 fire:update(dt)
                 
-                if fire.position.y > love.graphics.getHeight() + 50 then
+                if fire.y > love.graphics.getHeight() + 50 then
                     table.remove(gameState.fires, i)
                     gameState.score = gameState.score + 10
                 end

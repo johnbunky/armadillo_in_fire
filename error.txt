@@ -1,6 +1,6 @@
-Error: main.lua:157: attempt to call method 'drawLives' (a nil value)
+Error: main.lua:72: attempt to index field 'position' (a nil value)
 stack traceback:
-        [love "boot.lua"]:352: in function 'drawLives'
-        main.lua:157: in function 'draw'
-        [love "callbacks.lua"]:168: in function <[love "callbacks.lua"]:144>
+        [love "boot.lua"]:352: in function '__index'
+        main.lua:72: in function 'update'
+        [love "callbacks.lua"]:162: in function <[love "callbacks.lua"]:144>
         [C]: in function 'xpcall'
