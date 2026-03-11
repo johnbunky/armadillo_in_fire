@@ -109,3 +109,10 @@ screenshots/
 !assets/**/*.png
 !assets/**/*.jpg
 !assets/**/*.gif
+CLAUDE.md 
+history.txt 
+session.log 
+decisions.log 
+error.txt 
+intent.lua 
+_world.lua 

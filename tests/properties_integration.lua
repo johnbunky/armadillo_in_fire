@@ -165,7 +165,7 @@ property("contract: Ball has all required methods", function(r)
     if not Ball then return false, "require failed: " .. err end
     -- Ball is a class -- check prototype methods
     if not Ball.new then return false, 'Ball missing :new constructor' end
-    local instance = Ball:new(400, 300)
+    local instance = Ball:new(400, 300, 25, {1,1,1}, false)
     if not instance then return false, "Ball:new failed" end
     return check_methods(instance, "Ball", {
         "update", "draw", "keypressed", "keyreleased",
@@ -208,7 +208,7 @@ end)
 property("contract: Physics has checkCollisions", function(r)
     local Physics, err = safe_require("src.physics")
     if not Physics then return false, "require failed: " .. err end
-    return check_methods(Physics, "Physics", {"checkCollisions"})
+    return check_methods(Physics, "Physics", {"checkCollision"})
 end)
 
 -- ── Menu contract ─────────────────────────────────────────────────────────────
