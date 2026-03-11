@@ -16,40 +16,6 @@ function Physics.checkCoinCollision(ball, coin)
     return distance < (ball.radius + coin.radius)
 end
 
--- Check collision between ball and fire
-function Physics.checkFireCollision(ball, fire)
-    local dx = ball.position.x - fire.position.x
-    local dy = ball.position.y - fire.position.y
-    local distance = math.sqrt(dx * dx + dy * dy)
-    return distance < (ball.radius + fire.radius)
-end
-
--- Main collision checking function called by main.lua
-function Physics:checkCollisions(ball, fires, stains, audio, gameState)
-    -- Check collisions between ball and fires
-    for i = #fires, 1, -1 do
-        local fire = fires[i]
-        
-        if self.checkFireCollision(ball, fire) then
-            -- Fire hit the ball - take damage
-            gameState.lives = gameState.lives - 1
-            
-            -- Create stain at fire position
-            local Stain = require('src.stain')
-            local stain = Stain:new(fire.position.x, fire.position.y)
-            table.insert(stains, stain)
-            
-            -- Remove the fire
-            table.remove(fires, i)
-            
-            -- Play damage sound
-            if audio then
-                audio:playFireDamage()
-            end
-        end
-    end
-end
-
 -- Handle collision physics with audio support
 function Physics.handleCollision(playerBall, pushBall, audio)
     if not Physics.checkCollision(playerBall, pushBall) then

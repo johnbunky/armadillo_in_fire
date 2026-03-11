@@ -179,13 +179,4 @@ function Ball:draw()
     end
 end
 
-function Ball:keyreleased(key)
-    -- nothing needed if you're using love.keyboard.isDown() in update
-    -- only needed if you track key state manually
-end
-
-function Ball:keypressed(key)
-    -- handle key press if needed
-end
- 
 return Ball
