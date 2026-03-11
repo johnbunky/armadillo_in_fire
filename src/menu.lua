@@ -124,8 +124,9 @@ function Menu:keypressed(key)
         end
         self.keyDelay = self.keyDelayTime
     elseif key == "return" or key == "space" then
-        self:selectOption()
+        local action = self:selectOption()
         self.keyDelay = self.keyDelayTime
+        return action
     elseif key == "escape" then
         if self.currentMenu == "main" then
             love.event.quit()
