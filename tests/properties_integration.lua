@@ -205,7 +205,7 @@ end)
 
 -- ── Physics contract ──────────────────────────────────────────────────────────
 
-property("contract: Physics has checkCollisions", function(r)
+property("contract: Physics has checkCollision", function(r)
     local Physics, err = safe_require("src.physics")
     if not Physics then return false, "require failed: " .. err end
     return check_methods(Physics, "Physics", {"checkCollision"})
@@ -228,23 +228,18 @@ end)
 -- ── Cross-module wiring ───────────────────────────────────────────────────────
 -- Verify main.lua's assumptions about how modules talk to each other.
 
-property("wiring: Physics.checkCollisions accepts expected args", function(r)
+property("wiring: Physics.checkCollision accepts expected args", function(r)
     local Physics, err = safe_require("src.physics")
     if not Physics then return false, "require failed: " .. err end
     local Ball, _ = safe_require("src.ball")
     if not Ball then return true end  -- skip if ball missing
 
     -- create minimal stubs
-    local ball     = {x=400, y=300, vx=0, vy=0, radius=20,
-                      velocity={x=0,y=0}, position={x=400,y=300}}
-    local fires    = {}
-    local stains   = {}
-    local audio    = {playSound=function()end}
-    local state    = {score=0, lives=3}
-
-    local ok, err2 = pcall(Physics.checkCollisions, Physics,
-                           ball, fires, stains, audio, state)
-    return ok, "checkCollisions error: " .. tostring(err2)
+    local ball1 = {x=400, y=300, radius=20}
+    local ball2 = {x=420, y=300, radius=20}
+    
+    local ok, err2 = pcall(Physics.checkCollision, ball1, ball2)
+    return ok, "checkCollision error: " .. tostring(err2)
 end)
 
 -- Audio.init is stateful -- run once, cache result

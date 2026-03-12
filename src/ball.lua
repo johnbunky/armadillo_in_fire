@@ -179,4 +179,10 @@ function Ball:draw()
     end
 end
 
+function Ball:keyreleased(key)
+end
+
+function Ball:keypressed(key)
+end
+
 return Ball

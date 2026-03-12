@@ -204,4 +204,13 @@ function Audio:playFireDamage()
     self:playSound("fireDamage")
 end
 
+function Audio:stopMusic()
+end
+
+function Audio:pauseMusic()
+end
+
+function Audio:resumeMusic()
+end
+
 return Audio

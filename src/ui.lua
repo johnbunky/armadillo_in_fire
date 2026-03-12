@@ -98,4 +98,13 @@ function UI.draw(gameState, audio)
     end
 end
 
+function UI:drawScore(score)
+end
+
+function UI:drawLives(lives)
+end
+
+function UI:drawGameOver()
+end
+
 return UI
