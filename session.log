@@ -2871,5 +2871,3 @@ stack traceback:
 [2026-03-10 17:10:17] [ERROR_INPUT] Error: main.lua:72: attempt to index field 'position' (a nil value)
 stack traceback:
         [love "boot.lua"]:352: in f
-[2026-03-12 12:51:57] [EVOLVE_START] --utility
-[2026-03-12 12:52:17] [EVOLVE_END] --utility

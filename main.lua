@@ -70,52 +70,28 @@ function gameState:update(dt)
 end
 
 function gameState:spawnFire()
-    local strategy = "chase"  -- change to: "block", "cluster", "wait"
-    
+    -- Predict player position
     local predictionTime = 0.28
-    local predictedX = math.max(50, math.min(love.graphics.getWidth()-50,
-        self.playerBall.x + self.playerBall.vx * predictionTime))
-    local predictedY = math.max(50, math.min(love.graphics.getHeight()-50,
-        self.playerBall.y + self.playerBall.vy * predictionTime))
-
-    local spawnX, spawnY
+    local predictedX = self.playerBall.x + self.playerBall.vx * predictionTime
+    local predictedY = self.playerBall.y + self.playerBall.vy * predictionTime
+    
+    -- Keep predicted position within bounds
+    predictedX = math.max(50, math.min(love.graphics.getWidth() - 50, predictedX))
+    predictedY = math.max(50, math.min(love.graphics.getHeight() - 50, predictedY))
+    
+    -- Calculate spawn position around predicted location
+    local spawnDistance = 65
     local angle = math.random() * 2 * math.pi
-
-    if strategy == "chase" then
-        -- tight, close to predicted — current behavior
-        local d = 65
-        spawnX = predictedX + math.cos(angle) * d
-        spawnY = predictedY + math.sin(angle) * d
-
-    elseif strategy == "block" then
-        -- between player and nearest corner
-        local cx = self.playerBall.x < 400 and 0 or 800
-        local cy = self.playerBall.y < 300 and 0 or 600
-        spawnX = (predictedX + cx) * 0.5
-        spawnY = (predictedY + cy) * 0.5
-
-    elseif strategy == "cluster" then
-        -- near existing fires if any, else random
-        if #self.fires > 0 then
-            local f = self.fires[math.random(#self.fires)]
-            spawnX = f.x + (math.random()-0.5) * 80
-            spawnY = f.y + (math.random()-0.5) * 80
-        else
-            spawnX = predictedX + math.cos(angle) * 65
-            spawnY = predictedY + math.sin(angle) * 65
-        end
-
-    elseif strategy == "wait" then
-        -- far from player, random side of screen
-        local d = 200
-        spawnX = predictedX + math.cos(angle) * d
-        spawnY = predictedY + math.sin(angle) * d
-    end
-
-    spawnX = math.max(30, math.min(love.graphics.getWidth()-30,  spawnX))
-    spawnY = math.max(30, math.min(love.graphics.getHeight()-30, spawnY))
-
-    table.insert(self.fires, Fire:new(spawnX, spawnY, 15, {1, 0.3, 0}))
+    local spawnX = predictedX + math.cos(angle) * spawnDistance
+    local spawnY = predictedY + math.sin(angle) * spawnDistance
+    
+    -- Keep spawn position within screen bounds
+    spawnX = math.max(30, math.min(love.graphics.getWidth() - 30, spawnX))
+    spawnY = math.max(30, math.min(love.graphics.getHeight() - 30, spawnY))
+    
+    -- Create new fire
+    local newFire = Fire:new(spawnX, spawnY, 15, {1, 0.3, 0})
+    table.insert(self.fires, newFire)
 end
 
 function gameState:extinguishFire(fireIndex, audio)
