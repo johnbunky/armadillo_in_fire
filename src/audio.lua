@@ -148,6 +148,14 @@ function Audio:playSound(soundName)
     end
 end
 
+-- Play music (stub implementation)
+function Audio:playMusic(musicName)
+    -- Stub: Music functionality not implemented yet
+    if self.enabled then
+        print("Playing music: " .. (musicName or "default"))
+    end
+end
+
 -- Set master volume for all sounds
 function Audio:setVolume(volume)
     self.volume = math.max(0, math.min(1, volume))  -- Clamp between 0 and 1
