@@ -21,6 +21,11 @@ function Fire:new(x, y, radius, color)
     fire.shadowColor = {0, 0, 0, 0.4}  -- Darker shadow for fire
     fire.shadowScale = {x = 1.2, y = 0.6}
     
+    -- Adaptation tracking
+    fire.positionSignal = 0  -- Distance to player (0-1 normalized)
+    fire.directionSignal = {x = 0, y = 0}  -- Player direction vector
+    fire.timingSignal = 0  -- Player approach speed
+    
     return fire
 end
 
@@ -34,7 +39,53 @@ function Fire:update(dt, playerBall)
     self.color[2] = math.min(1, self.baseColor[2] * flicker)
     self.color[3] = self.baseColor[3] * 0.1  -- Keep blue component low
     
+    -- Update adaptive signals
+    if playerBall then
+        self:detectPositionSignal(playerBall)
+        self:detectDirectionSignal(playerBall)
+        self:detectTimingSignal(playerBall)
+    end
+    
     -- Fire remains static - no movement code
+end
+
+function Fire:detectPositionSignal(playerBall)
+    -- Detect player proximity and normalize to 0-1 range
+    local dx = playerBall.x - self.x
+    local dy = playerBall.y - self.y
+    local distance = math.sqrt(dx * dx + dy * dy)
+    
+    -- Normalize distance (0-1: close to far), max detection range 400 pixels
+    self.positionSignal = math.max(0, 1 - (distance / 400))
+end
+
+function Fire:detectDirectionSignal(playerBall)
+    -- Detect player direction relative to fire
+    local dx = playerBall.x - self.x
+    local dy = playerBall.y - self.y
+    local distance = math.sqrt(dx * dx + dy * dy)
+    
+    if distance > 0 then
+        self.directionSignal.x = dx / distance
+        self.directionSignal.y = dy / distance
+    else
+        self.directionSignal.x = 0
+        self.directionSignal.y = 0
+    end
+end
+
+function Fire:detectTimingSignal(playerBall)
+    -- Detect player approach speed
+    local dx = playerBall.x - self.x
+    local dy = playerBall.y - self.y
+    local distance = math.sqrt(dx * dx + dy * dy)
+    
+    -- Calculate approach velocity (negative = approaching)
+    local playerSpeed = math.sqrt(playerBall.vx * playerBall.vx + playerBall.vy * playerBall.vy)
+    local approachSpeed = playerSpeed
+    
+    -- Normalize to 0-1 range (0-300 pixels/sec)
+    self.timingSignal = math.min(1, approachSpeed / 300)
 end
 
 function Fire:drawShadow()

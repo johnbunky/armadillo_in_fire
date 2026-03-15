@@ -27,6 +27,7 @@ function love.load()
     gameState.nextFireSpawn = 2.0  -- First fire spawns after 2 seconds
     gameState.fireSpawnInterval = 1.95  -- Base spawn interval
     gameState.maxFires = 5  -- Maximum fires on screen
+    gameState.gameTime = 0
     
     -- Create balls
     gameState.playerBall = Ball:new(100, 300, 25, {0.2, 0.8, 0.2}, true)  -- Green player ball
@@ -48,9 +49,9 @@ function love.load()
 end
 
 function gameState:update(dt)
+    self.gameTime = (self.gameTime or 0) + dt    -- ← self, not state. or 0 as safety
     -- Update fire spawn timer
     self.nextFireSpawn = self.nextFireSpawn - dt
-    
     if self.nextFireSpawn <= 0 and #self.fires < self.maxFires then
         self:spawnFire()
         self.nextFireSpawn = self.fireSpawnInterval
@@ -69,29 +70,64 @@ function gameState:update(dt)
     end
 end
 
+function gameState:pickStrategy()
+    local speed = math.sqrt(self.playerBall.vx^2 + self.playerBall.vy^2)
+    if speed > 200 then
+        return "block"      -- player moving fast, cut off escape
+    elseif speed < 50 then
+        return "cluster"    -- player hiding, build walls
+    else
+        return "chase"      -- normal movement, chase
+    end
+end
+
 function gameState:spawnFire()
-    -- Predict player position
+    local maxFires = 1
+    if self.gameTime > 30 then maxFires = 2 end
+    if self.gameTime > 60 then maxFires = 3 end
+    if self.gameTime > 120 then maxFires = 4 end
+
+    if #self.fires >= maxFires then return end
+    local strategy = self:pickStrategy()
+
     local predictionTime = 0.28
-    local predictedX = self.playerBall.x + self.playerBall.vx * predictionTime
-    local predictedY = self.playerBall.y + self.playerBall.vy * predictionTime
-    
-    -- Keep predicted position within bounds
-    predictedX = math.max(50, math.min(love.graphics.getWidth() - 50, predictedX))
-    predictedY = math.max(50, math.min(love.graphics.getHeight() - 50, predictedY))
-    
-    -- Calculate spawn position around predicted location
-    local spawnDistance = 65
+    local predictedX = math.max(50, math.min(love.graphics.getWidth()-50,
+        self.playerBall.x + self.playerBall.vx * predictionTime))
+    local predictedY = math.max(50, math.min(love.graphics.getHeight()-50,
+        self.playerBall.y + self.playerBall.vy * predictionTime))
+
+    local spawnX, spawnY
     local angle = math.random() * 2 * math.pi
-    local spawnX = predictedX + math.cos(angle) * spawnDistance
-    local spawnY = predictedY + math.sin(angle) * spawnDistance
-    
-    -- Keep spawn position within screen bounds
-    spawnX = math.max(30, math.min(love.graphics.getWidth() - 30, spawnX))
-    spawnY = math.max(30, math.min(love.graphics.getHeight() - 30, spawnY))
-    
-    -- Create new fire
-    local newFire = Fire:new(spawnX, spawnY, 15, {1, 0.3, 0})
-    table.insert(self.fires, newFire)
+
+    if strategy == "chase" then
+        spawnX = predictedX + math.cos(angle) * 65
+        spawnY = predictedY + math.sin(angle) * 65
+
+    elseif strategy == "block" then
+        local cx = self.playerBall.x < 400 and 0 or 800
+        local cy = self.playerBall.y < 300 and 0 or 600
+        spawnX = (predictedX + cx) * 0.5
+        spawnY = (predictedY + cy) * 0.5
+
+    elseif strategy == "cluster" then
+        if #self.fires > 0 then
+            local f = self.fires[math.random(#self.fires)]
+            spawnX = f.x + (math.random()-0.5) * 80
+            spawnY = f.y + (math.random()-0.5) * 80
+        else
+            spawnX = predictedX + math.cos(angle) * 65
+            spawnY = predictedY + math.sin(angle) * 65
+        end
+
+    elseif strategy == "wait" then
+        spawnX = predictedX + math.cos(angle) * 200
+        spawnY = predictedY + math.sin(angle) * 200
+    end
+
+    spawnX = math.max(30, math.min(love.graphics.getWidth()-30,  spawnX))
+    spawnY = math.max(30, math.min(love.graphics.getHeight()-30, spawnY))
+
+    table.insert(self.fires, Fire:new(spawnX, spawnY, 15, {1, 0.3, 0}))
 end
 
 function gameState:extinguishFire(fireIndex, audio)
