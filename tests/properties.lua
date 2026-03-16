@@ -167,3 +167,4 @@ property("game: random session never corrupts state", function(r)
     end
     return true
 end)
+

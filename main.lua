@@ -26,7 +26,7 @@ function love.load()
     gameState.gameOverDelay = 2.0
     gameState.nextFireSpawn = 2.0  -- First fire spawns after 2 seconds
     gameState.fireSpawnInterval = 1.95  -- Base spawn interval
-    gameState.maxFires = 5  -- Maximum fires on screen
+    gameState.maxFires = 100  -- Maximum fires on screen
     gameState.gameTime = 0
     
     -- Create balls
@@ -71,21 +71,27 @@ function gameState:update(dt)
 end
 
 function gameState:pickStrategy()
-    local speed = math.sqrt(self.playerBall.vx^2 + self.playerBall.vy^2)
-    if speed > 200 then
-        return "block"      -- player moving fast, cut off escape
-    elseif speed < 50 then
-        return "cluster"    -- player hiding, build walls
-    else
-        return "chase"      -- normal movement, chase
-    end
+    local U = require("utility_weights")
+    -- use fire signals from first fire if exists
+    local f = self.fires[1]
+    local state = {
+        self_x = f and f.x or 400,
+        self_y = f and f.y or 300,
+        player_x = self.playerBall.x,
+        player_y = self.playerBall.y,
+        red_x = self.pushBall and self.pushBall.x or 400,
+        red_y = self.pushBall and self.pushBall.y or 300,
+        nearest_fire_dist = f and (1 - f.positionSignal) * 400 or 200,
+    }
+    local action = U.pick(state, U.weights)
+    if action == "chase_player" then return "chase"
+    elseif action == "block_escape" then return "block"
+    elseif action == "cluster" then return "cluster"
+    else return "wait" end
 end
 
 function gameState:spawnFire()
-    local maxFires = 1
-    if self.gameTime > 30 then maxFires = 2 end
-    if self.gameTime > 60 then maxFires = 3 end
-    if self.gameTime > 120 then maxFires = 4 end
+    local maxFires = math.floor(1 + math.log(self.gameTime + 1) * 1.8)
 
     if #self.fires >= maxFires then return end
     local strategy = self:pickStrategy()
