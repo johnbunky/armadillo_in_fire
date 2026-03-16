@@ -39,36 +39,7 @@ property("ball: never outside screen after update", function(r)
            string.format("pos=(%.1f,%.1f) vel=(%.1f,%.1f)", x, y, vx, vy)
 end)
 
-property("ball: speed never exceeds max after friction", function(r)
-    local vx      = r.float(-2000, 2000)
-    local vy      = r.float(-2000, 2000)
-    local friction = r.float(0.8, 1.0)
-    local steps   = r.int(1, 60)
-    local max_speed = 2000
-
-    for i = 1, steps do
-        vx = vx * friction
-        vy = vy * friction
-    end
-
-    local speed = math.sqrt(vx*vx + vy*vy)
-    return speed <= max_speed,
-           string.format("speed=%.1f after %d steps friction=%.2f", speed, steps, friction)
-end)
-
 -- ── Collision properties ──────────────────────────────────────────────────────
-
-property("collision: detection is symmetric", function(r)
-    local ax, ay, ar = r.float(0,W), r.float(0,H), r.float(5,50)
-    local bx, by, br = r.float(0,W), r.float(0,H), r.float(5,50)
-
-    local dist  = math.sqrt((ax-bx)^2+(ay-by)^2)
-    local hit_ab = dist < ar + br
-    local hit_ba = dist < br + ar  -- same check, reversed
-
-    return hit_ab == hit_ba,
-           string.format("dist=%.1f radii=%.1f+%.1f", dist, ar, br)
-end)
 
 property("collision: overlap resolution moves balls apart", function(r)
     local ax, ay, ar = r.float(100,700), r.float(100,500), r.float(10,40)
@@ -116,25 +87,6 @@ property("spawn: position always within screen bounds", function(r)
            string.format("spawn=(%.1f,%.1f)", spawn_x, spawn_y)
 end)
 
--- ── Score properties ──────────────────────────────────────────────────────────
-
-property("score: never goes negative", function(r)
-    local score   = r.int(0, 10000)
-    local penalty = r.int(0, 100)
-    -- score should never go below 0
-    local new_score = math.max(0, score - penalty)
-    return new_score >= 0,
-           string.format("score=%d penalty=%d result=%d", score, penalty, new_score)
-end)
-
-property("lives: clamp between 0 and max", function(r)
-    local lives     = r.int(-5, 10)
-    local max_lives = 3
-    local clamped   = math.max(0, math.min(max_lives, lives))
-    return clamped >= 0 and clamped <= max_lives,
-           string.format("lives=%d clamped=%d", lives, clamped)
-end)
-
 -- ── Utility AI properties ─────────────────────────────────────────────────────
 
 property("utility: always returns a valid action", function(r)
@@ -164,4 +116,54 @@ property("utility: always returns a valid action", function(r)
 
     return valid[action] == true,
            "action=" .. tostring(action)
+end)
+
+-- ── Simulation properties ─────────────────────────────────────────────────────
+
+property("simulation: ball never explodes after 600 frames", function(r)
+    local ball = {
+        x=r.float(0,800), y=r.float(0,600),
+        vx=r.float(-400,400), vy=r.float(-400,400)
+    }
+    local dt=0.016
+    for i=1,600 do
+        ball.x=ball.x+ball.vx*dt
+        ball.y=ball.y+ball.vy*dt
+        if math.abs(ball.x)>10000 or math.abs(ball.y)>10000 then
+            return false, "exploded at frame "..i
+        end
+    end
+    return true
+end)
+
+property("physics: collision resolver separates overlapping balls", function(r)
+    local ax=r.float(100,700); local ay=r.float(100,500); local ar=r.float(10,40)
+    local bx=ax+r.float(-30,30); local by=ay+r.float(-30,30); local br=r.float(10,40)
+    local d=math.sqrt((ax-bx)^2+(ay-by)^2)
+    if d>=ar+br or d<0.001 then return true end
+    local dx,dy=bx-ax,by-ay
+    local dist=math.sqrt(dx*dx+dy*dy)
+    local overlap=(ar+br)-dist
+    dx,dy=dx/dist,dy/dist
+    bx=bx+dx*overlap*0.6; by=by+dy*overlap*0.6
+    ax=ax-dx*overlap*0.4; ay=ay-dy*overlap*0.4
+    local new_d=math.sqrt((ax-bx)^2+(ay-by)^2)
+    return new_d>=(ar+br)-0.1,
+        string.format("overlap=%.2f before=%.1f after=%.1f",overlap,d,new_d)
+end)
+
+property("game: random session never corrupts state", function(r)
+    local score=0; local lives=3; local gameTime=0
+    for frame=1,1000 do
+        gameTime=gameTime+0.016
+        local event=r.pick({"coin","fire","nothing","nothing"})
+        if event=="coin" then score=score+10 end
+        if event=="fire" then lives=lives-1 end
+        score=math.max(0,score)
+        lives=math.max(0,lives)
+        if score<0 then return false,"negative score at frame "..frame end
+        if lives<0 then return false,"negative lives at frame "..frame end
+        if gameTime<0 then return false,"negative gameTime" end
+    end
+    return true
 end)
