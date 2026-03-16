@@ -38,13 +38,17 @@ end
 function Stain:draw()
     if self.alpha <= 0 then return end
     
+    -- Calculate ellipse dimensions with 1.5:0.6 ratio (wider than tall)
+    local radiusX = self.radius * 1.5
+    local radiusY = self.radius * 0.6
+    
     -- Draw stain with fading alpha
     love.graphics.setColor(self.baseColor[1], self.baseColor[2], self.baseColor[3], self.alpha)
-    love.graphics.circle("fill", self.x, self.y, self.radius)
+    love.graphics.ellipse("fill", self.x, self.y, radiusX, radiusY)
     
     -- Draw slightly darker center
     love.graphics.setColor(self.baseColor[1] * 0.7, self.baseColor[2] * 0.7, self.baseColor[3] * 0.7, self.alpha * 0.8)
-    love.graphics.circle("fill", self.x, self.y, self.radius * 0.6)
+    love.graphics.ellipse("fill", self.x, self.y, radiusX * 0.6, radiusY * 0.6)
 end
 
 return Stain
