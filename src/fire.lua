@@ -1,6 +1,10 @@
 local Fire = {}
 Fire.__index = Fire
 
+-- Global tracking of all fires and extinguished count
+Fire.allFires = {}
+Fire.extinguishedCount = 0
+
 function Fire:new(x, y, radius, color)
     local fire = {}
     setmetatable(fire, Fire)
@@ -25,6 +29,9 @@ function Fire:new(x, y, radius, color)
     fire.positionSignal = 0  -- Distance to player (0-1 normalized)
     fire.directionSignal = {x = 0, y = 0}  -- Player direction vector
     fire.timingSignal = 0  -- Player approach speed
+    
+    -- Track this fire globally
+    table.insert(Fire.allFires, fire)
     
     return fire
 end
@@ -119,6 +126,19 @@ function Fire:draw()
     -- Center hot spot
     love.graphics.setColor(1, 1, 0.8)
     love.graphics.circle("fill", self.x, self.y, self.radius * 0.2)
+end
+
+function Fire:recordExtinguished()
+    Fire.extinguishedCount = Fire.extinguishedCount + 1
+end
+
+function Fire:resetGlobalTracking()
+    Fire.allFires = {}
+    Fire.extinguishedCount = 0
+end
+
+function Fire:getTotalCreated()
+    return Fire.extinguishedCount + (#gameState.fires or 0)
 end
 
 return Fire

@@ -1,7 +1,7 @@
 -- Evolved Utility AI weights
 -- jk sim --utility
 
-local UTILITY_WEIGHTS = { 1.9130, 0.0000, 0.9314, 1.9029, 1.0983 }
+local UTILITY_WEIGHTS = { 2.0000, 1.7097, 0.6166, 0.9987, 0.1374 }
 -- [1]=chase [2]=avoid_red [3]=block_escape [4]=cluster [5]=wait
 
 local function utility_pick(state, w)
