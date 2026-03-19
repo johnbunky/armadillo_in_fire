@@ -48,22 +48,11 @@ function Menu:new()
         help = {
             title = "HOW TO PLAY",
             content = {
-                "CONTROLS:",
-                "Arrow Keys - Move the ball",
-                "Spacebar - Activate fire",
-                "P - Pause game",
-                "Escape - Return to menu",
-                "",
-                "GAMEPLAY:",
-                "• Use fire to destroy obstacles",
-                "• Avoid taking damage",
-                "• Collect power-ups for bonuses",
-                "• Survive as long as possible",
-                "",
-                "DIFFICULTY LEVELS:",
-                "Easy - Slower enemies, more health",
-                "Normal - Balanced gameplay",
-                "Hard - Faster enemies, less health"
+
+
+
+
+
             },
             options = {
                 {text = "Back to Main Menu", action = "main"}
