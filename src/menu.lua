@@ -15,7 +15,7 @@ function Menu:new()
     -- Settings state
     instance.settings = {
         masterVolume = 0.7,
-        sfxVolume = 0.8,
+
         musicVolume = 0.6,
         difficulty = "Normal",
         fullscreen = false,
@@ -48,11 +48,11 @@ function Menu:new()
         help = {
             title = "HOW TO PLAY",
             content = {
-
-
-
-
-
+                "CONTROLS:",
+                "Arrow Keys - Move the ball",
+                "Spacebar - Activate fire",
+                "P - Pause game",
+                "Escape - Return to menu",
             },
             options = {
                 {text = "Back to Main Menu", action = "main"}
@@ -142,7 +142,7 @@ function Menu:adjustSetting(direction)
         self.settings.masterVolume = math.max(0, math.min(1, self.settings.masterVolume + direction * 0.1))
         love.audio.setVolume(self.settings.masterVolume)
     elseif option.action == "sfx_volume" then
-        self.settings.sfxVolume = math.max(0, math.min(1, self.settings.sfxVolume + direction * 0.1))
+
     elseif option.action == "music_volume" then
         self.settings.musicVolume = math.max(0, math.min(1, self.settings.musicVolume + direction * 0.1))
     elseif option.action == "difficulty" then
@@ -261,7 +261,7 @@ function Menu:draw()
                 if option.action == "master_volume" then
                     displayText = displayText .. math.floor(self.settings.masterVolume * 100) .. "%"
                 elseif option.action == "sfx_volume" then
-                    displayText = displayText .. math.floor(self.settings.sfxVolume * 100) .. "%"
+
                 elseif option.action == "music_volume" then
                     displayText = displayText .. math.floor(self.settings.musicVolume * 100) .. "%"
                 elseif option.action == "difficulty" then

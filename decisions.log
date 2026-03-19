@@ -1,9 +1,0 @@
-
-=== 2026-03-09 14:55:09 -- could you fix it Error: main.lua:57: attempt to call method 'playMusic' (a nil value) ===
-Added missing music control methods (playMusic, stopMusic, pauseMusic, resumeMusic) to Audio module with generated fallback music and game_over sound effect
-
-=== 2026-03-09 15:05:14 -- could you fix this error ===
-Fixed nil comparison error by using gameState.lives instead of gameState.ball.lives and updated Physics collision to modify gameState.lives
-
-=== 2026-03-09 15:20:02 -- main menu was added and there are errors one by one like this Error: main.lua:157: attempt to call method 'drawLives' (a nil value), could you pass throuw whole code and fix the menu and game integration ===
-Split the UI drawScore method into separate drawScore and drawLives methods, and added missing drawGameOver method to match the interface expected by main.lua
