@@ -34,6 +34,7 @@ function love.load()
     gameState.pushableBall = Ball:new(400, 300, 25, {0.8, 0.2, 0.2}, false)  -- Red pushable ball
     
     -- Initialize arrays
+    extinguishedTotal = 0
     gameState.fires = {}
     gameState.stains = {}
     
@@ -137,6 +138,8 @@ function gameState:spawnFire()
 end
 
 function gameState:extinguishFire(fireIndex, audio)
+    extinguishedTotal = extinguishedTotal + 1
+    print("extinguished: " .. tostring(self.extinguishedTotal))
     if self.fires[fireIndex] then
         local fire = self.fires[fireIndex]
         

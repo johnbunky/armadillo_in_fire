@@ -118,8 +118,8 @@ function Audio:init()
         end
     end
     
-    print("Audio system initialized with " .. (self.sounds.ballCollision and "loaded" or "generated") .. " sounds")
-    print("Fire sound effects: crackle, extinguish, damage")
+    -- print("Audio system initialized with " .. (self.sounds.ballCollision and "loaded" or "generated") .. " sounds")
+    -- print("Fire sound effects: crackle, extinguish, damage")
 end
 
 -- Load a sound file with error handling
@@ -129,7 +129,7 @@ function Audio:loadSound(filepath, sourceType)
         print("Loaded sound: " .. filepath)
         return sound
     else
-        print("Could not load sound: " .. filepath .. " (will use generated sound)")
+        -- print("Could not load sound: " .. filepath .. " (will use generated sound)")
         return nil
     end
 end
