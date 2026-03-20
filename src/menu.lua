@@ -204,7 +204,7 @@ function Menu:setMenu(menuName)
     self.fadeAlpha = 0
 end
 
-function Menu:draw()
+function Menu:draw(gameState)
     local width, height = love.graphics.getDimensions()
     
     -- Background
@@ -249,7 +249,7 @@ function Menu:draw()
             love.graphics.print(option.text, width/2 - optionWidth/2, startY + (i-1) * 40)
         end
     else
-        -- Regular menu options
+        -- Game over score display (if in game over menu)        if self.currentMenu == "gameover" and gameState and gameState.extinguishedTotal then            love.graphics.setColor(0.8, 0.8, 1, self.fadeAlpha)            love.graphics.setFont(love.graphics.newFont(18))            local scoreText = "Fires Extinguished: " .. gameState.extinguishedTotal            local scoreWidth = love.graphics.getFont():getWidth(scoreText)            love.graphics.print(scoreText, width/2 - scoreWidth/2, startY - 60)        end                -- Regular menu options
         love.graphics.setFont(love.graphics.newFont(20))
         local startY = height/2
         
