@@ -204,7 +204,7 @@ function Menu:setMenu(menuName)
     self.fadeAlpha = 0
 end
 
-function Menu:draw(gameState)
+function Menu:draw(gameState, fireCount, extinguishedTotal)
     local width, height = love.graphics.getDimensions()
     
     -- Background
@@ -249,18 +249,34 @@ function Menu:draw(gameState)
             love.graphics.print(option.text, width/2 - optionWidth/2, startY + (i-1) * 40)
         end
     else
-        -- Game over score display (if in game over menu)
-        if self.currentMenu == "gameover" and gameState and gameState.extinguishedTotal then
-            love.graphics.setColor(0.8, 0.8, 1, self.fadeAlpha)            
-            love.graphics.setFont(love.graphics.newFont(18))            
-            local scoreText = "Fires Extinguished: " .. gameState.extinguishedTotal            
-            local scoreWidth = love.graphics.getFont():getWidth(scoreText)            
-            love.graphics.print(scoreText, width/2 - scoreWidth/2, startY - 60)       
-        end               
         -- Regular menu options
         love.graphics.setFont(love.graphics.newFont(20))
         local startY = height/2
         
+        -- Game over score display (if in game over menu)
+        if self.currentMenu == "gameover" then
+            love.graphics.setColor(0.8, 0.8, 1, self.fadeAlpha)            
+            love.graphics.setFont(love.graphics.newFont(18))
+            
+            local scoreY = startY - 80
+            
+            -- Display fires extinguished
+            if extinguishedTotal then
+                local extinguishedText = "Fires Extinguished: " .. extinguishedTotal
+                local extinguishedWidth = love.graphics.getFont():getWidth(extinguishedText)
+                love.graphics.print(extinguishedText, width/2 - extinguishedWidth/2, scoreY)
+                scoreY = scoreY + 25
+            end
+            
+            -- Display remaining fires
+            if fireCount then
+                local fireText = "Fires Remaining: " .. fireCount
+                local fireWidth = love.graphics.getFont():getWidth(fireText)
+                love.graphics.print(fireText, width/2 - fireWidth/2, scoreY)
+            end
+        end               
+        
+        love.graphics.setFont(love.graphics.newFont(20))
         for i, option in ipairs(currentMenuData.options) do
             local displayText = option.text
             
