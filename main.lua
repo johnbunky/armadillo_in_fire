@@ -11,6 +11,7 @@ local gameState = {}
 local audio
 local menu
 local currentState = "menu"  -- Can be: "menu", "playing", "paused", "game_over"
+local extinguishedTotal = 0
 
 function love.load()
     -- Initialize menu system
@@ -34,7 +35,6 @@ function love.load()
     gameState.pushableBall = Ball:new(400, 300, 25, {0.8, 0.2, 0.2}, false)  -- Red pushable ball
     
     -- Initialize arrays
-    extinguishedTotal = 0
     gameState.fires = {}
     gameState.stains = {}
     
@@ -139,7 +139,6 @@ end
 
 function gameState:extinguishFire(fireIndex, audio)
     extinguishedTotal = extinguishedTotal + 1
-    print("extinguished: " .. tostring(self.extinguishedTotal))
     if self.fires[fireIndex] then
         local fire = self.fires[fireIndex]
         
@@ -182,6 +181,9 @@ function gameState:restart()
     self.state = "playing"
     self.gameOverTime = 0
     self.nextFireSpawn = 2.0
+    
+    -- Reset extinguished counter
+    extinguishedTotal = 0
 end
 
 function love.update(dt)
