@@ -7,8 +7,8 @@ function Stain:new(x, y, radius)
     
     stain.x = x or 0
     stain.y = y or 0
-    stain.radius = radius or 20
-    stain.maxRadius = radius or 20
+    stain.radius = (radius or 20) / 2
+    stain.maxRadius = (radius or 20) / 2
     stain.alpha = 1.0
     stain.dissolveTime = 0
     stain.maxDissolveTime = 3.0  -- 3 seconds to fully dissolve
