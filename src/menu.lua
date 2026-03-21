@@ -204,7 +204,7 @@ function Menu:setMenu(menuName)
     self.fadeAlpha = 0
 end
 
-function Menu:draw(gameState, fireCount, extinguishedTotal)
+function Menu:draw(extinguishedTotal, fireCount)
     local width, height = love.graphics.getDimensions()
     
     -- Background

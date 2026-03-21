@@ -29,6 +29,7 @@ function love.load()
     gameState.fireSpawnInterval = 1.95  -- Base spawn interval
     gameState.maxFires = 100  -- Maximum fires on screen
     gameState.gameTime = 0
+    gameState.extinguishedTotal = 0
     
     -- Create balls
     gameState.playerBall = Ball:new(100, 300, 25, {0.2, 0.8, 0.2}, true)  -- Green player ball
@@ -138,7 +139,7 @@ function gameState:spawnFire()
 end
 
 function gameState:extinguishFire(fireIndex, audio)
-    extinguishedTotal = extinguishedTotal + 1
+    self.extinguishedTotal = self.extinguishedTotal + 1
     if self.fires[fireIndex] then
         local fire = self.fires[fireIndex]
         
@@ -183,7 +184,7 @@ function gameState:restart()
     self.nextFireSpawn = 2.0
     
     -- Reset extinguished counter
-    extinguishedTotal = 0
+    self.extinguishedTotal = 0
 end
 
 function love.update(dt)
@@ -274,11 +275,11 @@ function love.draw()
         
         -- Draw menu overlay if paused
         if currentState == "paused" then
-            menu:draw()
+            menu:draw(gameState.extinguishedTotal, #gameState.fires)
         end
     elseif currentState == "menu" or currentState == "game_over" then
         -- Draw menu
-        menu:draw()
+        menu:draw(gameState.extinguishedTotal, #gameState.fires)
     end
 end
 
