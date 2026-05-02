@@ -7,6 +7,70 @@ local UI      = require('src.ui')
 local Menu    = require('src.menu')
 local Screen  = require('src.screen')
 
+-- ── C: all tunable game constants in one place ─────────────────────────────
+-- Evolve functions will read and mutate these at runtime.
+local C = {
+    player = {
+        spawnX                 = 100,
+        spawnY                 = 300,
+        speed                  = 300,
+        radius                 = 25,
+        color                  = {0.2, 0.8, 0.2},
+        maxHealth              = 100,
+        damageInterval         = 0.5,
+        fireResistanceDuration = 0.2,
+        regenRate              = 0.5,
+        regenDelay             = 2.0,
+        wallBounceDamp         = 0.5,
+    },
+    pushball = {
+        spawnX         = 400,
+        spawnY         = 300,
+        radius         = 25,
+        color          = {0.8, 0.2, 0.2},
+        friction       = 0.98,
+        wallBounceDamp = 0.6,
+    },
+    multikill = {
+        window           = 1.5,
+        tier2_count      = 2,
+        tier2_multiplier = 2.0,
+        tier2_duration   = 5.0,
+        tier3_count      = 3,
+        tier3_multiplier = 4.0,
+        tier3_duration   = 8.0,
+    },
+    fire = {
+        radius            = 15,
+        color             = {1, 0.3, 0},
+        spawnRate         = 40,
+        damagePerTick     = 20,
+        firstSpawnDelay   = 2.0,
+        baseSpawnInterval = 1.95,
+        maxFires          = 100,
+        spawnScaleBase    = 1,
+        spawnScaleFactor  = 1.8,
+    },
+    stain = {
+        radiusOffset = 5,
+    },
+    ai = {
+        weights          = {2.0, 1.7097, 0.6166, 0.9987, 0.1374},
+        predictionTime   = 0.28,
+        chaseSpawnRadius = 65,
+        waitSpawnRadius  = 200,
+        clusterSpread    = 80,
+        positionRange    = 400,
+        redBallRange     = 200,
+        blockRange       = 300,
+        clusterRange     = 150,
+    },
+    movement = {
+        lerpSnap      = 10,
+        arrivalRadius = 8,
+    },
+}
+
 local gameState    = {}
 local audio
 local menu
@@ -59,13 +123,13 @@ function gameState:pickStrategy()
 end
 
 function gameState:spawnFire()
-    local maxFires = math.floor(1 + math.log(self.gameTime + 1) * 1.8)
+    local maxFires = math.floor(C.fire.spawnScaleBase + math.log(self.gameTime + 1) * C.fire.spawnScaleFactor)
     if #self.fires >= maxFires then return end
 
     local strategy = self:pickStrategy()
 
     local W, H = Screen.W, Screen.H
-    local predictionTime = 0.28
+    local predictionTime = C.ai.predictionTime
     local predictedX = math.max(50, math.min(W - 50,
         self.playerBall.x + self.playerBall.vx * predictionTime))
     local predictedY = math.max(50, math.min(H - 50,
@@ -75,8 +139,8 @@ function gameState:spawnFire()
     local spawnX, spawnY
 
     if strategy == "chase" then
-        spawnX = predictedX + math.cos(angle) * 65
-        spawnY = predictedY + math.sin(angle) * 65
+        spawnX = predictedX + math.cos(angle) * C.ai.chaseSpawnRadius
+        spawnY = predictedY + math.sin(angle) * C.ai.chaseSpawnRadius
 
     elseif strategy == "block" then
         local cx = self.playerBall.x < W * 0.5 and 0 or W
@@ -87,23 +151,23 @@ function gameState:spawnFire()
     elseif strategy == "cluster" then
         if #self.fires > 0 then
             local f = self.fires[math.random(#self.fires)]
-            spawnX = f.x + (math.random() - 0.5) * 80
-            spawnY = f.y + (math.random() - 0.5) * 80
+            spawnX = f.x + (math.random() - 0.5) * C.ai.clusterSpread
+            spawnY = f.y + (math.random() - 0.5) * C.ai.clusterSpread
         else
             spawnX = predictedX + math.cos(angle) * 65
             spawnY = predictedY + math.sin(angle) * 65
         end
 
     else -- wait
-        spawnX = predictedX + math.cos(angle) * 200
-        spawnY = predictedY + math.sin(angle) * 200
+        spawnX = predictedX + math.cos(angle) * C.ai.waitSpawnRadius
+        spawnY = predictedY + math.sin(angle) * C.ai.waitSpawnRadius
     end
 
     spawnX = math.max(30, math.min(W - 30, spawnX))
     spawnY = math.max(30, math.min(H - 30, spawnY))
 
-    local fire = Fire:new(spawnX, spawnY, 15, {1, 0.3, 0})
-    fire.stain = Stain:new(spawnX, spawnY, fire.radius + 5)  -- stain lives with fire
+    local fire = Fire:new(spawnX, spawnY, C.fire.radius, C.fire.color)
+    fire.stain = Stain:new(spawnX, spawnY, fire.radius + C.stain.radiusOffset)  -- stain lives with fire
     table.insert(self.fires, fire)
 end
 
@@ -121,21 +185,21 @@ function gameState:extinguishFire(fireIndex)
 end
 
 function gameState:restart()
-    self.playerBall.x  = 100;  self.playerBall.y  = 300
+    self.playerBall.x  = C.player.spawnX;  self.playerBall.y  = C.player.spawnY
     self.playerBall.vx = 0;    self.playerBall.vy = 0
     self.playerBall.health           = self.playerBall.maxHealth
     self.playerBall.damageTimer      = 0
     self.playerBall.fireResistanceTime = 0
     self.playerBall.timeSinceLastDamage = 0
 
-    self.pushableBall.x  = 400;  self.pushableBall.y  = 300
+    self.pushableBall.x  = C.pushball.spawnX;  self.pushableBall.y  = C.pushball.spawnY
     self.pushableBall.vx = 0;    self.pushableBall.vy = 0
 
     self.fires  = {}
     self.stains = {}
     self.state            = "playing"
     self.gameOverTime     = 0
-    self.nextFireSpawn    = 2.0
+    self.nextFireSpawn    = C.fire.firstSpawnDelay
     self.extinguishedTotal = 0
     self.gameTime         = 0
 
@@ -157,15 +221,15 @@ function love.load()
     gameState.state             = "playing"
     gameState.gameOverTime      = 0
     gameState.gameOverDelay     = 2.0
-    gameState.nextFireSpawn     = 2.0
-    gameState.fireSpawnInterval = 1.95
-    gameState.maxFires          = 100
+    gameState.nextFireSpawn     = C.fire.firstSpawnDelay
+    gameState.fireSpawnInterval = C.fire.baseSpawnInterval
+    gameState.maxFires          = C.fire.maxFires
     gameState.gameTime          = 0
     gameState.extinguishedTotal = 0
     gameState.touchTarget       = nil   -- {x, y} in logical coords
 
-    gameState.playerBall  = Ball:new(100, 300, 25, {0.2, 0.8, 0.2}, true)
-    gameState.pushableBall = Ball:new(400, 300, 25, {0.8, 0.2, 0.2}, false)
+    gameState.playerBall  = Ball:new(C.player.spawnX, C.player.spawnY, C.player.radius, C.player.color, true)
+    gameState.pushableBall = Ball:new(C.pushball.spawnX, C.pushball.spawnY, C.pushball.radius, C.pushball.color, false)
 
     gameState.fires  = {}
     gameState.stains = {}
@@ -197,14 +261,14 @@ function love.update(dt)
         gameState:update(dt)
 
         -- ── Movement ──────────────────────────────────────────────────
-        local speed = 300
+        local speed = C.player.speed
         local targetVx, targetVy = 0, 0
 
         if gameState.touchTarget then
             local dx   = gameState.touchTarget.x - gameState.playerBall.x
             local dy   = gameState.touchTarget.y - gameState.playerBall.y
             local dist = math.sqrt(dx * dx + dy * dy)
-            if dist > 8 then
+            if dist > C.movement.arrivalRadius then
                 -- Full speed toward target. The exp-lerp below gives smooth
                 -- acceleration on start and smooth coast-out after arrival.
                 targetVx = (dx / dist) * speed
@@ -221,7 +285,7 @@ function love.update(dt)
 
         -- Lerp toward target velocity: inertia on both start and stop
         -- Raise 10 for snappier feel, lower for more slide
-        local snap = 1 - math.exp(-dt * 10)
+        local snap = 1 - math.exp(-dt * C.movement.lerpSnap)
         gameState.playerBall.vx = gameState.playerBall.vx + (targetVx - gameState.playerBall.vx) * snap
         gameState.playerBall.vy = gameState.playerBall.vy + (targetVy - gameState.playerBall.vy) * snap
 
@@ -232,49 +296,52 @@ function love.update(dt)
         local gp = gameState.playerBall
         local gr = gp.radius
         if gp.x < gr then
-            gp.x = gr;  gp.vx = math.abs(gp.vx) * 0.5
+            gp.x = gr;  gp.vx = math.abs(gp.vx) * C.player.wallBounceDamp
         elseif gp.x > Screen.W - gr then
-            gp.x = Screen.W - gr;  gp.vx = -math.abs(gp.vx) * 0.5
+            gp.x = Screen.W - gr;  gp.vx = -math.abs(gp.vx) * C.player.wallBounceDamp
         end
         if gp.y < gr then
-            gp.y = gr;  gp.vy = math.abs(gp.vy) * 0.5
+            gp.y = gr;  gp.vy = math.abs(gp.vy) * C.player.wallBounceDamp
         elseif gp.y > Screen.H - gr then
-            gp.y = Screen.H - gr;  gp.vy = -math.abs(gp.vy) * 0.5
+            gp.y = Screen.H - gr;  gp.vy = -math.abs(gp.vy) * C.player.wallBounceDamp
         end
 
         -- Clamp red ball to logical canvas (fullscreen would let it escape otherwise)
         local pb = gameState.pushableBall
         local r  = pb.radius
         if pb.x < r then
-            pb.x = r;  pb.vx = math.abs(pb.vx) * 0.6
+            pb.x = r;  pb.vx = math.abs(pb.vx) * C.pushball.wallBounceDamp
         elseif pb.x > Screen.W - r then
-            pb.x = Screen.W - r;  pb.vx = -math.abs(pb.vx) * 0.6
+            pb.x = Screen.W - r;  pb.vx = -math.abs(pb.vx) * C.pushball.wallBounceDamp
         end
         if pb.y < r then
-            pb.y = r;  pb.vy = math.abs(pb.vy) * 0.6
+            pb.y = r;  pb.vy = math.abs(pb.vy) * C.pushball.wallBounceDamp
         elseif pb.y > Screen.H - r then
-            pb.y = Screen.H - r;  pb.vy = -math.abs(pb.vy) * 0.6
+            pb.y = Screen.H - r;  pb.vy = -math.abs(pb.vy) * C.pushball.wallBounceDamp
         end
 
         Physics.handleCollision(gameState.playerBall, gameState.pushableBall, audio)
 
         -- Red ball extinguishes fires.
         -- Multi-kill: count extinguishes within a 0.25 s window; if >= 2 → boost.
-        local MULTIKILL_WINDOW = 1.5
+        local MULTIKILL_WINDOW = C.multikill.window
         gameState.multiKillTimer  = (gameState.multiKillTimer  or 0) - dt
         gameState.multiKillCount  = (gameState.multiKillCount  or 0)
         if gameState.multiKillTimer <= 0 then
-            gameState.multiKillCount = 0   -- window expired, reset
+            gameState.multiKillCount = 0
         end
 
         for i = #gameState.fires, 1, -1 do
             if Physics.checkCoinCollision(gameState.pushableBall, gameState.fires[i]) then
                 gameState:extinguishFire(i)
                 gameState.multiKillCount = gameState.multiKillCount + 1
-                gameState.multiKillTimer = MULTIKILL_WINDOW   -- restart window
-                if gameState.multiKillCount >= 2 then
-                    gameState.playerBall:triggerRecoveryBoost(2.0, 5.0)
-                    gameState.multiKillCount = 0   -- reset so it doesn't re-trigger every hit
+                gameState.multiKillTimer = MULTIKILL_WINDOW
+
+                if gameState.multiKillCount >= C.multikill.tier3_count then
+                    gameState.playerBall:triggerRecoveryBoost(C.multikill.tier3_multiplier, C.multikill.tier3_duration)
+                    gameState.multiKillCount = 0
+                elseif gameState.multiKillCount == C.multikill.tier2_count then
+                    gameState.playerBall:triggerRecoveryBoost(C.multikill.tier2_multiplier, C.multikill.tier2_duration)
                 end
             end
         end
@@ -283,7 +350,7 @@ function love.update(dt)
         for _, fire in ipairs(gameState.fires) do
             if Physics.checkCoinCollision(gameState.playerBall, fire) then
                 if gameState.playerBall.damageTimer >= gameState.playerBall.damageInterval then
-                    gameState.playerBall:takeDamage(20, audio)
+                    gameState.playerBall:takeDamage(C.fire.damagePerTick, audio)
                     gameState.playerBall.damageTimer = 0
                 end
             end

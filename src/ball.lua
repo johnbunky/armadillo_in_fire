@@ -26,7 +26,7 @@ function Ball:new(x, y, radius, color, isPlayer)
         ball.regenDelay = 2.0
 
         -- Recovery boost (triggered by multi-extinguish)
-        ball.recoveryBoost     = 2.0   -- active multiplier
+        ball.recoveryBoost     = 1.0   -- active multiplier
         ball.recoveryBoostTime = 0.0   -- seconds remaining
 
         ball.damageNumbers = {}
