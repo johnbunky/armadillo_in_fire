@@ -1,144 +1,135 @@
 local Fire = {}
 Fire.__index = Fire
 
--- Global tracking of all fires and extinguished count
-Fire.allFires = {}
-Fire.extinguishedCount = 0
+-- ── Helpers ────────────────────────────────────────────────────────────────
+
+local function lerp(a, b, t) return a + (b - a) * t end
+
+local function newParticle()
+    return { x = 0, y = 0, vx = 0, vy = 0,
+             life = 1, maxLife = 1, size = 8 }
+end
+
+-- ── Constructor ────────────────────────────────────────────────────────────
 
 function Fire:new(x, y, radius, color)
-    local fire = {}
-    setmetatable(fire, Fire)
-    
-    fire.x = x or 0
-    fire.y = y or 0
+    local fire = setmetatable({}, Fire)
+
+    fire.x      = x or 0
+    fire.y      = y or 0
     fire.radius = radius or 15
-    fire.baseColor = color or {1, 0.3, 0}  -- orange-red by default
-    fire.color = {fire.baseColor[1], fire.baseColor[2], fire.baseColor[3]}
-    
-    -- Fire animation properties
-    fire.flickerTime = 0
-    fire.flickerSpeed = 8
-    fire.flickerIntensity = 0.3
-    
-    -- Shadow properties - fires don't need shadows based on user feedback
-    fire.shadowOffset = {x = 2, y = 3}
-    fire.shadowColor = {0, 0, 0, 0.4}  -- Darker shadow for fire
-    fire.shadowScale = {x = 1.2, y = 0.6}
-    
-    -- Adaptation tracking
-    fire.positionSignal = 0  -- Distance to player (0-1 normalized)
-    fire.directionSignal = {x = 0, y = 0}  -- Player direction vector
-    fire.timingSignal = 0  -- Player approach speed
-    
-    -- Track this fire globally
-    table.insert(Fire.allFires, fire)
-    
+
+    -- Particle pool
+    fire.particles    = {}
+    fire.spawnAccum   = 0
+    fire.spawnRate    = 40   -- particles per second
+
+    -- AI signals (read by utility_weights / pickStrategy)
+    fire.positionSignal  = 0
+    fire.directionSignal = { x = 0, y = 0 }
+    fire.timingSignal    = 0
+
     return fire
 end
 
+-- ── Particle spawn ─────────────────────────────────────────────────────────
+
+local function spawnParticle(fire)
+    local p      = newParticle()
+    local spread = math.random(-18, 18)
+    p.x       = fire.x + spread
+    p.y       = fire.y
+    p.vx      = spread * 0.6 + math.random(-15, 15)
+    p.vy      = math.random(-90, -50)
+    p.life    = math.random(50, 90) / 100   -- 0.50 – 0.90 s
+    p.maxLife = p.life
+    p.size    = math.random(6, 16)
+    table.insert(fire.particles, p)
+end
+
+-- ── Update ─────────────────────────────────────────────────────────────────
+
 function Fire:update(dt, playerBall)
-    -- Update flicker animation only
-    self.flickerTime = self.flickerTime + dt * self.flickerSpeed
-    
-    -- Create flickering effect by modifying color intensity
-    local flicker = math.sin(self.flickerTime) * self.flickerIntensity + 0.7
-    self.color[1] = math.min(1, self.baseColor[1] * flicker + 0.3)
-    self.color[2] = math.min(1, self.baseColor[2] * flicker)
-    self.color[3] = self.baseColor[3] * 0.1  -- Keep blue component low
-    
-    -- Update adaptive signals
-    if playerBall then
-        self:detectPositionSignal(playerBall)
-        self:detectDirectionSignal(playerBall)
-        self:detectTimingSignal(playerBall)
+    -- Spawn new particles
+    self.spawnAccum = self.spawnAccum + self.spawnRate * dt
+    local toSpawn   = math.floor(self.spawnAccum)
+    self.spawnAccum = self.spawnAccum - toSpawn
+    for _ = 1, toSpawn do spawnParticle(self) end
+
+    -- Update existing particles
+    for i = #self.particles, 1, -1 do
+        local p = self.particles[i]
+        p.x    = p.x + p.vx * dt
+        p.y    = p.y + p.vy * dt
+        p.life = p.life - dt
+        if p.life <= 0 then
+            table.remove(self.particles, i)
+        end
     end
-    
-    -- Fire remains static - no movement code
+
+    -- AI signals
+    if playerBall then
+        self:_detectPosition(playerBall)
+        self:_detectDirection(playerBall)
+        self:_detectTiming(playerBall)
+    end
 end
 
-function Fire:detectPositionSignal(playerBall)
-    -- Detect player proximity and normalize to 0-1 range
+-- ── AI signal helpers ──────────────────────────────────────────────────────
+
+function Fire:_detectPosition(playerBall)
     local dx = playerBall.x - self.x
     local dy = playerBall.y - self.y
-    local distance = math.sqrt(dx * dx + dy * dy)
-    
-    -- Normalize distance (0-1: close to far), max detection range 400 pixels
-    self.positionSignal = math.max(0, 1 - (distance / 400))
+    local d  = math.sqrt(dx * dx + dy * dy)
+    self.positionSignal = math.max(0, 1 - d / 400)
 end
 
-function Fire:detectDirectionSignal(playerBall)
-    -- Detect player direction relative to fire
+function Fire:_detectDirection(playerBall)
     local dx = playerBall.x - self.x
     local dy = playerBall.y - self.y
-    local distance = math.sqrt(dx * dx + dy * dy)
-    
-    if distance > 0 then
-        self.directionSignal.x = dx / distance
-        self.directionSignal.y = dy / distance
+    local d  = math.sqrt(dx * dx + dy * dy)
+    if d > 0 then
+        self.directionSignal.x = dx / d
+        self.directionSignal.y = dy / d
     else
         self.directionSignal.x = 0
         self.directionSignal.y = 0
     end
 end
 
-function Fire:detectTimingSignal(playerBall)
-    -- Detect player approach speed
-    local dx = playerBall.x - self.x
-    local dy = playerBall.y - self.y
-    local distance = math.sqrt(dx * dx + dy * dy)
-    
-    -- Calculate approach velocity (negative = approaching)
-    local playerSpeed = math.sqrt(playerBall.vx * playerBall.vx + playerBall.vy * playerBall.vy)
-    local approachSpeed = playerSpeed
-    
-    -- Normalize to 0-1 range (0-300 pixels/sec)
-    self.timingSignal = math.min(1, approachSpeed / 300)
+function Fire:_detectTiming(playerBall)
+    local spd = math.sqrt(playerBall.vx ^ 2 + playerBall.vy ^ 2)
+    self.timingSignal = math.min(1, spd / 300)
 end
 
-function Fire:drawShadow()
-    -- Skip drawing shadow for fires per user feedback
-    return
-end
+-- ── Draw ───────────────────────────────────────────────────────────────────
+
+function Fire:drawShadow() end   -- fires cast no shadow
 
 function Fire:draw()
-    -- Draw as triangle shape per user feedback
-    local height = self.radius * 1.5
-    local baseWidth = self.radius * 1.2
-    
-    -- Main fire triangle
-    love.graphics.setColor(self.color[1], self.color[2], self.color[3])
-    local vertices = {
-        self.x, self.y - height,  -- top point
-        self.x - baseWidth/2, self.y + height/2,  -- bottom left
-        self.x + baseWidth/2, self.y + height/2   -- bottom right
-    }
-    love.graphics.polygon("fill", vertices)
-    
-    -- Inner core triangle (brighter)
-    love.graphics.setColor(1, 0.8, 0.2)
-    local coreVertices = {
-        self.x, self.y - height * 0.6,
-        self.x - baseWidth/3, self.y + height/3,
-        self.x + baseWidth/3, self.y + height/3
-    }
-    love.graphics.polygon("fill", coreVertices)
-    
-    -- Center hot spot
-    love.graphics.setColor(1, 1, 0.8)
-    love.graphics.circle("fill", self.x, self.y, self.radius * 0.2)
-end
+    love.graphics.setBlendMode("add")
 
-function Fire:recordExtinguished()
-    Fire.extinguishedCount = Fire.extinguishedCount + 1
-end
+    for _, p in ipairs(self.particles) do
+        local t  = p.life / p.maxLife        -- 1 = fresh, 0 = dead
+        -- How high is this particle above the fire base? (0 = base, 1 = ~50px up)
+        local rise = math.max(0, math.min(1, (self.y - p.y) / 50))
+        local r  = 1
+        local g  = lerp(0.1, 0.7, t) * lerp(1, 0.15, rise)  -- redder toward top
+        local b  = 0
+        local a  = lerp(0,   0.9, t)
+        local sz = p.size * t
+        if sz > 0.5 then
+            love.graphics.setColor(r, g, b, a)
+            love.graphics.circle("fill", p.x, p.y, sz)
+        end
+    end
 
-function Fire:resetGlobalTracking()
-    Fire.allFires = {}
-    Fire.extinguishedCount = 0
-end
+    -- Base glow: grounds the fire visually at its collision centre
+    love.graphics.setColor(1, 0.35, 0, 0.35)
+    love.graphics.circle("fill", self.x, self.y, self.radius * 0.9)
 
-function Fire:getTotalCreated()
-    return Fire.extinguishedCount + (#gameState.fires or 0)
+    love.graphics.setBlendMode("alpha")
+    love.graphics.setColor(1, 1, 1, 1)
 end
 
 return Fire

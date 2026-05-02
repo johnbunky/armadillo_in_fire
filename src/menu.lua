@@ -4,118 +4,115 @@ Menu.__index = Menu
 function Menu:new()
     local instance = {}
     setmetatable(instance, Menu)
-    
-    instance.currentMenu = "main"
+
+    instance.currentMenu    = "main"
     instance.selectedOption = 1
-    instance.keyDelay = 0
-    instance.keyDelayTime = 0.15
+    instance.keyDelay       = 0
+    instance.keyDelayTime   = 0.15
     instance.animationTimer = 0
-    instance.fadeAlpha = 0
-    
-    -- Settings state
+    instance.fadeAlpha      = 0
+
     instance.settings = {
         masterVolume = 0.7,
-
-        musicVolume = 0.6,
-        difficulty = "Normal",
-        fullscreen = false,
-        vsync = true
+        musicVolume  = 0.6,
+        fullscreen   = false,
     }
-    
-    -- Menu definitions
+
     instance.menus = {
         main = {
-            title = "FIRE BALL GAME",
+            title = "ARMADILLO IN FIRE",
             options = {
-                {text = "Start Game", action = "start_game"},
-                {text = "Settings", action = "settings"},
-                {text = "Help", action = "help"},
-                {text = "Quit", action = "quit"}
-            }
-        },
-        settings = {
-            title = "SETTINGS",
-            options = {
-                {text = "Master Volume: ", action = "master_volume", type = "slider"},
-                {text = "SFX Volume: ", action = "sfx_volume", type = "slider"},
-                {text = "Music Volume: ", action = "music_volume", type = "slider"},
-                {text = "Difficulty: ", action = "difficulty", type = "toggle"},
-                {text = "Fullscreen: ", action = "fullscreen", type = "toggle"},
-                {text = "VSync: ", action = "vsync", type = "toggle"},
-                {text = "Back to Main Menu", action = "main"}
+                { text = "Start Game", action = "start_game" },
+                { text = "How to Play", action = "help" },
+                { text = "Quit",        action = "quit" },
             }
         },
         help = {
             title = "HOW TO PLAY",
             content = {
-                "CONTROLS:",
-                "Arrow Keys - Move the ball",
-                "Spacebar - Activate fire",
-                "P - Pause game",
-                "Escape - Return to menu",
+                "TAP anywhere to move the green armadillo",
+                "Push the RED ball into fires to extinguish them",
+                "Don't touch the fires — they damage you!",
+                "Fires spread over time. Move fast.",
+                "",
+                "Keyboard: WASD / Arrow keys   |   P = Pause",
             },
             options = {
-                {text = "Back to Main Menu", action = "main"}
+                { text = "Back", action = "main" }
             }
         },
         pause = {
-            title = "GAME PAUSED",
+            title = "PAUSED",
             options = {
-                {text = "Resume", action = "resume"},
-                {text = "Settings", action = "settings"},
-                {text = "Main Menu", action = "main"},
-                {text = "Quit", action = "quit"}
+                { text = "Resume",    action = "resume" },
+                { text = "Main Menu", action = "main" },
+                { text = "Quit",      action = "quit" },
             }
         },
         gameover = {
             title = "GAME OVER",
             options = {
-                {text = "Try Again", action = "restart"},
-                {text = "Main Menu", action = "main"},
-                {text = "Quit", action = "quit"}
+                { text = "Try Again", action = "restart" },
+                { text = "Main Menu", action = "main" },
+                { text = "Quit",      action = "quit" },
             }
         }
     }
-    
+
     return instance
 end
 
-function Menu:update(dt)
-    self.animationTimer = self.animationTimer + dt
-    
-    -- Handle key delay
-    if self.keyDelay > 0 then
-        self.keyDelay = self.keyDelay - dt
-    end
-    
-    -- Fade in effect
-    if self.fadeAlpha < 1 then
-        self.fadeAlpha = math.min(1, self.fadeAlpha + dt * 2)
+-- ── Helpers ────────────────────────────────────────────────────────────────
+
+-- Returns the Y start and line spacing used by draw() for the current menu.
+-- Needed so mousepressed can hit-test without duplicating layout math.
+function Menu:_layoutY()
+    local _, height = love.graphics.getDimensions()
+    local currentMenuData = self.menus[self.currentMenu]
+    if not currentMenuData then return height / 2, 50 end
+
+    if self.currentMenu == "help" and currentMenuData.content then
+        local startY = height / 3 + #currentMenuData.content * 28 + 40
+        return startY, 56
+    else
+        local startY = height / 2
+        if self.currentMenu == "gameover" then startY = height / 2 end
+        return startY, 56
     end
 end
 
+-- ── Update ─────────────────────────────────────────────────────────────────
+
+function Menu:update(dt)
+    self.animationTimer = self.animationTimer + dt
+    if self.keyDelay > 0 then self.keyDelay = self.keyDelay - dt end
+    if self.fadeAlpha < 1 then
+        self.fadeAlpha = math.min(1, self.fadeAlpha + dt * 3)
+    end
+end
+
+-- ── Input ──────────────────────────────────────────────────────────────────
+
 function Menu:keypressed(key)
     if self.keyDelay > 0 then return end
-    
-    local currentMenuData = self.menus[self.currentMenu]
-    if not currentMenuData then return end
-    
+    local data = self.menus[self.currentMenu]
+    if not data then return end
+
     if key == "up" or key == "w" then
         self.selectedOption = self.selectedOption - 1
-        if self.selectedOption < 1 then
-            self.selectedOption = #currentMenuData.options
-        end
+        if self.selectedOption < 1 then self.selectedOption = #data.options end
         self.keyDelay = self.keyDelayTime
+
     elseif key == "down" or key == "s" then
         self.selectedOption = self.selectedOption + 1
-        if self.selectedOption > #currentMenuData.options then
-            self.selectedOption = 1
-        end
+        if self.selectedOption > #data.options then self.selectedOption = 1 end
         self.keyDelay = self.keyDelayTime
+
     elseif key == "return" or key == "space" then
         local action = self:selectOption()
         self.keyDelay = self.keyDelayTime
         return action
+
     elseif key == "escape" then
         if self.currentMenu == "main" then
             love.event.quit()
@@ -123,219 +120,142 @@ function Menu:keypressed(key)
             self:setMenu("main")
         end
         self.keyDelay = self.keyDelayTime
-    elseif key == "left" or key == "a" then
-        self:adjustSetting(-1)
-        self.keyDelay = self.keyDelayTime
-    elseif key == "right" or key == "d" then
-        self:adjustSetting(1)
-        self.keyDelay = self.keyDelayTime
     end
 end
 
-function Menu:adjustSetting(direction)
-    if self.currentMenu ~= "settings" then return end
-    
-    local option = self.menus.settings.options[self.selectedOption]
-    if not option or not option.type then return end
-    
-    if option.action == "master_volume" then
-        self.settings.masterVolume = math.max(0, math.min(1, self.settings.masterVolume + direction * 0.1))
-        love.audio.setVolume(self.settings.masterVolume)
-    elseif option.action == "sfx_volume" then
+-- Mouse / touch click — returns action string or nil
+function Menu:mousepressed(x, y)
+    local data = self.menus[self.currentMenu]
+    if not data or not data.options then return end
 
-    elseif option.action == "music_volume" then
-        self.settings.musicVolume = math.max(0, math.min(1, self.settings.musicVolume + direction * 0.1))
-    elseif option.action == "difficulty" then
-        local difficulties = {"Easy", "Normal", "Hard"}
-        local currentIndex = 1
-        for i, diff in ipairs(difficulties) do
-            if diff == self.settings.difficulty then
-                currentIndex = i
-                break
-            end
+    local startY, spacing = self:_layoutY()
+    local W = love.graphics.getWidth()
+
+    for i, option in ipairs(data.options) do
+        local itemY  = startY + (i - 1) * spacing
+        local hitH   = spacing            -- full row height as touch target
+        local hitX1  = W * 0.1           -- 10%–90% of screen width
+        local hitX2  = W * 0.9
+
+        if x >= hitX1 and x <= hitX2
+        and y >= itemY - 4 and y <= itemY + hitH then
+            self.selectedOption = i
+            return self:selectOption()
         end
-        currentIndex = currentIndex + direction
-        if currentIndex < 1 then currentIndex = #difficulties end
-        if currentIndex > #difficulties then currentIndex = 1 end
-        self.settings.difficulty = difficulties[currentIndex]
-    elseif option.action == "fullscreen" then
-        self.settings.fullscreen = not self.settings.fullscreen
-        love.window.setFullscreen(self.settings.fullscreen)
-    elseif option.action == "vsync" then
-        self.settings.vsync = not self.settings.vsync
     end
 end
 
 function Menu:selectOption()
-    local currentMenuData = self.menus[self.currentMenu]
-    if not currentMenuData then return end
-    
-    local option = currentMenuData.options[self.selectedOption]
+    local data = self.menus[self.currentMenu]
+    if not data then return end
+    local option = data.options[self.selectedOption]
     if not option then return end
-    
-    if option.action == "start_game" then
-        return "start_game"
-    elseif option.action == "settings" then
-        self:setMenu("settings")
-    elseif option.action == "help" then
-        self:setMenu("help")
-    elseif option.action == "main" then
-        self:setMenu("main")
-    elseif option.action == "pause" then
-        self:setMenu("pause")
-    elseif option.action == "gameover" then
-        self:setMenu("gameover")
-    elseif option.action == "resume" then
-        return "resume"
-    elseif option.action == "restart" then
-        return "restart"
-    elseif option.action == "quit" then
-        love.event.quit()
-    elseif option.type == "slider" or option.type == "toggle" then
-        self:adjustSetting(1)
+
+    local a = option.action
+    if     a == "start_game" then return "start_game"
+    elseif a == "resume"     then return "resume"
+    elseif a == "restart"    then return "restart"
+    elseif a == "quit"       then love.event.quit()
+    elseif a == "help"       then self:setMenu("help")
+    elseif a == "main"       then self:setMenu("main")
     end
-    
     return nil
 end
 
-function Menu:setMenu(menuName)
-    self.currentMenu = menuName
+function Menu:setMenu(name)
+    self.currentMenu    = name
     self.selectedOption = 1
-    self.fadeAlpha = 0
+    self.fadeAlpha      = 0
 end
+
+function Menu:showGameOver() self:setMenu("gameover") end
+function Menu:showPause()    self:setMenu("pause") end
+function Menu:getSettings()  return self.settings end
+
+-- ── Draw ───────────────────────────────────────────────────────────────────
 
 function Menu:draw(extinguishedTotal, fireCount)
-    local width, height = love.graphics.getDimensions()
-    
-    -- Background
-    love.graphics.setColor(0, 0, 0, 0.8)
-    love.graphics.rectangle("fill", 0, 0, width, height)
-    
-    -- Apply fade alpha
-    love.graphics.setColor(1, 1, 1, self.fadeAlpha)
-    
-    local currentMenuData = self.menus[self.currentMenu]
-    if not currentMenuData then return end
-    
-    -- Title
-    love.graphics.setFont(love.graphics.newFont(32))
-    local titleWidth = love.graphics.getFont():getWidth(currentMenuData.title)
-    love.graphics.print(currentMenuData.title, width/2 - titleWidth/2, height/4)
-    
-    -- Help content (special case)
-    if self.currentMenu == "help" and currentMenuData.content then
-        love.graphics.setFont(love.graphics.newFont(16))
-        local startY = height/3
-        for i, line in ipairs(currentMenuData.content) do
-            local lineWidth = love.graphics.getFont():getWidth(line)
-            love.graphics.print(line, width/2 - lineWidth/2, startY + (i-1) * 25)
-        end
-        startY = startY + #currentMenuData.content * 25 + 50
-        
-        -- Help menu options
-        love.graphics.setFont(love.graphics.newFont(20))
-        for i, option in ipairs(currentMenuData.options) do
-            local color = {1, 1, 1, self.fadeAlpha}
-            if i == self.selectedOption then
-                color = {1, 0.8, 0, self.fadeAlpha}
-                -- Selection indicator
-                local pulse = 0.5 + 0.5 * math.sin(self.animationTimer * 4)
-                love.graphics.setColor(1, 0.8, 0, pulse * self.fadeAlpha)
-                love.graphics.print("> ", width/2 - 120, startY + (i-1) * 40)
-            end
-            
-            love.graphics.setColor(color)
-            local optionWidth = love.graphics.getFont():getWidth(option.text)
-            love.graphics.print(option.text, width/2 - optionWidth/2, startY + (i-1) * 40)
-        end
-    else
-        -- Regular menu options
-        love.graphics.setFont(love.graphics.newFont(20))
-        local startY = height/2
-        
-        -- Game over score display (if in game over menu)
-        if self.currentMenu == "gameover" then
-            love.graphics.setColor(0.8, 0.8, 1, self.fadeAlpha)            
-            love.graphics.setFont(love.graphics.newFont(18))
-            
-            local scoreY = startY - 80
-            
-            -- Display fires extinguished
-            if extinguishedTotal then
-                local extinguishedText = "Fires Extinguished: " .. extinguishedTotal
-                local extinguishedWidth = love.graphics.getFont():getWidth(extinguishedText)
-                love.graphics.print(extinguishedText, width/2 - extinguishedWidth/2, scoreY)
-                scoreY = scoreY + 25
-            end
-            
-            -- Display remaining fires
-            if fireCount then
-                local fireText = "Fires Remaining: " .. fireCount
-                local fireWidth = love.graphics.getFont():getWidth(fireText)
-                love.graphics.print(fireText, width/2 - fireWidth/2, scoreY)
-            end
-        end               
-        
-        love.graphics.setFont(love.graphics.newFont(20))
-        for i, option in ipairs(currentMenuData.options) do
-            local displayText = option.text
-            
-            -- Add setting values for settings menu
-            if self.currentMenu == "settings" and option.type then
-                if option.action == "master_volume" then
-                    displayText = displayText .. math.floor(self.settings.masterVolume * 100) .. "%"
-                elseif option.action == "sfx_volume" then
+    local W, H   = love.graphics.getDimensions()
+    local data   = self.menus[self.currentMenu]
+    if not data then return end
 
-                elseif option.action == "music_volume" then
-                    displayText = displayText .. math.floor(self.settings.musicVolume * 100) .. "%"
-                elseif option.action == "difficulty" then
-                    displayText = displayText .. self.settings.difficulty
-                elseif option.action == "fullscreen" then
-                    displayText = displayText .. (self.settings.fullscreen and "On" or "Off")
-                elseif option.action == "vsync" then
-                    displayText = displayText .. (self.settings.vsync and "On" or "Off")
-                end
-            end
-            
-            local color = {1, 1, 1, self.fadeAlpha}
-            if i == self.selectedOption then
-                color = {1, 0.8, 0, self.fadeAlpha}
-                -- Selection indicator with pulse animation
-                local pulse = 0.5 + 0.5 * math.sin(self.animationTimer * 4)
-                love.graphics.setColor(1, 0.8, 0, pulse * self.fadeAlpha)
-                love.graphics.print("> ", width/2 - 150, startY + (i-1) * 50)
-            end
-            
-            love.graphics.setColor(color)
-            local textWidth = love.graphics.getFont():getWidth(displayText)
-            love.graphics.print(displayText, width/2 - textWidth/2, startY + (i-1) * 50)
+    -- Dim background
+    love.graphics.setColor(0, 0, 0, 0.82)
+    love.graphics.rectangle("fill", 0, 0, W, H)
+
+    local fa = self.fadeAlpha  -- shorthand
+
+    -- ── Title ──
+    local titleFont = love.graphics.newFont(math.floor(H * 0.07))
+    love.graphics.setFont(titleFont)
+    love.graphics.setColor(1, 0.55, 0.1, fa)
+    local tw = titleFont:getWidth(data.title)
+    love.graphics.print(data.title, W / 2 - tw / 2, H * 0.14)
+
+    -- ── Help content ──
+    if self.currentMenu == "help" and data.content then
+        local bodyFont = love.graphics.newFont(math.floor(H * 0.032))
+        love.graphics.setFont(bodyFont)
+        local lineH = math.floor(H * 0.055)
+        local baseY = H / 3
+        for i, line in ipairs(data.content) do
+            love.graphics.setColor(0.9, 0.9, 0.9, fa)
+            local lw = bodyFont:getWidth(line)
+            love.graphics.print(line, W / 2 - lw / 2, baseY + (i - 1) * lineH)
         end
     end
-    
-    -- Instructions
-    if self.currentMenu == "settings" then
-        love.graphics.setColor(0.7, 0.7, 0.7, self.fadeAlpha)
-        love.graphics.setFont(love.graphics.newFont(14))
-        local instructions = "Use Left/Right arrows to adjust settings"
-        local instWidth = love.graphics.getFont():getWidth(instructions)
-        love.graphics.print(instructions, width/2 - instWidth/2, height - 50)
+
+    -- ── Game over score ──
+    if self.currentMenu == "gameover" then
+        local scoreFont = love.graphics.newFont(math.floor(H * 0.035))
+        love.graphics.setFont(scoreFont)
+        love.graphics.setColor(0.8, 0.8, 1, fa)
+        local scoreY = H / 2 - math.floor(H * 0.14)
+        if extinguishedTotal then
+            local t  = "Fires extinguished: " .. extinguishedTotal
+            love.graphics.print(t, W / 2 - scoreFont:getWidth(t) / 2, scoreY)
+            scoreY = scoreY + math.floor(H * 0.05)
+        end
+        if fireCount then
+            local t = "Fires remaining: " .. fireCount
+            love.graphics.print(t, W / 2 - scoreFont:getWidth(t) / 2, scoreY)
+        end
     end
-    
-    -- Reset color
+
+    -- ── Options ──
+    local optFont   = love.graphics.newFont(math.floor(H * 0.05))
+    love.graphics.setFont(optFont)
+    local startY, spacing = self:_layoutY()
+
+    for i, option in ipairs(data.options) do
+        local oy      = startY + (i - 1) * spacing
+        local selected = (i == self.selectedOption)
+
+        if selected then
+            local pulse = 0.55 + 0.45 * math.sin(self.animationTimer * 4)
+            -- Subtle highlight bar
+            love.graphics.setColor(1, 0.7, 0.1, 0.18 * fa)
+            love.graphics.rectangle("fill", W * 0.1, oy - 4, W * 0.8, spacing - 4, 6, 6)
+            -- Arrow
+            love.graphics.setColor(1, 0.75, 0.1, pulse * fa)
+            love.graphics.print(">", W / 2 - optFont:getWidth(option.text) / 2 - 30, oy)
+            love.graphics.setColor(1, 0.85, 0.2, fa)
+        else
+            love.graphics.setColor(0.88, 0.88, 0.88, fa)
+        end
+
+        local tw2 = optFont:getWidth(option.text)
+        love.graphics.print(option.text, W / 2 - tw2 / 2, oy)
+    end
+
+    -- ── Hint ──
+    local hintFont = love.graphics.newFont(math.floor(H * 0.025))
+    love.graphics.setFont(hintFont)
+    love.graphics.setColor(0.55, 0.55, 0.55, fa)
+    local hint = "Tap a menu item  ·  Keyboard: ↑↓ Enter"
+    love.graphics.print(hint, W / 2 - hintFont:getWidth(hint) / 2, H - math.floor(H * 0.06))
+
     love.graphics.setColor(1, 1, 1, 1)
-end
-
-function Menu:getSettings()
-    return self.settings
-end
-
-function Menu:showGameOver(score)
-    self:setMenu("gameover")
-    -- Could add score display here if needed
-end
-
-function Menu:showPause()
-    self:setMenu("pause")
 end
 
 return Menu

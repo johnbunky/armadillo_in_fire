@@ -1,6 +1,0 @@
-Error: main.lua:72: attempt to index field 'position' (a nil value)
-stack traceback:
-        [love "boot.lua"]:352: in function '__index'
-        main.lua:72: in function 'update'
-        [love "callbacks.lua"]:162: in function <[love "callbacks.lua"]:144>
-        [C]: in function 'xpcall'

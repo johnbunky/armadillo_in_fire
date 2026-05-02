@@ -42,7 +42,6 @@ function UI.draw(gameState, audio)
         else
             love.graphics.setColor(1, 1, 1, 1)      -- White text for good health
         end
-        love.graphics.print(string.format("Health: %.0f/%.0f", gameState.playerBall.health, gameState.playerBall.maxHealth), barX, barY + 25)
         
         -- Critical health warning
         if healthPercent < 0.15 then
@@ -63,25 +62,6 @@ function UI.draw(gameState, audio)
             love.graphics.setColor(0.3, 1, 0.3, 0.8)
             love.graphics.print("REGENERATING", barX, barY - 15)
         end
-    end
-    
-    -- Draw fire count and stain count
-    local fireCount = gameState.fires and #gameState.fires or 0
-    local stainCount = gameState.stains and #gameState.stains or 0
-    
-    love.graphics.setColor(1, 1, 1, 1)
-    love.graphics.print("Active Fires: " .. fireCount, 10, 60)
-    love.graphics.print("Extinguished: " .. stainCount, 10, 80)
-    
-    -- Draw instructions
-    love.graphics.print("Push red ball into fires to extinguish them!", 10, 110)
-    love.graphics.print("Avoid touching fires - they damage you!", 10, 130)
-    
-    -- Draw audio status
-    if audio then
-        local audioStatus = audio:isEnabled() and "ON" or "OFF"
-        love.graphics.print("Audio: " .. audioStatus .. " (M to toggle)", love.graphics.getWidth() - 200, 10)
-        love.graphics.print("Volume: " .. math.floor(audio.volume * 100) .. "% (+/- to adjust)", love.graphics.getWidth() - 200, 30)
     end
     
     -- Draw screen-edge damage indicators when player is taking damage
