@@ -211,15 +211,6 @@ function Menu:draw(extinguishedTotal, fireCount)
         love.graphics.setFont(scoreFont)
         love.graphics.setColor(0.8, 0.8, 1, fa)
         local scoreY = H / 2 - math.floor(H * 0.14)
-        if extinguishedTotal then
-            local t  = "Fires extinguished: " .. extinguishedTotal
-            love.graphics.print(t, W / 2 - scoreFont:getWidth(t) / 2, scoreY)
-            scoreY = scoreY + math.floor(H * 0.05)
-        end
-        if fireCount then
-            local t = "Fires remaining: " .. fireCount
-            love.graphics.print(t, W / 2 - scoreFont:getWidth(t) / 2, scoreY)
-        end
     end
 
     -- ── Options ──

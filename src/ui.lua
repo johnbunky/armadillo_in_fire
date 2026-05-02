@@ -55,13 +55,6 @@ function UI.draw(gameState, audio)
             love.graphics.setColor(0.8, 0.8, 1, 0.7)
             love.graphics.print("FIRE RESISTANCE", barX + barWidth + 10, barY + 5)
         end
-        
-        -- Health regeneration indicator
-        if gameState.playerBall.timeSinceLastDamage >= gameState.playerBall.regenDelay and 
-           gameState.playerBall.health < gameState.playerBall.maxHealth then
-            love.graphics.setColor(0.3, 1, 0.3, 0.8)
-            love.graphics.print("REGENERATING", barX, barY - 15)
-        end
     end
     
     -- Draw screen-edge damage indicators when player is taking damage

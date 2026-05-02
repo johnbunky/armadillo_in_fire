@@ -140,7 +140,9 @@ function gameState:restart()
     self.gameTime         = 0
 
     -- Clear tap target
-    self.touchTarget = nil
+    self.touchTarget       = nil
+    self.multiKillTimer    = 0
+    self.multiKillCount    = 0
 end
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -256,10 +258,24 @@ function love.update(dt)
 
         Physics.handleCollision(gameState.playerBall, gameState.pushableBall, audio)
 
-        -- Red ball extinguishes fires
+        -- Red ball extinguishes fires.
+        -- Multi-kill: count extinguishes within a 0.25 s window; if >= 2 → boost.
+        local MULTIKILL_WINDOW = 1.5
+        gameState.multiKillTimer  = (gameState.multiKillTimer  or 0) - dt
+        gameState.multiKillCount  = (gameState.multiKillCount  or 0)
+        if gameState.multiKillTimer <= 0 then
+            gameState.multiKillCount = 0   -- window expired, reset
+        end
+
         for i = #gameState.fires, 1, -1 do
             if Physics.checkCoinCollision(gameState.pushableBall, gameState.fires[i]) then
                 gameState:extinguishFire(i)
+                gameState.multiKillCount = gameState.multiKillCount + 1
+                gameState.multiKillTimer = MULTIKILL_WINDOW   -- restart window
+                if gameState.multiKillCount >= 2 then
+                    gameState.playerBall:triggerRecoveryBoost(2.0, 5.0)
+                    gameState.multiKillCount = 0   -- reset so it doesn't re-trigger every hit
+                end
             end
         end
 
