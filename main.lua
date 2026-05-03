@@ -7,6 +7,26 @@ local UI      = require('src.ui')
 local Menu    = require('src.menu')
 local Screen  = require('src.screen')
 
+
+-- ── _evo: mutable adaptive state ──────────────────────────────────────────
+-- Defined before C so evolved_params() is always callable.
+local _evo = {
+    spawnInterval = 3.2,  -- seconds between fires [0.3 – 4.0]
+    damagePerTick = 12,   -- hp lost per fire tick  [5 – 25]
+    chaseWeight   = 1.0,  -- ai chase aggression    [0.5 – 2.8]
+}
+
+local function evolved_params()
+    return {
+        spawnInterval = _evo.spawnInterval,
+        damagePerTick = _evo.damagePerTick,
+        aiWeights     = {
+            _evo.chaseWeight,
+            1.7097, 0.6166, 0.9987, 0.1374,
+        },
+    }
+end
+
 -- ── C: all tunable game constants in one place ─────────────────────────────
 -- Evolve functions will read and mutate these at runtime.
 local C = {
@@ -44,18 +64,18 @@ local C = {
         radius            = 15,
         color             = {1, 0.3, 0},
         spawnRate         = 40,
-        damagePerTick     = 20,
-        firstSpawnDelay   = 2.0,
-        baseSpawnInterval = 1.95,
+        damagePerTick     = 12,    -- set by _evo; adapt() updates live
+        firstSpawnDelay   = 5.0,
+        baseSpawnInterval = 2.2,   -- set by _evo; adapt() updates live
         maxFires          = 100,
         spawnScaleBase    = 1,
-        spawnScaleFactor  = 1.8,
+        spawnScaleFactor  = 0.003,
     },
     stain = {
         radiusOffset = 5,
     },
     ai = {
-        weights          = {2.0, 1.7097, 0.6166, 0.9987, 0.1374},
+        weights          = {1.4, 1.7097, 0.6166, 0.9987, 0.1374}, -- [1] updated by adapt()
         predictionTime   = 0.28,
         chaseSpawnRadius = 65,
         waitSpawnRadius  = 200,
@@ -69,7 +89,35 @@ local C = {
         lerpSnap      = 10,
         arrivalRadius = 8,
     },
+
+    -- Live game stats (mutated during play, read by evolve/UI)
+    stats = {
+        gameTime          = 0,   -- seconds elapsed this run
+        extinguishedTotal = 0,   -- fires put out this run
+    },
 }
+
+
+-- ── adapt(): called on death, tunes _evo then syncs back to C ─────────────
+--   score = fires/sec  >0.8 player winning  <0.3 overwhelmed  else nudge
+local function adapt()
+    local t     = math.max(1, C.stats.gameTime)
+    local score = C.stats.extinguishedTotal / t
+
+    local factor
+    if     score > 0.8 then factor = 1.08   -- ease in more pressure
+    elseif score < 0.3 then factor = 0.92   -- ease off
+    else                    factor = 1.02   -- always creep slightly harder
+    end
+
+    _evo.spawnInterval = math.max(0.3,  math.min(4.0,  _evo.spawnInterval / factor))
+    _evo.damagePerTick = math.max(5,    math.min(25,   _evo.damagePerTick  * factor))
+    _evo.chaseWeight   = math.max(0.5,  math.min(2.8,  _evo.chaseWeight   * factor))
+
+    C.fire.baseSpawnInterval = _evo.spawnInterval
+    C.fire.damagePerTick     = _evo.damagePerTick
+    C.ai.weights[1]          = _evo.chaseWeight
+end
 
 local gameState    = {}
 local audio
@@ -82,6 +130,7 @@ local currentState = "menu"
 
 function gameState:update(dt)
     self.gameTime = (self.gameTime or 0) + dt
+    C.stats.gameTime = self.gameTime
 
     -- Fire spawn timer
     self.nextFireSpawn = self.nextFireSpawn - dt
@@ -104,27 +153,42 @@ function gameState:update(dt)
 end
 
 function gameState:pickStrategy()
-    local U = require("utility_weights")
-    local f = self.fires[1]
-    local state = {
-        self_x   = f and f.x or 400,
-        self_y   = f and f.y or 300,
-        player_x = self.playerBall.x,
-        player_y = self.playerBall.y,
-        red_x    = self.pushableBall.x,   -- BUG FIX: was self.pushBall
-        red_y    = self.pushableBall.y,
-        nfd      = f and (1 - f.positionSignal) * 400 or 200,  -- BUG FIX: was nearest_fire_dist
+    local f  = self.fires[1]
+    local w  = C.ai.weights
+    local px, py = self.playerBall.x, self.playerBall.y
+    local rx, ry = self.pushableBall.x, self.pushableBall.y
+    local sx = f and f.x or 400
+    local sy = f and f.y or 300
+    local nfd = f and (1 - f.positionSignal) * 400 or 200
+
+    local function dist(ax, ay, bx, by)
+        return math.sqrt((ax-bx)^2 + (ay-by)^2)
+    end
+
+    local scores = {
+        w[1] * (1 - math.min(1, dist(sx, sy, px, py)  / C.ai.positionRange)),
+        w[2] * (1 - math.min(1, dist(sx, sy, rx, ry)  / C.ai.redBallRange)),
+        w[3] * (1 - math.min(1, dist(sx, sy,
+                    px < Screen.W*0.5 and 0 or Screen.W,
+                    py < Screen.H*0.5 and 0 or Screen.H) / C.ai.blockRange)),
+        w[4] * (1 - math.min(1, nfd / C.ai.clusterRange)),
+        w[5] * 0.3,
     }
-    local action = U.pick(state, U.weights)
-    if action == "chase"   then return "chase"
-    elseif action == "block"   then return "block"
-    elseif action == "cluster" then return "cluster"
-    else                             return "wait"  end
+
+    local best, bestScore = 1, -math.huge
+    for i, v in ipairs(scores) do
+        if v > bestScore then best, bestScore = i, v end
+    end
+
+    return ({"chase", "avoid", "block", "cluster", "wait"})[best]
 end
 
 function gameState:spawnFire()
-    local maxFires = math.floor(C.fire.spawnScaleBase + math.log(self.gameTime + 1) * C.fire.spawnScaleFactor)
-    if #self.fires >= maxFires then return end
+    -- Single ceiling: C.fire.maxFires (checked before calling this in update).
+    -- Log formula throttles the interval between spawns instead:
+    --   interval shrinks from baseSpawnInterval down to a floor of 0.3s over time.
+    local logScale = C.fire.spawnScaleBase + math.log(self.gameTime + 1) * C.fire.spawnScaleFactor
+    self.fireSpawnInterval = math.max(0.3, C.fire.baseSpawnInterval / logScale)
 
     local strategy = self:pickStrategy()
 
@@ -173,6 +237,7 @@ end
 
 function gameState:extinguishFire(fireIndex)
     self.extinguishedTotal = self.extinguishedTotal + 1
+    C.stats.extinguishedTotal = self.extinguishedTotal
     if self.fires[fireIndex] then
         local fire = self.fires[fireIndex]
         -- Hand stain off to the dissolving list now that fire is gone
@@ -202,6 +267,8 @@ function gameState:restart()
     self.nextFireSpawn    = C.fire.firstSpawnDelay
     self.extinguishedTotal = 0
     self.gameTime         = 0
+    C.stats.gameTime          = 0
+    C.stats.extinguishedTotal = 0
 
     -- Clear tap target
     self.touchTarget       = nil
@@ -253,6 +320,7 @@ function love.update(dt)
 
     elseif currentState == "playing" then
         if gameState.playerBall:isDead() then
+            adapt()
             currentState = "game_over"
             menu:showGameOver()
             return
