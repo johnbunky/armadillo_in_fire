@@ -36,9 +36,9 @@ local P = {
 -- ── _evo: mutable adaptive state ──────────────────────────────────────────
 -- Defined before C so evolved_params() is always callable.
 local _evo = {
-    spawnInterval = 3.7,  -- seconds between fires [0.3 – 4.0]
+    spawnInterval = 3.2,  -- seconds between fires [0.3 – 4.0]
     damagePerTick = 12,   -- hp lost per fire tick  [5 – 25]
-    chaseWeight   = 1.0,  -- ai chase aggression    [0.5 – 2.8]
+    chaseWeight   = 0.8,  -- ai chase aggression    [0.5 – 2.8]
 }
 
 local function evolved_params()
@@ -94,7 +94,7 @@ local C = {
         baseSpawnInterval = 2.2,   -- set by _evo; adapt() updates live
         maxFires          = 100,
         spawnScaleBase    = 1,
-        spawnScaleFactor  = 0.03,
+        spawnScaleFactor  = 0.02,
     },
     stain = {
         radiusOffset = 5,
@@ -326,7 +326,20 @@ function love.load()
     gameState.fires  = {}
     gameState.stains = {}
 
-    love.graphics.setBackgroundColor(0, 0, 0)  -- black bars outside canvas
+    -- Menu background assets
+    menuBg    = love.graphics.newImage("assets/armadillo.png")
+    menuFires = {}
+    -- Spawn a handful of fires along the bottom of the logical canvas
+    local firePositions = {
+        {120, 520}, {260, 540}, {400, 510}, {550, 535}, {680, 515},
+        {80,  490}, {340, 555}, {620, 490},
+    }
+    for _, pos in ipairs(firePositions) do
+        local f = Fire:new(pos[1], pos[2], 18, C.fire.color)
+        table.insert(menuFires, f)
+    end
+
+    love.graphics.setBackgroundColor(0, 0, 0)
 
     Screen:update()
 
@@ -340,8 +353,14 @@ function love.resize(w, h)
 end
 
 function love.update(dt)
-    if currentState == "menu" then
-        menu:update(dt)
+    if currentState == "menu" or currentState == "game_over" then
+        -- Keep menu fires alive
+        for _, f in ipairs(menuFires) do f:update(dt, nil) end
+        if currentState == "menu" then
+            menu:update(dt)
+        else
+            menu:update(dt)
+        end
 
     elseif currentState == "playing" then
         if gameState.playerBall:isDead() then
@@ -523,6 +542,27 @@ function love.draw()
         end
 
     elseif currentState == "menu" or currentState == "game_over" then
+        love.graphics.push()
+        Screen:apply()
+
+        -- Background image (armadillo reference, dimmed)
+        love.graphics.setColor(1, 1, 1, 1)
+        local iw = menuBg:getWidth()
+        local ih = menuBg:getHeight()
+        local scale = math.max(Screen.W / iw, Screen.H / ih) / 2
+        local ox = 0
+        local oy = (Screen.H - ih * scale) * 0.5
+        love.graphics.draw(menuBg, ox, oy, 0, scale, scale)
+
+        -- Live fires along the bottom
+        love.graphics.setBlendMode("add")
+        for _, f in ipairs(menuFires) do f:draw() end
+        love.graphics.setBlendMode("alpha")
+
+        love.graphics.pop()
+        Screen:drawBars()
+
+        -- Menu overlay drawn on top (already has dark bg rect)
         menu:draw(gameState.extinguishedTotal, #gameState.fires)
     end
 end

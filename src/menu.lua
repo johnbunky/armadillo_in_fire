@@ -69,17 +69,22 @@ end
 -- Returns the Y start and line spacing used by draw() for the current menu.
 -- Needed so mousepressed can hit-test without duplicating layout math.
 function Menu:_layoutY()
-    local _, height = love.graphics.getDimensions()
-    local currentMenuData = self.menus[self.currentMenu]
-    if not currentMenuData then return height / 2, 50 end
+    local _, H = love.graphics.getDimensions()
+    local data = self.menus[self.currentMenu]
+    if not data then return H / 2, 50 end
 
-    if self.currentMenu == "help" and currentMenuData.content then
-        local startY = height / 3 + #currentMenuData.content * 28 + 40
-        return startY, 56
+    if self.currentMenu == "help" and data.content then
+        -- Title takes ~14% from top, content lines below it.
+        -- Options sit below content with a fixed gap — never overlaps.
+        local titleBottom = H * 0.24
+        local lineH       = math.floor(H * 0.055)
+        local contentH    = #data.content * lineH
+        local gap         = math.floor(H * 0.06)
+        local startY      = titleBottom + contentH + gap
+        local spacing     = math.floor(H * 0.09)
+        return startY, spacing
     else
-        local startY = height / 2
-        if self.currentMenu == "gameover" then startY = height / 2 end
-        return startY, 56
+        return H * 0.44, math.floor(H * 0.10)
     end
 end
 
@@ -182,7 +187,8 @@ function Menu:draw(extinguishedTotal, fireCount)
     if not data then return end
 
     -- Dim background
-    love.graphics.setColor(0, 0, 0, 0.82)
+    -- Semi-transparent so background image shows through on menu/game_over
+    love.graphics.setColor(0, 0, 0, 0.55)
     love.graphics.rectangle("fill", 0, 0, W, H)
 
     local fa = self.fadeAlpha  -- shorthand
@@ -198,10 +204,10 @@ function Menu:draw(extinguishedTotal, fireCount)
     if self.currentMenu == "help" and data.content then
         local bodyFont = love.graphics.newFont(math.floor(H * 0.032))
         love.graphics.setFont(bodyFont)
-        local lineH = math.floor(H * 0.055)
-        local baseY = H / 3
+        local lineH  = math.floor(H * 0.055)
+        local baseY  = math.floor(H * 0.24)   -- just below title
         for i, line in ipairs(data.content) do
-            love.graphics.setColor(0.9, 0.9, 0.9, fa)
+            love.graphics.setColor(P and P.uiText or {0.9,0.9,0.9}, fa or 1)
             local lw = bodyFont:getWidth(line)
             love.graphics.print(line, W / 2 - lw / 2, baseY + (i - 1) * lineH)
         end
@@ -213,6 +219,11 @@ function Menu:draw(extinguishedTotal, fireCount)
         love.graphics.setFont(scoreFont)
         love.graphics.setColor(P and P.sand or {0.8,0.8,1})
         local scoreY = H / 2 - math.floor(H * 0.14)
+        if extinguishedTotal then
+            local t  = "Fires extinguished: " .. extinguishedTotal
+            love.graphics.print(t, W / 2 - scoreFont:getWidth(t) / 2, scoreY)
+            scoreY = scoreY + math.floor(H * 0.05)
+        end
     end
 
     -- ── Options ──
