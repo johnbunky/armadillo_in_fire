@@ -1,5 +1,7 @@
 local Menu = {}
 Menu.__index = Menu
+-- Palette imported from main via global P (set before any draw call)
+-- Fallback colours used if P not yet defined
 
 function Menu:new()
     local instance = {}
@@ -188,7 +190,7 @@ function Menu:draw(extinguishedTotal, fireCount)
     -- ── Title ──
     local titleFont = love.graphics.newFont(math.floor(H * 0.07))
     love.graphics.setFont(titleFont)
-    love.graphics.setColor(1, 0.55, 0.1, fa)
+    love.graphics.setColor(P and P.uiTitle or {1, 0.55, 0.1})
     local tw = titleFont:getWidth(data.title)
     love.graphics.print(data.title, W / 2 - tw / 2, H * 0.14)
 
@@ -209,7 +211,7 @@ function Menu:draw(extinguishedTotal, fireCount)
     if self.currentMenu == "gameover" then
         local scoreFont = love.graphics.newFont(math.floor(H * 0.035))
         love.graphics.setFont(scoreFont)
-        love.graphics.setColor(0.8, 0.8, 1, fa)
+        love.graphics.setColor(P and P.sand or {0.8,0.8,1})
         local scoreY = H / 2 - math.floor(H * 0.14)
     end
 
@@ -230,9 +232,9 @@ function Menu:draw(extinguishedTotal, fireCount)
             -- Arrow
             love.graphics.setColor(1, 0.75, 0.1, pulse * fa)
             love.graphics.print(">", W / 2 - optFont:getWidth(option.text) / 2 - 30, oy)
-            love.graphics.setColor(1, 0.85, 0.2, fa)
+            love.graphics.setColor(P and P.uiTitle or {1,0.85,0.2})
         else
-            love.graphics.setColor(0.88, 0.88, 0.88, fa)
+            love.graphics.setColor(P and P.uiText or {0.88,0.88,0.88})
         end
 
         local tw2 = optFont:getWidth(option.text)
@@ -242,7 +244,7 @@ function Menu:draw(extinguishedTotal, fireCount)
     -- ── Hint ──
     local hintFont = love.graphics.newFont(math.floor(H * 0.025))
     love.graphics.setFont(hintFont)
-    love.graphics.setColor(0.55, 0.55, 0.55, fa)
+    love.graphics.setColor(P and P.uiDim or {0.55,0.55,0.55})
     local hint = "Tap a menu item  ·  Keyboard: ↑↓ Enter"
     love.graphics.print(hint, W / 2 - hintFont:getWidth(hint) / 2, H - math.floor(H * 0.06))
 

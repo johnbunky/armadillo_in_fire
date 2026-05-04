@@ -8,10 +8,35 @@ local Menu    = require('src.menu')
 local Screen  = require('src.screen')
 
 
+
+-- ── P: Savanna split-complementary palette ────────────────────────────────
+-- Green ↔ Orange-Red split. All game colours derive from here.
+local P = {
+    -- Greens (field)
+    grassDark   = {0.18, 0.38, 0.11},   -- shadow patches
+    grassMid    = {0.30, 0.54, 0.16},   -- base field
+    grassLight  = {0.46, 0.72, 0.24},   -- highlight blades
+    -- Warm neutrals (characters, UI)
+    sand        = {0.82, 0.68, 0.44},   -- belly, face, text bg
+    sienna      = {0.52, 0.28, 0.09},   -- shell mid
+    siennaDark  = {0.32, 0.16, 0.05},   -- shell shadow
+    -- Fire / danger
+    fireOrange  = {0.94, 0.42, 0.04},   -- base flame
+    fireYellow  = {0.98, 0.78, 0.12},   -- core flame
+    danger      = {0.88, 0.14, 0.08},   -- damage, health low
+    -- UI
+    uiTitle     = {0.96, 0.60, 0.12},   -- menu title, gold
+    uiText      = {0.92, 0.88, 0.78},   -- body text (warm white)
+    uiDim       = {0.52, 0.48, 0.38},   -- hints, inactive
+}
+
+-- expose palette globally so src/*.lua can read it without require
+-- (set once here, never mutated)
+
 -- ── _evo: mutable adaptive state ──────────────────────────────────────────
 -- Defined before C so evolved_params() is always callable.
 local _evo = {
-    spawnInterval = 3.2,  -- seconds between fires [0.3 – 4.0]
+    spawnInterval = 3.7,  -- seconds between fires [0.3 – 4.0]
     damagePerTick = 12,   -- hp lost per fire tick  [5 – 25]
     chaseWeight   = 1.0,  -- ai chase aggression    [0.5 – 2.8]
 }
@@ -65,11 +90,11 @@ local C = {
         color             = {1, 0.3, 0},
         spawnRate         = 40,
         damagePerTick     = 12,    -- set by _evo; adapt() updates live
-        firstSpawnDelay   = 5.0,
+        firstSpawnDelay   = 2.0,
         baseSpawnInterval = 2.2,   -- set by _evo; adapt() updates live
         maxFires          = 100,
         spawnScaleBase    = 1,
-        spawnScaleFactor  = 0.003,
+        spawnScaleFactor  = 0.03,
     },
     stain = {
         radiusOffset = 5,
@@ -436,9 +461,36 @@ function love.draw()
         love.graphics.push()
         Screen:apply()
 
-        -- Ground
-        love.graphics.setColor(0.6, 0.8, 0.4)
+        -- ── Grass field ──────────────────────────────────────────────
+        love.graphics.setColor(P.grassMid)
         love.graphics.rectangle("fill", 0, 0, Screen.W, Screen.H)
+
+        math.randomseed(7)
+        -- Dark shadow patches
+        love.graphics.setColor(P.grassDark[1], P.grassDark[2], P.grassDark[3], 0.45)
+        for _ = 1, 18 do
+            love.graphics.ellipse("fill",
+                math.random(0, Screen.W), math.random(0, Screen.H),
+                math.random(30, 90),      math.random(20, 55))
+        end
+        -- Dark V-blade tufts
+        love.graphics.setColor(P.grassDark[1], P.grassDark[2], P.grassDark[3], 0.75)
+        love.graphics.setLineWidth(1)
+        for _ = 1, 120 do
+            local bx, by = math.random(0, Screen.W), math.random(0, Screen.H)
+            local h, sp  = math.random(5, 11), math.random(3, 6)
+            love.graphics.line(bx, by, bx - sp, by - h)
+            love.graphics.line(bx, by, bx + sp, by - h)
+        end
+        -- Light highlight blades
+        love.graphics.setColor(P.grassLight[1], P.grassLight[2], P.grassLight[3], 0.35)
+        for _ = 1, 60 do
+            local bx, by = math.random(0, Screen.W), math.random(0, Screen.H)
+            local h = math.random(4, 8)
+            love.graphics.line(bx, by, bx + math.random(-3,3), by - h)
+        end
+        math.randomseed(os.time())
+        love.graphics.setLineWidth(1)
 
         -- Shadows, stains, balls, fires
         gameState.playerBall:drawShadow()

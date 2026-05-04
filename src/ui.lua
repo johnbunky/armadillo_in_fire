@@ -17,8 +17,9 @@ function UI.draw(gameState, audio)
         love.graphics.rectangle("fill", x, y, stripW, stripH, 2, 2)
 
         -- Fill: green → orange → red
-        local r = math.min(1, 2 * (1 - hp) + 0.1)
-        local g = math.min(1, 2 * hp)
+        -- P.grassLight → P.fireOrange → P.danger as health drops
+        local r = math.min(1, (P and P.fireOrange[1] or 0.94) * (2*(1-hp)) + 0.1)
+        local g = math.min(1, (P and P.grassLight[2] or 0.72) * (2*hp))
         -- Low health pulse
         if hp < 0.25 then
             local pulse = (math.sin(t * 8) + 1) * 0.5
@@ -38,7 +39,7 @@ function UI.draw(gameState, audio)
         -- Critical warning text
         if hp < 0.15 then
             local alpha = (math.sin(t * 10) + 1) * 0.5
-            love.graphics.setColor(1, 0.2, 0.2, alpha)
+            love.graphics.setColor(P and P.danger or {1,0.2,0.2})
             love.graphics.printf("CRITICAL", x, y + stripH + 6, stripW, "left")
         end
     end

@@ -22,7 +22,7 @@ function Fire:new(x, y, radius, color)
     -- Particle pool
     fire.particles    = {}
     fire.spawnAccum   = 0
-    fire.spawnRate    = 40   -- particles per second
+    fire.spawnRate    = 40
 
     -- AI signals (read by utility_weights / pickStrategy)
     fire.positionSignal  = 0
