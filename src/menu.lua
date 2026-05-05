@@ -50,7 +50,6 @@ function Menu:new()
                 "Don't touch the fires — they damage you!",
                 "Fires spread over time. Move fast.",
                 "",
-                -- "Keyboard: WASD / Arrow keys   |   P = Pause",
             },
             options = {
                 { text = "Back", action = "main" }
@@ -143,10 +142,15 @@ function Menu:keypressed(key)
         return action
 
     elseif key == "escape" then
-        if self.currentMenu == "main" then
-            safeQuit()
-        else
-            self:setMenu("main")
+        -- On Android the back button fires both touch AND escape in the
+        -- same frame. Touch already handled the navigation; ignore the
+        -- escape key entirely on Android to prevent double-firing into quit.
+        if not isAndroid() then
+            if self.currentMenu == "main" then
+                safeQuit()
+            else
+                self:setMenu("main")
+            end
         end
         self.keyDelay = self.keyDelayTime
     end
@@ -307,13 +311,13 @@ function Menu:draw(extinguishedTotal, fireCount)
     end
 
     -- ── Hint ──
-    local hintFont = self:_font(math.floor(H * 0.025))
-    love.graphics.setFont(hintFont)
-    love.graphics.setColor(P and P.uiDim or {0.55,0.55,0.55})
-    local hint = "Tap a menu item  ·  Keyboard: ↑↓ Enter"
+    -- local hintFont = self:_font(math.floor(H * 0.025))
+    -- love.graphics.setFont(hintFont)
+    -- love.graphics.setColor(P and P.uiDim or {0.55,0.55,0.55})
+    -- local hint = "Tap a menu item  ·  Keyboard: ↑↓ Enter"
     -- love.graphics.print(hint, W / 2 - hintFont:getWidth(hint) / 2, H - math.floor(H * 0.06))
-
-    love.graphics.setColor(1, 1, 1, 1)
+    --
+    -- love.graphics.setColor(1, 1, 1, 1)
 end
 
 return Menu
