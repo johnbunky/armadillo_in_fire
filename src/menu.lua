@@ -26,6 +26,7 @@ function Menu:new()
     instance.animationTimer = 0
     instance.fadeAlpha      = 0
     instance._fonts        = {}  -- cached fonts
+    instance.inputCooldown = 0   -- blocks tap-through after menu transition
 
     instance.settings = {
         masterVolume = 0.7,
@@ -114,6 +115,7 @@ end
 function Menu:update(dt)
     self.animationTimer = self.animationTimer + dt
     if self.keyDelay > 0 then self.keyDelay = self.keyDelay - dt end
+    if self.inputCooldown > 0 then self.inputCooldown = self.inputCooldown - dt end
     if self.fadeAlpha < 1 then
         self.fadeAlpha = math.min(1, self.fadeAlpha + dt * 3)
     end
@@ -142,15 +144,11 @@ function Menu:keypressed(key)
         return action
 
     elseif key == "escape" then
-        -- On Android the back button fires both touch AND escape in the
-        -- same frame. Touch already handled the navigation; ignore the
-        -- escape key entirely on Android to prevent double-firing into quit.
-        if not isAndroid() then
-            if self.currentMenu == "main" then
-                safeQuit()
-            else
-                self:setMenu("main")
-            end
+        if self.inputCooldown > 0 then return end  -- block double-fire after touch
+        if self.currentMenu == "main" then
+            safeQuit()
+        else
+            self:setMenu("main")
         end
         self.keyDelay = self.keyDelayTime
     end
@@ -158,6 +156,7 @@ end
 
 -- Mouse / touch click — returns action string or nil
 function Menu:mousepressed(x, y)
+    if self.inputCooldown > 0 then return end
     local data = self.menus[self.currentMenu]
     if not data or not data.options then return end
 
@@ -199,6 +198,7 @@ function Menu:setMenu(name)
     self.currentMenu    = name
     self.selectedOption = 1
     self.fadeAlpha      = 0
+    self.inputCooldown  = 0.25  -- block tap-through for 250ms
 end
 
 function Menu:showGameOver() self:setMenu("gameover") end
@@ -290,6 +290,11 @@ function Menu:draw(extinguishedTotal, fireCount)
     local startY, spacing = self:_layoutY()
 
     for i, option in ipairs(data.options) do
+        -- On Android, hide Back/navigation buttons — hardware back handles it
+        if isAndroid() and (option.action == "main" or option.action == "resume") and
+           self.currentMenu == "help" then
+            goto continue
+        end
         local oy      = startY + (i - 1) * spacing
         local selected = (i == self.selectedOption)
 
@@ -308,6 +313,7 @@ function Menu:draw(extinguishedTotal, fireCount)
 
         local tw2 = optFont:getWidth(option.text)
         love.graphics.print(option.text, W / 2 - tw2 / 2, oy)
+        ::continue::
     end
 
     -- ── Hint ──
