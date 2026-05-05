@@ -13,6 +13,7 @@ function Menu:new()
     instance.keyDelayTime   = 0.15
     instance.animationTimer = 0
     instance.fadeAlpha      = 0
+    instance._fonts        = {}  -- cached fonts
 
     instance.settings = {
         masterVolume = 0.7,
@@ -32,8 +33,8 @@ function Menu:new()
         help = {
             title = "HOW TO PLAY",
             content = {
-                "TAP anywhere to move the green armadillo",
-                "Push the RED ball into fires to extinguish them",
+                "TAP anywhere to move the armadillo",
+                "Push the stone into fires to extinguish them",
                 "Don't touch the fires — they damage you!",
                 "Fires spread over time. Move fast.",
                 "",
@@ -90,6 +91,14 @@ end
 
 -- ── Update ─────────────────────────────────────────────────────────────────
 
+function Menu:_font(size)
+    local key = math.floor(size)
+    if not self._fonts[key] then
+        self._fonts[key] = love.graphics.newFont(key)
+    end
+    return self._fonts[key]
+end
+
 function Menu:update(dt)
     self.animationTimer = self.animationTimer + dt
     if self.keyDelay > 0 then self.keyDelay = self.keyDelay - dt end
@@ -122,7 +131,10 @@ function Menu:keypressed(key)
 
     elseif key == "escape" then
         if self.currentMenu == "main" then
-            love.event.quit()
+            -- on Android the OS handles back-button quit; avoid crashing
+            if not (love.system and love.system.getOS() == "Android") then
+                love.event.quit()
+            end
         else
             self:setMenu("main")
         end
@@ -162,7 +174,12 @@ function Menu:selectOption()
     if     a == "start_game" then return "start_game"
     elseif a == "resume"     then return "resume"
     elseif a == "restart"    then return "restart"
-    elseif a == "quit"       then love.event.quit()
+    elseif a == "quit"       then
+        if love.system and love.system.getOS() == "Android" then
+            love.event.quit(0)
+        else
+            love.event.quit()
+        end
     elseif a == "help"       then self:setMenu("help")
     elseif a == "main"       then self:setMenu("main")
     end
@@ -194,7 +211,7 @@ function Menu:draw(extinguishedTotal, fireCount)
     local fa = self.fadeAlpha  -- shorthand
 
     -- ── Title ──
-    local titleFont = love.graphics.newFont(math.floor(H * 0.07))
+    local titleFont = self:_font(math.floor(H * 0.07))
     love.graphics.setFont(titleFont)
     love.graphics.setColor(P and P.uiTitle or {1, 0.55, 0.1})
     local tw = titleFont:getWidth(data.title)
@@ -202,7 +219,7 @@ function Menu:draw(extinguishedTotal, fireCount)
 
     -- ── Help content ──
     if self.currentMenu == "help" and data.content then
-        local bodyFont = love.graphics.newFont(math.floor(H * 0.032))
+        local bodyFont = self:_font(math.floor(H * 0.032))
         love.graphics.setFont(bodyFont)
         local lineH  = math.floor(H * 0.055)
         local baseY  = math.floor(H * 0.24)   -- just below title
@@ -215,7 +232,7 @@ function Menu:draw(extinguishedTotal, fireCount)
 
     -- ── Game over score ──
     if self.currentMenu == "gameover" then
-        local scoreFont = love.graphics.newFont(math.floor(H * 0.035))
+        local scoreFont = self:_font(math.floor(H * 0.035))
         love.graphics.setFont(scoreFont)
         love.graphics.setColor(P and P.sand or {0.8,0.8,1})
         local scoreY = H / 2 - math.floor(H * 0.14)
@@ -224,10 +241,11 @@ function Menu:draw(extinguishedTotal, fireCount)
             love.graphics.print(t, W / 2 - scoreFont:getWidth(t) / 2, scoreY)
             scoreY = scoreY + math.floor(H * 0.05)
         end
+
     end
 
     -- ── Options ──
-    local optFont   = love.graphics.newFont(math.floor(H * 0.05))
+    local optFont   = self:_font(math.floor(H * 0.05))
     love.graphics.setFont(optFont)
     local startY, spacing = self:_layoutY()
 
@@ -253,7 +271,7 @@ function Menu:draw(extinguishedTotal, fireCount)
     end
 
     -- ── Hint ──
-    local hintFont = love.graphics.newFont(math.floor(H * 0.025))
+    local hintFont = self:_font(math.floor(H * 0.025))
     love.graphics.setFont(hintFont)
     love.graphics.setColor(P and P.uiDim or {0.55,0.55,0.55})
     local hint = "Tap a menu item  ·  Keyboard: ↑↓ Enter"

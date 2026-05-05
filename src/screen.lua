@@ -14,9 +14,13 @@ Screen.offsetY = 0
 function Screen:update()
     local sw = love.graphics.getWidth()
     local sh = love.graphics.getHeight()
-    self.scale   = math.min(sw / self.W, sh / self.H)
-    self.offsetX = math.floor((sw - self.W * self.scale) / 2)
-    self.offsetY = math.floor((sh - self.H * self.scale) / 2)
+    -- Adapt logical canvas to actual screen aspect ratio (no black bars).
+    -- Height stays at 600; width stretches to fill the real aspect ratio.
+    self.H    = 600
+    self.W    = math.floor(self.H * sw / sh)
+    self.scale   = sh / self.H
+    self.offsetX = 0
+    self.offsetY = 0
 end
 
 -- Call inside love.draw() before drawing game objects
@@ -25,25 +29,8 @@ function Screen:apply()
     love.graphics.scale(self.scale, self.scale)
 end
 
--- Draw letterbox bars so gaps outside the canvas look clean
-function Screen:drawBars()
-    love.graphics.setColor(0, 0, 0, 1)
-    -- Left / right bars
-    if self.offsetX > 0 then
-        love.graphics.rectangle("fill", 0, 0, self.offsetX, love.graphics.getHeight())
-        love.graphics.rectangle("fill",
-            self.offsetX + self.W * self.scale, 0,
-            self.offsetX + 1, love.graphics.getHeight())
-    end
-    -- Top / bottom bars
-    if self.offsetY > 0 then
-        love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), self.offsetY)
-        love.graphics.rectangle("fill",
-            0, self.offsetY + self.H * self.scale,
-            love.graphics.getWidth(), self.offsetY + 1)
-    end
-    love.graphics.setColor(1, 1, 1, 1)
-end
+-- No letterbox bars needed: canvas always fills the full screen
+function Screen:drawBars() end
 
 -- Convert real window coords (mouse, touch) → logical game coords
 function Screen:toGame(x, y)
