@@ -3,6 +3,18 @@ Menu.__index = Menu
 -- Palette imported from main via global P (set before any draw call)
 -- Fallback colours used if P not yet defined
 
+local function isAndroid()
+    return love.system and love.system.getOS() == "Android"
+end
+
+local function safeQuit()
+    if isAndroid() then
+        os.exit(0)   -- love.event.quit unreliable on Android
+    else
+        love.event.quit()
+    end
+end
+
 function Menu:new()
     local instance = {}
     setmetatable(instance, Menu)
@@ -75,17 +87,16 @@ function Menu:_layoutY()
     if not data then return H / 2, 50 end
 
     if self.currentMenu == "help" and data.content then
-        -- Title takes ~14% from top, content lines below it.
-        -- Options sit below content with a fixed gap — never overlaps.
-        local titleBottom = H * 0.24
-        local lineH       = math.floor(H * 0.055)
-        local contentH    = #data.content * lineH
-        local gap         = math.floor(H * 0.06)
-        local startY      = titleBottom + contentH + gap
-        local spacing     = math.floor(H * 0.09)
+        local lineH    = math.floor(H * 0.042)   -- tighter lines
+        local contentH = #data.content * lineH
+        -- Pack: title(57%) + content + gap + back button must fit by 97%
+        local available = H * 0.97 - H * 0.67 - contentH
+        local gap       = math.max(math.floor(H * 0.02), math.floor(available * 0.4))
+        local startY    = H * 0.67 + contentH + gap
+        local spacing   = math.floor(H * 0.07)
         return startY, spacing
     else
-        return H * 0.44, math.floor(H * 0.10)
+        return H * 0.66, math.floor(H * 0.09)
     end
 end
 
@@ -131,10 +142,7 @@ function Menu:keypressed(key)
 
     elseif key == "escape" then
         if self.currentMenu == "main" then
-            -- on Android the OS handles back-button quit; avoid crashing
-            if not (love.system and love.system.getOS() == "Android") then
-                love.event.quit()
-            end
+            safeQuit()
         else
             self:setMenu("main")
         end
@@ -174,12 +182,7 @@ function Menu:selectOption()
     if     a == "start_game" then return "start_game"
     elseif a == "resume"     then return "resume"
     elseif a == "restart"    then return "restart"
-    elseif a == "quit"       then
-        if love.system and love.system.getOS() == "Android" then
-            love.event.quit(0)
-        else
-            love.event.quit()
-        end
+    elseif a == "quit"       then safeQuit()
     elseif a == "help"       then self:setMenu("help")
     elseif a == "main"       then self:setMenu("main")
     end
@@ -211,20 +214,39 @@ function Menu:draw(extinguishedTotal, fireCount)
     local fa = self.fadeAlpha  -- shorthand
 
     -- ── Title ──
-    local titleFont = self:_font(math.floor(H * 0.07))
+    -- Title: start at preferred size, shrink until it fits within margins
+    local margin    = W * 0.07
+    local maxTitleW = W - margin * 2
+    local titleSize = math.floor(H * 0.062)
+    local titleFont = self:_font(titleSize)
+    while titleFont:getWidth(data.title) > maxTitleW and titleSize > 12 do
+        titleSize = titleSize - 1
+        titleFont = self:_font(titleSize)
+    end
     love.graphics.setFont(titleFont)
     love.graphics.setColor(P and P.uiTitle or {1, 0.55, 0.1})
     local tw = titleFont:getWidth(data.title)
-    love.graphics.print(data.title, W / 2 - tw / 2, H * 0.14)
+    love.graphics.print(data.title, W / 2 - tw / 2, H * 0.55)
 
     -- ── Help content ──
     if self.currentMenu == "help" and data.content then
-        local bodyFont = self:_font(math.floor(H * 0.032))
+        -- Find longest line, shrink font until it fits with margins
+        local maxContentW = W - margin * 2
+        local bodySize    = math.floor(H * 0.032)
+        local bodyFont    = self:_font(bodySize)
+        local longest     = ""
+        for _, line in ipairs(data.content) do
+            if #line > #longest then longest = line end
+        end
+        while bodyFont:getWidth(longest) > maxContentW and bodySize > 9 do
+            bodySize = bodySize - 1
+            bodyFont = self:_font(bodySize)
+        end
         love.graphics.setFont(bodyFont)
-        local lineH  = math.floor(H * 0.055)
-        local baseY  = math.floor(H * 0.24)   -- just below title
+        local lineH = math.floor(bodySize * 1.55)
+        local baseY = math.floor(H * 0.67)
         for i, line in ipairs(data.content) do
-            love.graphics.setColor(P and P.uiText or {0.9,0.9,0.9}, fa or 1)
+            love.graphics.setColor(P and P.uiText or {0.9,0.9,0.9})
             local lw = bodyFont:getWidth(line)
             love.graphics.print(line, W / 2 - lw / 2, baseY + (i - 1) * lineH)
         end
@@ -232,16 +254,24 @@ function Menu:draw(extinguishedTotal, fireCount)
 
     -- ── Game over score ──
     if self.currentMenu == "gameover" then
-        local scoreFont = self:_font(math.floor(H * 0.035))
+        local scoreFont = self:_font(math.floor(H * 0.038))
         love.graphics.setFont(scoreFont)
-        love.graphics.setColor(P and P.sand or {0.8,0.8,1})
-        local scoreY = H / 2 - math.floor(H * 0.14)
-        if extinguishedTotal then
-            local t  = "Fires extinguished: " .. extinguishedTotal
-            love.graphics.print(t, W / 2 - scoreFont:getWidth(t) / 2, scoreY)
-            scoreY = scoreY + math.floor(H * 0.05)
+        local margin = W * 0.10
+        local scoreY = H * 0.62
+        local lineH  = math.floor(H * 0.055)
+
+        local function scoreLine(label, value)
+            love.graphics.setColor(P and P.uiDim or {0.7,0.7,0.7})
+            love.graphics.print(label, margin, scoreY)
+            love.graphics.setColor(P and P.uiTitle or {1,0.85,0.2})
+            local vw = scoreFont:getWidth(tostring(value))
+            love.graphics.print(tostring(value), W - margin - vw, scoreY)
+            scoreY = scoreY + lineH
         end
 
+        if extinguishedTotal then
+            scoreLine("Fires extinguished", extinguishedTotal)
+        end
     end
 
     -- ── Options ──

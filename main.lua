@@ -38,7 +38,7 @@ local P = {
 local _evo = {
     spawnInterval = 3.2,  -- seconds between fires [0.3 – 4.0]
     damagePerTick = 12,   -- hp lost per fire tick  [5 – 25]
-    chaseWeight   = 0.8,  -- ai chase aggression    [0.5 – 2.8]
+    chaseWeight   = 1.0,  -- ai chase aggression    [0.5 – 2.8]
 }
 
 local function evolved_params()
@@ -91,10 +91,10 @@ local C = {
         spawnRate         = 40,
         damagePerTick     = 12,    -- set by _evo; adapt() updates live
         firstSpawnDelay   = 2.0,
-        baseSpawnInterval = 2.2,   -- set by _evo; adapt() updates live
+        baseSpawnInterval = 3.2,   -- set by _evo; adapt() updates live
         maxFires          = 100,
         spawnScaleBase    = 1,
-        spawnScaleFactor  = 0.02,
+        spawnScaleFactor  = 0.03,
     },
     stain = {
         radiusOffset = 5,
@@ -330,13 +330,21 @@ function love.load()
     menuBg    = love.graphics.newImage("assets/armadillo.png")
     menuFires = {}
     -- Spawn a handful of fires along the bottom of the logical canvas
-    local firePositions = {
-        {120, 520}, {260, 540}, {400, 510}, {550, 535}, {680, 515},
-        {80,  490}, {340, 555}, {620, 490},
-    }
-    for _, pos in ipairs(firePositions) do
-        local f = Fire:new(pos[1], pos[2], 18, C.fire.color)
-        table.insert(menuFires, f)
+    -- Chaotic fire positions across the lower portion of canvas
+    math.randomseed(13)
+    for i = 1, 8 do
+        local fx = 40 + math.random() * (Screen.W - 80)
+        local fy = Screen.H * 0.70 + math.random() * (Screen.H * 0.22)
+        table.insert(menuFires, Fire:new(fx, fy, 18, C.fire.color))
+    end
+    math.randomseed(os.time())
+
+    -- Force portrait on Android (conf orientation only works on iOS)
+    if love.system and love.system.getOS() == "Android" then
+        local sw, sh = love.window.getMode()
+        if sw > sh then
+            love.window.setMode(sh, sw)   -- swap to portrait
+        end
     end
 
     love.graphics.setBackgroundColor(0, 0, 0)
@@ -545,16 +553,18 @@ function love.draw()
         love.graphics.push()
         Screen:apply()
 
-        -- Background image (armadillo reference, dimmed)
+        -- Portrait layout: image fills top 55%, centred; fires along bottom
         love.graphics.setColor(1, 1, 1, 1)
-        local iw = menuBg:getWidth()
-        local ih = menuBg:getHeight()
-        local scale = math.max(Screen.W / iw, Screen.H / ih) / 2
-        local ox = 0
-        local oy = (Screen.H - ih * scale) * 0.5
+        local iw     = menuBg:getWidth()
+        local ih     = menuBg:getHeight()
+        local scaleW = Screen.W / iw
+        local scaleH = (Screen.H * 0.55) / ih
+        local scale  = math.min(scaleW, scaleH)
+        local ox     = (Screen.W - iw * scale) * 0.5
+        local oy     = Screen.H * 0.02
         love.graphics.draw(menuBg, ox, oy, 0, scale, scale)
 
-        -- Live fires along the bottom
+        -- Menu fires: chaotic positions along bottom third
         love.graphics.setBlendMode("add")
         for _, f in ipairs(menuFires) do f:draw() end
         love.graphics.setBlendMode("alpha")
@@ -629,8 +639,11 @@ function love.keypressed(key)
             currentState = "paused"
             menu:showPause()
         elseif key == "escape" then
-            currentState = "menu"
-            menu:setMenu("main")
+            currentState = "paused"
+            menu:showPause()
+        elseif key == "f11" then
+            local fs = love.window.getFullscreen()
+            love.window.setFullscreen(not fs, "desktop")
         elseif key == "m" then
             audio:toggle()
         elseif key == "=" or key == "+" then
