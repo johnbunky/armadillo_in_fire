@@ -300,14 +300,10 @@ function Ball:draw()
             love.graphics.setColor(belly)
             love.graphics.ellipse("fill", 0, -r*0.62, r*0.30, r*0.28)
 
-            -- Eyes (big and cute)
-            love.graphics.setColor(0.08, 0.05, 0.04)
+            -- Eyes fully black
+            love.graphics.setColor(0, 0, 0)
             love.graphics.circle("fill", -r*0.18, -r*0.72, r*0.13)
             love.graphics.circle("fill",  r*0.18, -r*0.72, r*0.13)
-            -- Eye shine
-            love.graphics.setColor(1, 1, 1, 0.9)
-            love.graphics.circle("fill", -r*0.13, -r*0.76, r*0.045)
-            love.graphics.circle("fill",  r*0.22, -r*0.76, r*0.045)
 
             -- Nose
             love.graphics.setColor(0.55, 0.32, 0.22)

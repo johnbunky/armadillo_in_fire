@@ -50,7 +50,7 @@ function Menu:new()
                 "Don't touch the fires — they damage you!",
                 "Fires spread over time. Move fast.",
                 "",
-                "Keyboard: WASD / Arrow keys   |   P = Pause",
+                -- "Keyboard: WASD / Arrow keys   |   P = Pause",
             },
             options = {
                 { text = "Back", action = "main" }
@@ -87,13 +87,15 @@ function Menu:_layoutY()
     if not data then return H / 2, 50 end
 
     if self.currentMenu == "help" and data.content then
-        local lineH    = math.floor(H * 0.042)   -- tighter lines
+        local bodySize = math.floor(H * 0.032)
+        local lineH    = math.floor(bodySize * 1.35)
         local contentH = #data.content * lineH
-        -- Pack: title(57%) + content + gap + back button must fit by 97%
-        local available = H * 0.97 - H * 0.67 - contentH
-        local gap       = math.max(math.floor(H * 0.02), math.floor(available * 0.4))
-        local startY    = H * 0.67 + contentH + gap
-        local spacing   = math.floor(H * 0.07)
+        local gap      = math.floor(H * 0.04)
+        local spacing  = math.floor(H * 0.09)
+        local startY   = H * 0.67 + contentH + gap
+        -- Keep back button clear of bottom edge (leave 12% margin)
+        local maxY     = H * 0.88 - spacing
+        startY = math.min(startY, maxY)
         return startY, spacing
     else
         return H * 0.66, math.floor(H * 0.09)
@@ -243,8 +245,8 @@ function Menu:draw(extinguishedTotal, fireCount)
             bodyFont = self:_font(bodySize)
         end
         love.graphics.setFont(bodyFont)
-        local lineH = math.floor(bodySize * 1.55)
-        local baseY = math.floor(H * 0.67)
+        local lineH = math.floor(bodySize * 1.35)
+        local baseY = math.floor(H * 0.63)
         for i, line in ipairs(data.content) do
             love.graphics.setColor(P and P.uiText or {0.9,0.9,0.9})
             local lw = bodyFont:getWidth(line)
@@ -261,11 +263,15 @@ function Menu:draw(extinguishedTotal, fireCount)
         local lineH  = math.floor(H * 0.055)
 
         local function scoreLine(label, value)
+            local full = label .. ": " .. tostring(value)
+            local fw   = scoreFont:getWidth(full)
+            -- label part
             love.graphics.setColor(P and P.uiDim or {0.7,0.7,0.7})
-            love.graphics.print(label, margin, scoreY)
+            local lw = scoreFont:getWidth(label .. ": ")
+            love.graphics.print(label .. ": ", W / 2 - fw / 2, scoreY)
+            -- value part in gold
             love.graphics.setColor(P and P.uiTitle or {1,0.85,0.2})
-            local vw = scoreFont:getWidth(tostring(value))
-            love.graphics.print(tostring(value), W - margin - vw, scoreY)
+            love.graphics.print(tostring(value), W / 2 - fw / 2 + lw, scoreY)
             scoreY = scoreY + lineH
         end
 
@@ -305,7 +311,7 @@ function Menu:draw(extinguishedTotal, fireCount)
     love.graphics.setFont(hintFont)
     love.graphics.setColor(P and P.uiDim or {0.55,0.55,0.55})
     local hint = "Tap a menu item  ·  Keyboard: ↑↓ Enter"
-    love.graphics.print(hint, W / 2 - hintFont:getWidth(hint) / 2, H - math.floor(H * 0.06))
+    -- love.graphics.print(hint, W / 2 - hintFont:getWidth(hint) / 2, H - math.floor(H * 0.06))
 
     love.graphics.setColor(1, 1, 1, 1)
 end
