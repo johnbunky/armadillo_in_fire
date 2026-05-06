@@ -38,7 +38,7 @@ local P = {
 local _evo = {
     spawnInterval = 3.2,  -- seconds between fires [0.3 – 4.0]
     damagePerTick = 12,   -- hp lost per fire tick  [5 – 25]
-    chaseWeight   = 1.0,  -- ai chase aggression    [0.5 – 2.8]
+    chaseWeight   = 1.4,  -- ai chase aggression    [0.5 – 2.8]
 }
 
 local function evolved_params()
@@ -581,7 +581,10 @@ end
 
 -- Mouse click (desktop testing)
 local function setTouchTarget(rx, ry)
-    local gx, gy = Screen:toGame(rx, ry)
+    -- On web, touch coords are physical pixels; convert to CSS first
+    local os  = love.system and love.system.getOS() or ""
+    local dpi = (os == "Web") and (love.graphics.getDPIScale() or 1) or 1
+    local gx, gy = Screen:toGame(rx / dpi, ry / dpi)
     local dx = gx - gameState.playerBall.x
     local dy = gy - gameState.playerBall.y
     gameState.touchTarget = {
@@ -621,7 +624,9 @@ end
 
 function love.touchmoved(id, x, y)
     if currentState == "playing" then
-        local gx, gy = Screen:toGame(x, y)
+        local os  = love.system and love.system.getOS() or ""
+        local dpi = (os == "Web") and (love.graphics.getDPIScale() or 1) or 1
+        local gx, gy = Screen:toGame(x / dpi, y / dpi)
         gameState.touchTarget = { x = gx, y = gy }
     end
 end

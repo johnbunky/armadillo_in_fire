@@ -41,13 +41,29 @@ function Physics.handleCollision(playerBall, pushBall, audio)
     -- Transfer momentum: only the component of player velocity
     -- along the collision axis drives the push (no phantom force).
     local playerSpeed = playerBall.vx * nx + playerBall.vy * ny
-    if playerSpeed > 0 then          -- only push if moving toward pushball
-        local transfer = playerSpeed * 1.4   -- slight amplification for feel
+    if playerSpeed > 0 then
+        local transfer = playerSpeed * 1.4
         pushBall.vx = pushBall.vx + nx * transfer
         pushBall.vy = pushBall.vy + ny * transfer
-        -- Bleed a little velocity off the player so it feels physical
         playerBall.vx = playerBall.vx - nx * transfer * 0.2
         playerBall.vy = playerBall.vy - ny * transfer * 0.2
+    end
+
+    -- Corner escape: if stone is pinned near two walls, add a nudge
+    -- so it doesn't get completely stuck
+    local margin = pushBall.radius * 1.5
+    local W, H   = Screen.W, Screen.H
+    local nearL  = pushBall.x < margin
+    local nearR  = pushBall.x > W - margin
+    local nearT  = pushBall.y < margin
+    local nearB  = pushBall.y > H - margin
+    if (nearL or nearR) and (nearT or nearB) then
+        -- Push diagonally away from the corner
+        local ex = nearL and 1 or (nearR and -1 or 0)
+        local ey = nearT and 1 or (nearB and -1 or 0)
+        local escapeForce = math.max(0, playerSpeed) * 0.5 + 80
+        pushBall.vx = pushBall.vx + ex * escapeForce
+        pushBall.vy = pushBall.vy + ey * escapeForce
     end
 
     if audio then audio:playBallPush() end

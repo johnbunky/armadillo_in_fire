@@ -58,6 +58,7 @@ function Menu:new()
                 "Don't touch the fires — they damage you!",
                 "Fires spread over time. Move fast.",
                 "",
+                "Keyboard: WASD / Arrow keys   |   P = Pause",
             },
             options = {
                 { text = "Back", action = "main" }
@@ -167,8 +168,10 @@ function Menu:mousepressed(x, y)
     local data = self.menus[self.currentMenu]
     if not data or not data.options then return end
 
+    local os  = love.system and love.system.getOS() or ""
+    local dpi = (os == "Web") and (love.graphics.getDPIScale() or 1) or 1
     local startY, spacing = self:_layoutY()
-    local W = love.graphics.getWidth()
+    local W = love.graphics.getWidth() / dpi
 
     for i, option in ipairs(data.options) do
         local itemY  = startY + (i - 1) * spacing
@@ -298,8 +301,7 @@ function Menu:draw(extinguishedTotal, fireCount)
 
     for i, option in ipairs(data.options) do
         -- On Android hide Back in help screen — hardware back handles it
-        local hide = (isAndroid() and option.action == "main" and self.currentMenu == "help")
-                  or (isWeb() and option.action == "quit")
+        local hide = (isWeb() and option.action == "quit")
         if not hide then
             local oy       = startY + (i - 1) * spacing
             local selected = (i == self.selectedOption)
@@ -318,7 +320,7 @@ function Menu:draw(extinguishedTotal, fireCount)
         end
     end
 
-    -- ── Hint ──
+    -- -- ── Hint ──
     -- local hintFont = self:_font(math.floor(H * 0.025))
     -- love.graphics.setFont(hintFont)
     -- love.graphics.setColor(P and P.uiDim or {0.55,0.55,0.55})

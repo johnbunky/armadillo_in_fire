@@ -10,7 +10,7 @@ function love.conf(t)
     t.window.fullscreen      = false
     t.window.fullscreentype  = "desktop"
     t.window.highdpi         = true
-    t.window.orientation     = "portrait"
+    -- orientation unlocked: both portrait and landscape work
 
     -- Turn off unused modules (faster load, smaller APK)
     t.modules.joystick = false
