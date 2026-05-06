@@ -7,9 +7,16 @@ local function isAndroid()
     return love.system and love.system.getOS() == "Android"
 end
 
+local function isWeb()
+    return love.system and love.system.getOS() == "Web"
+end
+
 local function safeQuit()
-    if isAndroid() then
-        os.exit(0)   -- love.event.quit unreliable on Android
+    if isWeb() then
+        -- on web, close the tab or do nothing — no reliable quit
+        love.event.quit()
+    elseif isAndroid() then
+        os.exit(0)
     else
         love.event.quit()
     end
@@ -290,30 +297,25 @@ function Menu:draw(extinguishedTotal, fireCount)
     local startY, spacing = self:_layoutY()
 
     for i, option in ipairs(data.options) do
-        -- On Android, hide Back/navigation buttons — hardware back handles it
-        if isAndroid() and (option.action == "main" or option.action == "resume") and
-           self.currentMenu == "help" then
-            goto continue
+        -- On Android hide Back in help screen — hardware back handles it
+        local hide = (isAndroid() and option.action == "main" and self.currentMenu == "help")
+                  or (isWeb() and option.action == "quit")
+        if not hide then
+            local oy       = startY + (i - 1) * spacing
+            local selected = (i == self.selectedOption)
+            if selected then
+                local pulse = 0.55 + 0.45 * math.sin(self.animationTimer * 4)
+                love.graphics.setColor(1, 0.7, 0.1, 0.18 * fa)
+                love.graphics.rectangle("fill", W * 0.1, oy - 4, W * 0.8, spacing - 4, 6, 6)
+                love.graphics.setColor(1, 0.75, 0.1, pulse * fa)
+                love.graphics.print(">", W / 2 - optFont:getWidth(option.text) / 2 - 30, oy)
+                love.graphics.setColor(P and P.uiTitle or {1, 0.85, 0.2})
+            else
+                love.graphics.setColor(P and P.uiText or {0.88, 0.88, 0.88})
+            end
+            local tw2 = optFont:getWidth(option.text)
+            love.graphics.print(option.text, W / 2 - tw2 / 2, oy)
         end
-        local oy      = startY + (i - 1) * spacing
-        local selected = (i == self.selectedOption)
-
-        if selected then
-            local pulse = 0.55 + 0.45 * math.sin(self.animationTimer * 4)
-            -- Subtle highlight bar
-            love.graphics.setColor(1, 0.7, 0.1, 0.18 * fa)
-            love.graphics.rectangle("fill", W * 0.1, oy - 4, W * 0.8, spacing - 4, 6, 6)
-            -- Arrow
-            love.graphics.setColor(1, 0.75, 0.1, pulse * fa)
-            love.graphics.print(">", W / 2 - optFont:getWidth(option.text) / 2 - 30, oy)
-            love.graphics.setColor(P and P.uiTitle or {1,0.85,0.2})
-        else
-            love.graphics.setColor(P and P.uiText or {0.88,0.88,0.88})
-        end
-
-        local tw2 = optFont:getWidth(option.text)
-        love.graphics.print(option.text, W / 2 - tw2 / 2, oy)
-        ::continue::
     end
 
     -- ── Hint ──

@@ -358,7 +358,8 @@ function Ball:draw()
         end
 
         -- Floating damage numbers
-        love.graphics.setFont(love.graphics.newFont(12))
+        if not Ball._dmgFont then Ball._dmgFont = love.graphics.newFont(12) end
+        love.graphics.setFont(Ball._dmgFont)
         for _, d in ipairs(self.damageNumbers) do
             love.graphics.setColor(1, 0.3, 0.3, d.alpha)
             love.graphics.print("-"..d.amount, d.x - 10, d.y)

@@ -12,12 +12,11 @@ Screen.offsetX = 0
 Screen.offsetY = 0
 
 function Screen:update()
-    local sw = love.graphics.getWidth()
-    local sh = love.graphics.getHeight()
-    -- Adapt logical canvas to actual screen aspect ratio (no black bars).
-    -- Height stays at 600; width stretches to fill the real aspect ratio.
-    self.H    = 600
-    self.W    = math.floor(self.H * sw / sh)
+    -- getWidth/Height returns physical pixels on web (HiDPI).
+    -- getMode returns logical window size — matches mouse/touch coords.
+    local sw, sh = love.window.getMode()
+    self.H       = 600
+    self.W       = math.floor(self.H * sw / sh)
     self.scale   = sh / self.H
     self.offsetX = 0
     self.offsetY = 0
