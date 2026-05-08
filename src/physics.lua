@@ -19,6 +19,11 @@ end
 -- ── Ball ↔ ball collision ──────────────────────────────────────────────────
 
 function Physics.handleCollision(playerBall, pushBall, audio)
+    -- Tick sound cooldown every call (not just on wall bounce)
+    local dt = love.timer.getDelta()
+    if pushBall._collisionTimer and pushBall._collisionTimer > 0 then
+        pushBall._collisionTimer = pushBall._collisionTimer - dt
+    end
     if not Physics.checkCollision(playerBall, pushBall) then return end
 
     local dx = pushBall.x - playerBall.x
