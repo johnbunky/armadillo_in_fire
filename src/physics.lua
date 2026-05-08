@@ -66,12 +66,23 @@ function Physics.handleCollision(playerBall, pushBall, audio)
         pushBall.vy = pushBall.vy + ey * escapeForce
     end
 
-    if audio then audio:playBallPush() end
+    -- Sound cooldown: only play if enough time passed since last collision
+    if audio then
+        pushBall._collisionTimer = (pushBall._collisionTimer or 0)
+        if pushBall._collisionTimer <= 0 and playerSpeed > 30 then
+            audio:playBallPush()
+            pushBall._collisionTimer = 0.15  -- 150ms cooldown
+        end
+    end
 end
 
 -- ── Boundary collision — uses logical canvas size ─────────────────────────
 
 function Physics.handleBoundaryCollision(ball, audio)
+    -- Tick collision sound cooldown
+    if ball._collisionTimer and ball._collisionTimer > 0 then
+        ball._collisionTimer = ball._collisionTimer - (love.timer.getDelta and love.timer.getDelta() or 0.016)
+    end
     local bounced       = false
     local bounceReduce  = 0.7
     local W, H          = Screen.W, Screen.H   -- logical coords, not screen pixels
