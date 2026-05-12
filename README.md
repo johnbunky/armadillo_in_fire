@@ -89,6 +89,11 @@ assets/sounds/fire_damage.wav
 npm install -g love.js
 ```
 
+> **Windows gotcha:** the global `love.js` shim won't run due to `.js` file association. Call the entry point directly:
+> ```bash
+> node "C:\Users\yourname\AppData\Roaming\npm\node_modules\love.js\index.js" ...
+> ```
+
 ### Build and test locally
 
 ```bash
@@ -102,11 +107,31 @@ node "C:\Users\yourname\AppData\Roaming\npm\node_modules\love.js\index.js" mygam
 # 3. IMPORTANT: restore patched index.html (the build overwrites it)
 copy index_patched.html output_folder\index.html
 
-# 4. Serve locally
+# 4. Serve locally (needs COOP/COEP headers for SharedArrayBuffer)
 cd output_folder
 python3 server.py
 # open http://localhost:3000
 ```
+
+### server.py (required for local testing)
+
+Save this as `output_folder/server.py`:
+
+```python
+import http.server, socketserver
+
+class Handler(http.server.SimpleHTTPRequestHandler):
+    def end_headers(self):
+        self.send_header('Cross-Origin-Opener-Policy', 'same-origin')
+        self.send_header('Cross-Origin-Embedder-Policy', 'require-corp')
+        super().end_headers()
+
+with socketserver.TCPServer(("", 3000), Handler) as httpd:
+    print("Serving at http://localhost:3000")
+    httpd.serve_forever()
+```
+
+> itch.io sends these headers automatically — this is only needed for local smoke testing.
 
 ### index.html patch (important)
 
@@ -128,51 +153,98 @@ On itch.io:
 - Edit game → Uploads → upload `web_build.zip`
 - Kind: **HTML**
 - Check: **"This file will be played in the browser"**
+- Enable **SharedArrayBuffer** in the embed options (required)
 
 ---
 
-## Android Build
+## Android Build (command-line, no Android Studio)
 
 ### Prerequisites
 
-- [love-android SDK](https://github.com/love2d/love-android)
-- Android Studio (or `apktool` for command-line only)
-- Java JDK
+Install via [Scoop](https://scoop.sh/):
 
-### Steps (Android Studio path)
-
-1. Clone love-android: `git clone https://github.com/love2d/love-android`
-2. Copy your `.love` file into `love-android/app/src/main/assets/game.love`
-3. Edit `love-android/app/src/main/AndroidManifest.xml`:
-   - Set `android:screenOrientation="portrait"` (or `"landscape"`)
-   - Set `android:label="Your Game Title"`
-4. Open in Android Studio → Build → Generate Signed APK
-5. Sign with your keystore (create one if first time: `keytool -genkey -v -keystore my.keystore ...`)
-
-### Known platform behaviours
-
-| Platform | Quit button | Back button | Orientation |
-|----------|-------------|-------------|-------------|
-| Desktop  | ✅ shown    | ESC = pause | F11 fullscreen |
-| Android  | ❌ hidden   | Hardware back = pause | Set in manifest |
-| Web      | ✅ shown    | N/A         | Browser controls |
-
----
-
-## Tuning the Game
-
-All gameplay constants live in the `C` table at the top of `main.lua`:
-
-```lua
-C.fire.baseSpawnInterval  -- seconds between fire spawns
-C.fire.spawnScaleFactor   -- how fast spawning accelerates over time
-C.fire.damagePerTick      -- damage per fire touch
-C.ai.weights              -- [chase, avoid, block, cluster, wait]
-C.multikill.window        -- seconds for multi-kill detection
-C.player.speed            -- armadillo movement speed
+```bash
+scoop bucket add java
+scoop install java/openjdk
+scoop install apktool
+scoop install uber-apk-signer
 ```
 
-The `adapt()` function mutates these after each death based on player performance score (`fires extinguished / survival time`).
+Verify:
+```bash
+java --version
+apktool --version
+uber-apk-signer --version
+```
+
+### 1. Download the love-android prebuilt APK
+
+```bash
+curl -L -o love.apk "https://github.com/love2d/love-android/releases/download/11.5a/love-11.5-android-embed.apk"
+```
+
+### 2. Decompile
+
+```bash
+apktool d love.apk -o love_decompiled
+```
+
+### 3. Drop your game in
+
+```bash
+copy armadillo_in_fire.love love_decompiled\assets\game.love
+```
+
+### 4. Edit AndroidManifest.xml
+
+Open `love_decompiled\AndroidManifest.xml` and make these changes:
+
+| What | From | To |
+|------|------|----|
+| `package` attribute | `org.love2d.android` | `com.yourname.yourgame` |
+| `<permission>` name | `org.love2d.android.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` | `com.yourname.yourgame.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` |
+| `<uses-permission>` name | `org.love2d.android.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` | `com.yourname.yourgame.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` |
+| `<provider>` authorities | `org.love2d.android.androidx-startup` | `com.yourname.yourgame.androidx-startup` |
+| `android:label` | `LÖVE for Android` | Your game title |
+
+> **Do not change** `android:name="org.love2d.android.GameActivity"` — this points to compiled Java code inside the APK.
+
+### 5. Recompile
+
+```bash
+apktool b love_decompiled -o armadillo_unsigned.apk
+```
+
+### 6. Create a keystore (first time only)
+
+```bash
+keytool -genkey -v -keystore armadillo.keystore -alias armadillo -keyalg RSA -keysize 2048 -validity 10000
+```
+
+> **Keep this file safe and backed up.** You need the same keystore for every future update — losing it means you can't update the Play Store listing.
+
+### 7. Sign the APK
+
+```bash
+uber-apk-signer -a "C:\full\path\to\armadillo_unsigned.apk" --ks "C:\full\path\to\armadillo.keystore" --ksAlias armadillo --ksPass YOURPASSWORD --ksKeyPass YOURPASSWORD -o "C:\full\path\to\output"
+```
+
+> Use full absolute paths — relative paths have issues on Windows with uber-apk-signer.
+
+Output file will be named `armadillo_unsigned-aligned-signed.apk`. Rename it:
+
+```bash
+rename armadillo_unsigned-aligned-signed.apk armadillo_in_fire.apk
+```
+
+### 8. Upload to Google Play
+
+1. Go to [play.google.com/console](https://play.google.com/console) ($25 one-time registration fee)
+2. Create app → fill in title, description, category
+3. Add screenshots (at least 2) and a feature graphic (1024×500px)
+4. Complete the content rating questionnaire
+5. Go to **Production** → **Releases** → upload `armadillo_in_fire.apk`
+6. Submit for review (typically 1–3 days)
 
 ---
 
@@ -181,6 +253,17 @@ The `adapt()` function mutates these after each death based on player performanc
 - **Web fullscreen**: returning from fullscreen malforms the canvas (love.js limitation, out of scope)
 - **Web sound**: programmatic sound generation crashes love.js/WASM — use pre-baked `.wav` files (already solved, see above)
 - **Android orientation**: `conf.lua` orientation hint only works on iOS; Android requires manifest setting
+- **Play Store**: may prefer `.aab` over `.apk` in future — the apktool approach produces APK only
+
+---
+
+## Platform Behaviour Summary
+
+| Platform | Quit button | Back button | Orientation |
+|----------|-------------|-------------|-------------|
+| Desktop  | ✅ shown    | ESC = pause | F11 fullscreen |
+| Android  | ❌ hidden   | Hardware back = pause | Set in manifest |
+| Web      | ✅ shown    | N/A         | Browser controls |
 
 ---
 
