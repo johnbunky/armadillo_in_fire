@@ -49,14 +49,6 @@ cache/
 conf.lua.bak
 main.lua.bak
 
-# Assets that shouldn't be tracked (optional - uncomment if needed)
-# assets/music/*.mp3
-# assets/music/*.ogg
-# assets/sounds/*.wav
-# assets/sounds/*.mp3
-# assets/images/*.psd
-# assets/images/raw/
-
 # Dependencies (if using any Lua package managers)
 lua_modules/
 .luarocks/
@@ -109,13 +101,46 @@ screenshots/
 !assets/**/*.png
 !assets/**/*.jpg
 !assets/**/*.gif
-CLAUDE.md 
-history.txt 
-session.log 
-decisions.log 
-error.txt 
-intent.lua 
-_world.lua 
-intent.lua 
-joker.lua 
+
+# Project notes
+CLAUDE.md
+history.txt
+session.log
+decisions.log
+error.txt
+intent.lua
+_world.lua
+joker.lua
 tests/
+
+# -----------------------------------------------
+# Android Build Artifacts
+# -----------------------------------------------
+
+# Decompiled APK (apktool output) — regenerate with: apktool d love.apk -o love_decompiled
+love_decompiled/
+
+# Downloaded prebuilt love-android APK
+love.apk
+
+# Unsigned and intermediate APKs
+*_unsigned.apk
+*_unsigned-aligned-signed.apk
+*_unsigned-aligned-signed.apk.idsig
+
+# Signed release APK (distribute separately, not via git)
+armadillo_in_fire.apk
+
+# Keystore — NEVER commit this, but back it up somewhere safe offline
+# Losing it means you can never update your Play Store listing
+*.keystore
+
+# -----------------------------------------------
+# Web Build Artifacts
+# -----------------------------------------------
+
+# love.js build output folder — regenerate with: node .../love.js/index.js mygame.love output_folder
+output_folder/
+
+# Web build zip for itch.io upload
+web_build.zip

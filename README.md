@@ -157,11 +157,11 @@ On itch.io:
 
 ---
 
-## Android Build (command-line, no Android Studio)
+## Android Build (APK for sideloading / ADB testing)
+
+Quick path to get an APK on your device without Android Studio. Not suitable for Play Store (which requires AAB) but useful for local testing.
 
 ### Prerequisites
-
-Install via [Scoop](https://scoop.sh/):
 
 ```bash
 scoop bucket add java
@@ -170,28 +170,16 @@ scoop install apktool
 scoop install uber-apk-signer
 ```
 
-Verify:
-```bash
-java --version
-apktool --version
-uber-apk-signer --version
-```
-
-### 1. Download the love-android prebuilt APK
+### Steps
 
 ```bash
+# 1. Download the love-android prebuilt APK
 curl -L -o love.apk "https://github.com/love2d/love-android/releases/download/11.5a/love-11.5-android-embed.apk"
-```
 
-### 2. Decompile
-
-```bash
+# 2. Decompile
 apktool d love.apk -o love_decompiled
-```
 
-### 3. Drop your game in
-
-```bash
+# 3. Drop your game in
 copy armadillo_in_fire.love love_decompiled\assets\game.love
 ```
 
@@ -209,42 +197,176 @@ Open `love_decompiled\AndroidManifest.xml` and make these changes:
 
 > **Do not change** `android:name="org.love2d.android.GameActivity"` — this points to compiled Java code inside the APK.
 
-### 5. Recompile
-
 ```bash
+# 5. Recompile
 apktool b love_decompiled -o armadillo_unsigned.apk
+
+# 6. Create keystore (first time only)
+keytool -genkey -v -keystore armadillo.keystore -alias armadillo -keyalg RSA -keysize 2048 -validity 10000
+
+# 7. Sign — use full absolute paths, relative paths fail on Windows
+uber-apk-signer -a "C:\full\path\to\armadillo_unsigned.apk" --ks "C:\full\path\to\armadillo.keystore" --ksAlias armadillo --ksPass YOURPASSWORD --ksKeyPass YOURPASSWORD -o "C:\full\path\to\output"
+
+# 8. Rename
+rename armadillo_unsigned-aligned-signed.apk armadillo_in_fire.apk
+
+# 9. Install via ADB
+adb install armadillo_in_fire.apk
 ```
 
-### 6. Create a keystore (first time only)
+---
+
+## Android Build (AAB for Google Play)
+
+Play Store requires `.aab` format. This build compiles the full LÖVE engine from source using love-android.
+
+### Prerequisites
+
+Install via [Scoop](https://scoop.sh/):
+
+```bash
+scoop bucket add java
+scoop install java/temurin17-jdk   # must be exactly JDK 17
+scoop install android-clt
+```
+
+> **JDK must be exactly 17** — not 21, not 26. The love-android README is explicit about this.
+
+Set Java 17 as active (required each session — set JAVA_HOME permanently to avoid repeating):
+
+```bash
+set JAVA_HOME=%USERPROFILE%\scoop\apps\temurin17-jdk\current
+set PATH=%JAVA_HOME%\bin;%PATH%
+java -version   # confirm: openjdk version "17.x.x"
+```
+
+Accept Android SDK licenses (first time only):
+
+```bash
+%USERPROFILE%\scoop\apps\android-clt\current\cmdline-tools\cmdline-tools\bin\sdkmanager.bat --licenses
+```
+
+### 1. Clone love-android with submodules
+
+```bash
+git clone --recurse-submodules https://github.com/love2d/love-android
+cd love-android
+```
+
+> If you already cloned without submodules:
+> ```bash
+> git submodule sync --recursive
+> git submodule update --init --force --recursive
+> ```
+> Missing submodules cause `org.libsdl.app does not exist` errors.
+
+### 2. Drop your game in
+
+```bash
+mkdir app\src\main\assets
+copy path\to\armadillo_in_fire.love app\src\main\assets\game.love
+```
+
+### 3. Configure gradle.properties
+
+Edit `gradle.properties`:
+
+```properties
+app.name=Armadillo in Fire
+app.application_id=com.yourname.armadilloinfire
+app.orientation=sensorLandscape   # allows both landscape orientations
+app.version_code=1
+app.version_name=1.0
+# comment out app.name_byte_array if present
+```
+
+### 4. Reduce build size
+
+In `app/build.gradle`, find the `ndk` block and set:
+
+```groovy
+ndk {
+    abiFilters 'arm64-v8a'   // arm64 only — covers 95%+ of devices
+    debugSymbolLevel 'none'  // removes debug symbols — cuts size from 120MB to ~13MB
+}
+```
+
+### 5. Set Gradle and AGP versions
+
+In `gradle/wrapper/gradle-wrapper.properties`:
+
+```properties
+distributionUrl=https\://services.gradle.org/distributions/gradle-8.6-bin.zip
+```
+
+In root `build.gradle`:
+
+```groovy
+classpath 'com.android.tools.build:gradle:8.3.2'
+```
+
+> Gradle 8.13 + AGP 8.3.2 causes transform cache corruption. Gradle 8.6 + AGP 8.3.2 is the working combination.
+
+### 6. Build the AAB
+
+```bash
+.\gradlew bundleEmbedNoRecordRelease
+```
+
+First build takes ~1 hour (compiling LÖVE engine C++ from source). Subsequent builds are ~30 seconds.
+
+Output: `app/build/outputs/bundle/embedNoRecordRelease/app-embed-noRecord-release.aab`
+
+### 7. Create a keystore (first time only)
 
 ```bash
 keytool -genkey -v -keystore armadillo.keystore -alias armadillo -keyalg RSA -keysize 2048 -validity 10000
 ```
 
-> **Keep this file safe and backed up.** You need the same keystore for every future update — losing it means you can't update the Play Store listing.
+> **Keep this file safe and backed up.** You need the same keystore for every future update — losing it means you cannot update the Play Store listing ever again.
 
-### 7. Sign the APK
-
-```bash
-uber-apk-signer -a "C:\full\path\to\armadillo_unsigned.apk" --ks "C:\full\path\to\armadillo.keystore" --ksAlias armadillo --ksPass YOURPASSWORD --ksKeyPass YOURPASSWORD -o "C:\full\path\to\output"
-```
-
-> Use full absolute paths — relative paths have issues on Windows with uber-apk-signer.
-
-Output file will be named `armadillo_unsigned-aligned-signed.apk`. Rename it:
+### 8. Sign the AAB
 
 ```bash
-rename armadillo_unsigned-aligned-signed.apk armadillo_in_fire.apk
+# Copy to a path without spaces first (jarsigner has issues with spaces in paths)
+mkdir C:\temp
+copy "app\build\outputs\bundle\embedNoRecordRelease\app-embed-noRecord-release.aab" C:\temp\armadillo.aab
+
+jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore "C:\full\path\to\armadillo.keystore" C:\temp\armadillo.aab armadillo
 ```
 
-### 8. Upload to Google Play
+### 9. Test on device via ADB
+
+```bash
+scoop install adb
+
+# Enable on phone: Settings → About → tap Build Number 7 times
+# Settings → Developer Options → USB Debugging ON
+
+adb devices                                      # confirm device detected
+adb install path\to\armadillo_in_fire.apk        # use APK for local testing (AAB not directly installable)
+adb logcat | grep -i love                        # watch for errors
+adb uninstall com.yourname.armadilloinfire       # clean uninstall before reinstall
+
+# Take screenshots
+adb shell screencap -p /sdcard/screen.png
+adb pull /sdcard/screen.png
+```
+
+> AABs cannot be sideloaded directly — use a signed APK for local device testing, AAB for Play Store upload.
+
+### 10. Upload to Google Play
+
+> **Important:** Google Play accounts created after November 2023 require a closed test with 12 testers opted-in for 14 consecutive days before production access is granted. Plan for 3+ weeks before going live.
 
 1. Go to [play.google.com/console](https://play.google.com/console) ($25 one-time registration fee)
-2. Create app → fill in title, description, category
-3. Add screenshots (at least 2) and a feature graphic (1024×500px)
-4. Complete the content rating questionnaire
-5. Go to **Production** → **Releases** → upload `armadillo_in_fire.apk`
-6. Submit for review (typically 1–3 days)
+2. Create app → set package name to match `app.application_id` in gradle.properties
+3. Fill in store listing: title, short description (80 chars), full description, category
+4. Add screenshots (at least 2) and a feature graphic (1024×500px, mandatory)
+5. Complete content rating questionnaire
+6. Go to **Internal testing** → **Create release** → upload `C:\temp\armadillo.aab`
+7. Run closed test with 12+ testers for 14+ days to unlock production access
+8. Apply for production → answer questions → submit for review (~7 days)
 
 ---
 
@@ -252,8 +374,9 @@ rename armadillo_unsigned-aligned-signed.apk armadillo_in_fire.apk
 
 - **Web fullscreen**: returning from fullscreen malforms the canvas (love.js limitation, out of scope)
 - **Web sound**: programmatic sound generation crashes love.js/WASM — use pre-baked `.wav` files (already solved, see above)
-- **Android orientation**: `conf.lua` orientation hint only works on iOS; Android requires manifest setting
-- **Play Store**: may prefer `.aab` over `.apk` in future — the apktool approach produces APK only
+- **Android orientation**: `conf.lua` orientation hint only works on iOS; Android requires `gradle.properties` setting
+- **Gradle/Java version sensitivity**: love-android requires exactly JDK 17, Gradle 8.6, AGP 8.3.2 — any deviation causes build failures
+- **Spaces in paths**: `jarsigner` has issues with paths containing spaces — always copy files to `C:\temp` before signing
 
 ---
 
@@ -262,7 +385,7 @@ rename armadillo_unsigned-aligned-signed.apk armadillo_in_fire.apk
 | Platform | Quit button | Back button | Orientation |
 |----------|-------------|-------------|-------------|
 | Desktop  | ✅ shown    | ESC = pause | F11 fullscreen |
-| Android  | ❌ hidden   | Hardware back = pause | Set in manifest |
+| Android  | ❌ hidden   | Hardware back = pause | sensorLandscape (both ways) |
 | Web      | ✅ shown    | N/A         | Browser controls |
 
 ---
@@ -270,5 +393,6 @@ rename armadillo_unsigned-aligned-signed.apk armadillo_in_fire.apk
 ## Built With
 
 - [LÖVE 11.5](https://love2d.org/) — game framework
+- [love-android](https://github.com/love2d/love-android) — Android port
 - [love.js](https://github.com/Davidobot/love.js) — web export
 - Lua — language
