@@ -263,9 +263,11 @@ cd love-android
 ### 2. Drop your game in
 
 ```bash
-mkdir app\src\main\assets
-copy path\to\armadillo_in_fire.love app\src\main\assets\game.love
+mkdir app\src\embed\assets
+copy path\to\armadillo_in_fire.love app\src\embed\assets\game.love
 ```
+
+> Note: the embed assets path is `app\src\embed\assets`, not `app\src\main\assets`.
 
 ### 3. Configure gradle.properties
 
@@ -277,10 +279,30 @@ app.application_id=com.yourname.armadilloinfire
 app.orientation=sensorLandscape   # allows both landscape orientations
 app.version_code=1
 app.version_name=1.0
-# comment out app.name_byte_array if present
+# comment out app.name_byte_array if present:
+# app.name_byte_array=...
+
+# increase Gradle heap to avoid OOM during build
+org.gradle.jvmargs=-Xmx4g
 ```
 
-### 4. Reduce build size
+### 4. Fix libluajit.so packaging (required)
+
+The prebuilt `libluajit.so` exists in the repo but Gradle doesn't package it automatically. Add this to the existing `sourceSets { main {` block in `app/build.gradle`:
+
+```groovy
+sourceSets {
+    main {
+        java {
+            // ... existing java srcDirs ...
+        }
+        jniLibs.srcDirs += ['src/main/cpp/megasource/libs/LuaJIT/android']  // add this line
+    }
+```
+
+> Without this fix the app crashes on launch with `dlopen failed: library "libluajit.so" not found`.
+
+### 5. Reduce build size
 
 In `app/build.gradle`, find the `ndk` block and set:
 
@@ -290,22 +312,6 @@ ndk {
     debugSymbolLevel 'none'  // removes debug symbols — cuts size from 120MB to ~13MB
 }
 ```
-
-### 5. Set Gradle and AGP versions
-
-In `gradle/wrapper/gradle-wrapper.properties`:
-
-```properties
-distributionUrl=https\://services.gradle.org/distributions/gradle-8.6-bin.zip
-```
-
-In root `build.gradle`:
-
-```groovy
-classpath 'com.android.tools.build:gradle:8.3.2'
-```
-
-> Gradle 8.13 + AGP 8.3.2 causes transform cache corruption. Gradle 8.6 + AGP 8.3.2 is the working combination.
 
 ### 6. Build the AAB
 
@@ -375,8 +381,10 @@ adb pull /sdcard/screen.png
 - **Web fullscreen**: returning from fullscreen malforms the canvas (love.js limitation, out of scope)
 - **Web sound**: programmatic sound generation crashes love.js/WASM — use pre-baked `.wav` files (already solved, see above)
 - **Android orientation**: `conf.lua` orientation hint only works on iOS; Android requires `gradle.properties` setting
-- **Gradle/Java version sensitivity**: love-android requires exactly JDK 17, Gradle 8.6, AGP 8.3.2 — any deviation causes build failures
+- **Gradle/Java version sensitivity**: love-android requires exactly JDK 17 — not newer, not older
+- **libluajit.so not packaged**: prebuilt exists in repo but Gradle won't include it without the `jniLibs.srcDirs` fix — app crashes on launch without it
 - **Spaces in paths**: `jarsigner` has issues with paths containing spaces — always copy files to `C:\temp` before signing
+- **Java heap OOM during build**: add `org.gradle.jvmargs=-Xmx4g` to `gradle.properties`
 
 ---
 
