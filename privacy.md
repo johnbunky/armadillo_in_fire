@@ -1,12 +1,12 @@
-# Privacy Policy for Armadillo in Fire
+# Privacy Policy for johnbunky Games
 
 Last updated: May 2026
 
 ## Overview
-Armadillo in Fire is a simple arcade game developed by John Bunky. This privacy policy explains that we do not collect any data from users.
+This privacy policy applies to all games developed by John Bunky. Our games do not collect any data from users.
 
 ## Data Collection
-Armadillo in Fire does not collect, store, transmit or share any personal data or information. The game:
+Our games do not collect, store, transmit or share any personal data or information. Each game:
 - Does not require account registration
 - Does not use analytics or tracking
 - Does not contain advertisements
